@@ -1,4 +1,6 @@
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict
+from typing import Any
+from bson import ObjectId
 
 class RestaurantBase(BaseModel):
     """Base model with common restaurant attributes"""
@@ -7,29 +9,33 @@ class RestaurantBase(BaseModel):
 
 class RestaurantCreate(RestaurantBase):
     """Model used for restaurant creation requests"""
+    class Config:
+        json_encoders = {
+            ObjectId: lambda v: str(v),  # Convert ObjectId to string for JSON serialization
+            HttpUrl: lambda v: str(v)  # Convert HttpUrl to string for JSON serialization
+        }
     pass
 
 class RestaurantInDB(RestaurantBase):
     """Model representing how restaurant is stored in database"""
-    _id: str
+    id: str = Field(default=None, alias="_id")
     
-    class Config:
-        orm_mode = True
-        populate_by_name = True
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
 
 class Restaurant(RestaurantBase):
     """Model returned to clients via API"""
     id: str
 
-    class Config:
-        orm_mode = True
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
         
     @classmethod
     def from_db_model(cls, db_restaurant: RestaurantInDB) -> "Restaurant":
         """Convert from database model to API model"""
         return cls(
-            id=db_restaurant._id,
+            id=str(db_restaurant.id),
             name=db_restaurant.name,
             img_url=db_restaurant.img_url
         )

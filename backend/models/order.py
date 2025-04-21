@@ -1,69 +1,68 @@
-from pydantic import BaseModel, Field, HttpUrl, optional
+from pydantic import BaseModel, Field, HttpUrl, ConfigDict
+from typing import Optional, List, Dict, Any
 from bson import ObjectId
-    
+
+# Define OrderProduct first
 class OrderProduct(BaseModel):
+    id: str = Field(default=None, description="ID of the product")
     name: str = Field(..., description="Name of the product")
     price: float = Field(..., description="Price of the product")
     img_url: HttpUrl = Field(..., description="URL of the product image")
     quantity: int = Field(..., description="Quantity of the product in the order")
-    ingredients : list[str] = Field(..., description="List of ingredients for the product")
+    ingredients: List[str] = Field(default_factory=list, description="List of ingredients for the product")
+    
+    model_config = ConfigDict(populate_by_name=True)
     
 class OrderItemUpdate(BaseModel):
     """Model for updating an item in an order"""
     product_id: str = Field(..., description="Unique identifier of the product")
     quantity: int = Field(..., description="Quantity of the product in the order")
-    ingredients: list[str] = Field(default_factory=list, description="List of selected ingredients for the product")
+    ingredients: List[str] = Field(default_factory=list, description="List of selected ingredients for the product")
+
+# Request models
+class CreateOrderRequest(BaseModel):
+    """Request model for creating an order"""
+    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
+
+class JoinOrderResponse(BaseModel):
+    """Response model for joining an order"""
+    user_id: str = Field(..., description="Unique identifier for the user who joined the order")
+    
+class OrderStatusResponse(BaseModel):
+    """Response model for order modification status"""
+    status: str = Field(..., description="Status of the operation (Created, Updated, or Deleted)")
     
 class UserOrder(BaseModel):
-    products: list[OrderProduct] = Field(..., description="List of products in the order")
+    products: List[OrderProduct] = Field(default_factory=list, description="List of products in the order")
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     
 class OrderBase(BaseModel):
+    id: Optional[str] = Field(default=None, description="Unique identifier for the order")
+    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+class OrderInDBCreate(BaseModel):
+    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+class OrderInDB(BaseModel):
+    id: str = Field(..., description="Unique identifier for the order in the database")
+    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
+    
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+class Order(BaseModel):
     id: str = Field(..., description="Unique identifier for the order")
     restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
-    users: dict[str, UserOrder] = Field(..., description="Dictionary of users and their orders")
-
-class OrderInDBCreate(OrderBase):
-    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
-    users: dict[ObjectId, UserOrder] = Field(..., description="Dictionary of users and their orders")
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
     
-    class Config:
-        json_encoders = {
-            ObjectId: str
-        }
-    
-    @classmethod
-    def from_model(cls, model: OrderBase) -> "OrderInDBCreate":
-        return cls(
-            restaurant_id=model.restaurant_id,
-            users={ObjectId(user_id): user_order for user_id, user_order in model.users.items()}
-        )
-
-class OrderInDB(OrderBase):
-    id: ObjectId = Field(default_factory=ObjectId, description="Unique identifier for the order in the database")
-    
-    class Config:
-        json_encoders = {
-            ObjectId: str
-        }
-
-class Order(OrderBase):
-    id: str = Field(..., description="Unique identifier for the order")
-    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
-    users: dict[str, UserOrder] = Field(..., description="Dictionary of users and their orders")
-    
-    class Config:
-        json_encoders = {
-            ObjectId: str
-        }
-    
-    @classmethod
-    def from_db_model(cls, db_model: OrderInDB) -> "Order":
-        return cls(
-            id=str(db_model.id),
-            restaurant_id=db_model.restaurant_id,
-            users=db_model.users
-        )
-
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class OrderCreatedResponse(BaseModel):
     order_id: str = Field(..., description="Unique identifier for the created order")

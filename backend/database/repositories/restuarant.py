@@ -4,7 +4,7 @@ from models.restaurant import Restaurant, RestaurantCreate, RestaurantInDB
 from typing import List
 
 class RestaurantRepository:
-    collection = db.db["restaurants"]
+    collection = db.db.db["restaurants"]
     
     @classmethod
     async def list_restaurants(cls) -> List[Restaurant]:
@@ -23,8 +23,10 @@ class RestaurantRepository:
     async def create_restaurant(cls, restaurant: RestaurantCreate) -> Restaurant:
         restaurant_dict = restaurant.model_dump()
         
+        
         # Create document for insertion
         db_restaurant = restaurant_dict.copy()
+        db_restaurant["img_url"] = str(db_restaurant["img_url"])
         
         # Insert into database
         result = await cls.collection.insert_one(db_restaurant)

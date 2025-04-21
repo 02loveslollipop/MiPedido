@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from database.repositories import RestaurantRepository
-from models import Restaurant
+from models import Restaurant, RestaurantCreate
+import traceback
 
 router = APIRouter(
     prefix="/restaurant",
     tags=["Restaurant"],
-    responses={404: {"description": "Not found"}},
+    responses={404: {"description": "Not found", "currrent router" : "restaurant"}},
 )
 
 @router.get("/", response_model=list[Restaurant])
@@ -14,15 +15,17 @@ async def list_restaurants():
         restaurants = await RestaurantRepository.list_restaurants()
         return restaurants
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
     
 @router.post ("/", response_model=Restaurant, status_code=201)
-async def create_restaurant(restaurant: Restaurant):
+async def create_restaurant(restaurant: RestaurantCreate):
     try:
         created_restaurant = await RestaurantRepository.create_restaurant(restaurant)
         return created_restaurant
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @router.get("/{restaurant_id}", response_model=Restaurant)
 async def get_restaurant(restaurant_id: str):
@@ -31,5 +34,8 @@ async def get_restaurant(restaurant_id: str):
         if not restaurant:
             raise HTTPException(status_code=404, detail="Restaurant not found")
         return restaurant
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)

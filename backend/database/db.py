@@ -1,4 +1,4 @@
-from motor.motor_asyncio import AsyncIOMotorClient
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from typing import Optional
 from pydantic import BaseModel
 import os
@@ -13,7 +13,12 @@ class DatabaseSettings(BaseModel):
 
 class Database:
     client: Optional[AsyncIOMotorClient] = None
+    db: Optional[AsyncIOMotorDatabase] = None
     settings: DatabaseSettings = DatabaseSettings()
+    
+    def __init__(self):
+        # Connect to the database right away
+        self.connect_to_db()
     
     def connect_to_db(self) -> None:
         self.client = AsyncIOMotorClient(self.settings.mongodb_url)

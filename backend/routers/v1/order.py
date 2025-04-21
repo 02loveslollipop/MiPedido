@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException, status
 from typing import Dict, Any, List
+import traceback
 
 from database.repositories import OrderRepository, RestaurantRepository
-from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct
+from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse
 
 router = APIRouter(
     prefix="/order",
@@ -11,21 +12,14 @@ router = APIRouter(
 )
 
 @router.post("/", response_model=OrderCreatedResponse, status_code=201)
-async def create_order(data: Dict[str, str]):
+async def create_order(request: CreateOrderRequest):
     """
     Creates an empty order in a restaurant and returns the order id and the user id.
     If the restaurant does not exist, it returns an error.
     """
-    restaurant_id = data.get("restaurant_id")
-    if not restaurant_id:
-        raise HTTPException(
-            status_code=400, 
-            detail="Restaurant ID is required"
-        )
-    
     try:
         # Check if restaurant exists
-        restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
+        restaurant = await RestaurantRepository.get_restaurant(request.restaurant_id)
         if not restaurant:
             raise HTTPException(
                 status_code=404,
@@ -33,17 +27,19 @@ async def create_order(data: Dict[str, str]):
             )
         
         # Create the order
-        order_data = await OrderRepository.create_order(restaurant_id)
+        order_data = await OrderRepository.create_order(request.restaurant_id)
         return order_data
     except HTTPException:
         raise
     except Exception as e:
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            error=str(e),
+            detail=error_detail
         )
 
-@router.put("/{order_id}", status_code=201)
+@router.put("/{order_id}", response_model=JoinOrderResponse, status_code=201)
 async def join_order(order_id: str):
     """
     Adds a user to an existing order.
@@ -58,16 +54,18 @@ async def join_order(order_id: str):
                 detail="Order not found"
             )
         
-        return {"user_id": user_id}
+        return JoinOrderResponse(user_id=user_id)
     except HTTPException:
         raise
     except Exception as e:
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(
             status_code=500,
-            detail=str(e)
+            error=str(e),
+            detail=error_detail
         )
 
-@router.put("/{order_id}/{user_id}", response_model=Dict[str, str])
+@router.put("/{order_id}/{user_id}", response_model=OrderStatusResponse)
 async def modify_user_order(order_id: str, user_id: str, item_update: OrderItemUpdate):
     """
     Modify the order of a user.
@@ -100,20 +98,20 @@ async def modify_user_order(order_id: str, user_id: str, item_update: OrderItemU
         
         # Return appropriate status and response code
         if result["message"] == "Created":
-            return {"status": "Created"}
+            return OrderStatusResponse(status="Created")
         elif result["message"] == "Updated":
-            return {"status": "Updated"}
+            return OrderStatusResponse(status="Updated")
         elif result["message"] == "Deleted":
-            return {"status": "Deleted"}
+            return OrderStatusResponse(status="Deleted")
         else:
-            return {"status": result["message"]}
+            return OrderStatusResponse(status=result["message"])
             
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        # Handle unexpected errors
-        raise HTTPException(status_code=500, detail=str(e))
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @router.get("/{order_id}/{user_id}", response_model=List[OrderProduct])
 async def get_user_order(order_id: str, user_id: str):
@@ -147,7 +145,8 @@ async def get_user_order(order_id: str, user_id: str):
     except HTTPException:
         raise
     except Exception as e:
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=error_detail
         )

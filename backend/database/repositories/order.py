@@ -1,10 +1,10 @@
 from bson import ObjectId
 from database import db
-from models.order import OrderBase, UserOrder, OrderProduct, OrderInDBCreate, OrderCreatedResponse
-from typing import List, Dict, Any, Optional
+from models.order import OrderBase, UserOrder, OrderProduct, OrderInDBCreate, OrderCreatedResponse, JoinOrderResponse
+from typing import List, Dict, Any, Optional, Tuple
 
 class OrderRepository:
-    collection = db.db["orders"]
+    collection = db.db.db["orders"]
     
     @classmethod
     async def create_order(cls, restaurant_id: str) -> OrderCreatedResponse:
@@ -36,8 +36,7 @@ class OrderRepository:
             
             return response
         except Exception as e:
-            print(f"Error creating order: {e}")
-            raise
+            raise e
     
     @classmethod
     async def join_order(cls, order_id: str) -> Optional[str]:
@@ -64,28 +63,31 @@ class OrderRepository:
                 
             return new_user_id
         except Exception as e:
-            print(f"Error joining order: {e}")
-            return None
+            raise e
     
     @classmethod
-    async def modify_order(cls, order_id: str, user_id: str, product_id: str, quantity: int, ingredients: list[str]):
+    async def modify_order(cls, order_id: str, user_id: str, product_id: str, quantity: int, ingredients: list[str]) -> Dict[str, str]:
+        """
+        Modifies an order for a specific user.
+        Returns a status dictionary with a status and message.
+        """
         try:
             # Get the order from the database
             order = await cls.collection.find_one({"_id": ObjectId(order_id)})
             if not order:
-                return {"status": "error", "message": "Order not found"}
+                raise Exception("Order not found")
             
             # Check if the user exists in the order
             user_oid = ObjectId(user_id)
             if str(user_oid) not in order["users"]:
-                return {"status": "error", "message": "User not found for order"}
+                raise Exception("User not found in order")
             
             # Get the product details from the products collection
-            product_collection = db.db["products"]
+            product_collection = db.db.db["products"]
             product = await product_collection.find_one({"_id": ObjectId(product_id)})
             
             if not product:
-                return {"status": "error", "message": "Product not found in the restaurant"}
+                return Exception("Product not found")
             
             # Validate ingredients if provided
             if ingredients:
@@ -93,7 +95,7 @@ class OrderRepository:
                 valid_ingredients = set(product.get("ingredients", []))
                 for ingredient in ingredients:
                     if ingredient not in valid_ingredients:
-                        return {"status": "error", "message": "Ingredient not found for product"}
+                        raise Exception(f"Invalid ingredient: {ingredient}")
             
             # Find if the product already exists in the user's order
             user_products = order["users"][str(user_oid)]["products"]
@@ -147,8 +149,7 @@ class OrderRepository:
             return {"status": "success", "message": "Created"}
             
         except Exception as e:
-            print(f"Error modifying order: {e}")
-            return {"status": "error", "message": str(e)}
+            raise e
     
     @classmethod
     async def get_user_order(cls, order_id: str, user_id: str) -> Dict[str, Any]:
@@ -159,20 +160,19 @@ class OrderRepository:
             # Check if the order exists
             try:
                 order_obj_id = ObjectId(order_id)
-            except:
-                return {"status": "error", "message": "Order not found"}
+            except Exception as e:
+                raise e
                 
             order = await cls.collection.find_one({"_id": order_obj_id})
             if not order:
-                return {"status": "error", "message": "Order not found"}
+                raise Exception("Order not found")
             
             # Check if the user exists in the order
             if user_id not in order["users"]:
-                return {"status": "error", "message": "User not found for order"}
+                raise Exception("User not found in order")
             
             # Return the user's products
             user_products = order["users"][user_id]["products"]
             return {"status": "success", "data": user_products}
         except Exception as e:
-            print(f"Error getting user order: {e}")
-            return {"status": "error", "message": str(e)}
+            raise e

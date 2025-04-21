@@ -1,8 +1,14 @@
 FastAPI
 uvicorn
 pydantic
+pydantic-settings
+motor
+pymongo
+python-dotenv
 sqlalchemy
 databases
 asyncpg
+# Testing dependencies
 pytest
+pytest-asyncio
 httpx
