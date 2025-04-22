@@ -9,7 +9,6 @@ sqlalchemy
 databases
 asyncpg
 pyjwt
-certifi
 # Testing dependencies
 pytest
 pytest-asyncio
