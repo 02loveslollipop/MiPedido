@@ -336,6 +336,105 @@
 }
 ```
 
+### Close Order (Get final order)
+
+**URL**: `/v1/order/{order_id}`
+**Method**: `PUT`
+**Auth required**: `Yes`
+**Auth type**: `JWT`
+**Content-Type**: `application/json`
+**Description**: Closes the order and returns the final order with all the products and ingredients agregated by product and ingredients (So if two users have the same product with the same ingredients, it will be agregated. But if at least one ingredient is different, it will be considered a different product). If the order does not exist, it returns an error. If the bearer token is not valid, it returns an error. If the user exist, but the in the users collection the given user id is not related to the restaurant of the order, it returns an error. (The users collection must have a `controls` field in the user object with the restaurant id).
+
+#### Input: Path variable
+```json
+{
+    "order_id": String,
+}
+```
+
+#### Input: JSON
+```json
+{
+    "access_token": String
+}
+```
+
+#### Output:
+- Order found.
+
+***HTTP** 200: OK
+
+```json
+{
+    products: [
+        {
+            "name": String,
+            "price_per_unit": Number,
+            "total_price": Number,
+            "img_url": String,
+            "id": String,
+            "quantity": Number,
+            "ingredients": [
+                String,
+            ]
+        },
+    ]
+    total_price: Number,
+    total_quantity: Number,
+    date_completed: String,
+}
+```
+
+- Order not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Order not found"
+}
+```
+
+- User not found for order.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "User not found for order"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+    "error": String
+}
+```
+
+- Invalid token.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "Invalid token"
+}
+```
+
+- Restaurant not found in the user controls.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "This user cannot fulfill this order"
+}
+```
+
 ## Product
 
 ### List Products of a Restaurant
@@ -401,16 +500,107 @@
     "error": String
 }
 ```
+### Disable Product
 
+**URL**: `/v1/products/{restaurant_id}/{product_id}`
+**Method**: `DELETE`
+**Auth required**: `Yes`
+**Auth type**: `JWT`
+**Content-Type**: `application/json`
+***Description**: Disables a product in a restaurant. If the product does not exist, it returns an error. If the restaurant does not exist, it returns an error. If the bearer token is not valid, it returns an error. If the user exist, but the in the users collection the given user id is not related to the restaurant of the order, it returns an error. (The users collection must have a `controls` field in the user object with the restaurant id).
 
-<!-- 
-## Servidor
+#### Input: Path variable
+```json
+{
+    "restaurant_id": String,
+    "product_id": String,
+}
+```
 
-### login
+#### Input: JSON
+```json
+{
+    "access_token": String
+}
+```
 
-Inicia sesion en el servidor. Retorna un token de acceso y el id del usuario. Si el usuario no existe, retorna un error.
+#### Output:
 
-- input:
+- Product disabled.
+
+**HTTP** 200: OK
+
+```json
+{
+    "status": "Disabled"
+}
+```
+
+- Product not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Product not found"
+}
+```
+
+- Restaurant not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Restaurant not found"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+    "error": String
+}
+```
+
+- Invalid token.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "Invalid token"
+}
+```
+
+- Restaurant not found in the user controls.
+
+***HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "This user cannot fulfill this request"
+}
+```
+
+## User
+
+### Login
+
+**URL**: `/v1/login`
+
+**Method**: `POST`
+
+**Auth required**: `No`
+
+**Content-Type**: `application/json`
+
+**Description**: Sign in in the server. Returns an access token and the user id. If the user does not exist, it returns an error.
+
+#### Input: JSON
 ```json
 {
     "username": String,
@@ -418,7 +608,10 @@ Inicia sesion en el servidor. Retorna un token de acceso y el id del usuario. Si
 }
 ```
 
-- output:
+#### Output:
+- User found.
+**HTTP** 200: OK
+
 ```json
 {
     "access_token": String,
@@ -426,39 +619,13 @@ Inicia sesion en el servidor. Retorna un token de acceso y el id del usuario. Si
 }
 ```
 
-### getOrderById
+- User not found.
+**HTTP** 404: Not Found
 
-Retorna la orden de un usuario. Si no existe, retorna un error. Si el pedido es de otro restaurante, retorna un error. De lo contrario, retorna la orden agregada de todos los usuarios que la componen.
-
-> Se realiza una agregacion por producto y por ingredientes es decir se suman todos los productos iguales y con mismo ingrediente y se retorna la cantidad total de cada uno.
-
-- input:
 ```json
 {
-    "order_id": String,
-}
-```
-
-- output:
-```json
-{
-    [
-        {
-            "name": String,
-            "price": Number,
-            "img_url": String,
-            "id": String,
-            "quantity": Number,
-            "ingredients": [
-                String,
-            ]
-        },
-    ]
+    "error": "User not found"
 }
 ```
 
 
-
-
-
- -->

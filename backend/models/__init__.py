@@ -15,3 +15,5 @@ from .order import (
 from .restaurant import RestaurantBase, RestaurantInDB, Restaurant, RestaurantCreate
 
 from .product import ProductBase, ProductInDB, Product, ProductCreate
+
+from .user import UserBase, UserAuth, UserInDB, User, Token

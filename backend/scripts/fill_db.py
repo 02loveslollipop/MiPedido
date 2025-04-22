@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from bson import ObjectId
 import dotenv
 from datetime import datetime
+import hashlib
 
 # Load environment variables from .env file
 dotenv.load_dotenv()
@@ -60,6 +61,15 @@ PRODUCT_TYPES = {
     }
 }
 
+# Sample user data - admin users will control restaurants
+TEST_USERS = [
+    {"username": "admin", "password": "admin123", "is_admin": True},
+    {"username": "user1", "password": "pass1234", "is_admin": False},
+    {"username": "user2", "password": "securepass", "is_admin": False},
+    {"username": "manager", "password": "test123", "is_admin": True},
+    {"username": "customer", "password": "customer456", "is_admin": False}
+]
+
 def seed_database():
     """Seed the database with dummy data"""
     # Connect to MongoDB
@@ -71,9 +81,13 @@ def seed_database():
     db.restaurants.delete_many({})
     db.products.delete_many({})
     db.orders.delete_many({})
+    db.users.delete_many({})
     
     print("Creating restaurants...")
     restaurant_ids = create_restaurants(db)
+    
+    print("Creating users...")
+    create_users(db, restaurant_ids)
     
     print("Creating products for each restaurant...")
     create_products(db, restaurant_ids)
@@ -83,6 +97,50 @@ def seed_database():
     
     print("Database seeded successfully!")
     return client
+
+def create_users(db, restaurant_ids):
+    """Create test users with restaurant controls"""
+    user_ids = []
+    
+    # Assign random restaurants to admin users
+    admin_restaurant_assignments = {}
+    for restaurant_id in restaurant_ids:
+        # Randomly assign each restaurant to admin or manager
+        admin_user = random.choice([user for user in TEST_USERS if user["is_admin"]])
+        if admin_user["username"] not in admin_restaurant_assignments:
+            admin_restaurant_assignments[admin_user["username"]] = []
+        admin_restaurant_assignments[admin_user["username"]].append(restaurant_id)
+    
+    for user_data in TEST_USERS:
+        # Hash the password (simple SHA-256 hash for demonstration purposes)
+        hashed_password = hashlib.sha256(user_data["password"].encode()).hexdigest()
+        
+        # Assign restaurant controls for admin users
+        controls = []
+        if user_data["is_admin"]:
+            controls = admin_restaurant_assignments.get(user_data["username"], [])
+        
+        user = {
+            "username": user_data["username"],
+            "hashed_password": hashed_password,
+            "controls": controls
+        }
+        
+        # Check if user already exists
+        existing_user = db.users.find_one({"username": user_data["username"]})
+        if existing_user:
+            print(f"User {user_data['username']} already exists, skipping...")
+            user_ids.append(str(existing_user["_id"]))
+            continue
+        
+        # Insert the new user
+        result = db.users.insert_one(user)
+        user_ids.append(str(result.inserted_id))
+        
+        controls_info = f" (Controls {len(controls)} restaurants)" if controls else ""
+        print(f"Created user: {user['username']}{controls_info} (ID: {result.inserted_id})")
+    
+    return user_ids
 
 def create_restaurants(db):
     """Create dummy restaurants"""
@@ -138,19 +196,24 @@ def create_products(db, restaurant_ids):
                 # Select a random image
                 img_index = random.randint(0, len(FOOD_IMAGES) - 1)
                 
+                # Set active status (90% chance of being active)
+                is_active = random.random() < 0.9
+                
                 product = {
                     "restaurant_id": restaurant_id,
                     "name": name,
                     "description": f"Delicious {name.lower()} made with premium ingredients",
                     "price": price,
                     "img_url": f"{FOOD_IMAGES[img_index]}?w=300&h=200",
-                    "ingredients": ingredients
+                    "ingredients": ingredients,
+                    "active": is_active
                 }
                 
                 result = db.products.insert_one(product)
                 product_id = str(result.inserted_id)
                 product_ids_by_restaurant[restaurant_id].append(product_id)
-                print(f"Created product: {product['name']} for {restaurant_name} (ID: {result.inserted_id})")
+                active_status = "active" if is_active else "inactive"
+                print(f"Created product: {product['name']} ({active_status}) for {restaurant_name} (ID: {result.inserted_id})")
     
     return product_ids_by_restaurant
 

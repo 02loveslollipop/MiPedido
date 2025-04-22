@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any, List
 import traceback
+from bson import ObjectId
 
-from database.repositories import OrderRepository, RestaurantRepository
-from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse
+from database.repositories import OrderRepository, RestaurantRepository, UserRepository
+from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse, OrderCompletedResponse
+from utils.auth import get_current_user, TokenData, get_token_from_body, TokenRequest
 
 router = APIRouter(
     prefix="/order",
@@ -142,6 +144,63 @@ async def get_user_order(order_id: str, user_id: str):
         
         # Return the list of products
         return result["data"]
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_detail
+        )
+
+@router.post("/{order_id}/close", response_model=OrderCompletedResponse)
+async def close_order(
+    order_id: str, 
+    token_request: TokenRequest,
+    current_user: TokenData = Depends(get_token_from_body)
+):
+    """
+    Close the order and return the final order with all products aggregated.
+    Requires JWT authentication provided in the request body.
+    The user must control the restaurant of the order.
+    """
+    try:
+        # Get the order to check the restaurant_id
+        order_doc = await OrderRepository.collection.find_one({"_id": ObjectId(order_id)})
+        if not order_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found"
+            )
+        
+        # Check if user controls the restaurant
+        restaurant_id = order_doc.get("restaurant_id")
+        is_authorized = await UserRepository.user_controls_restaurant(current_user.user_id, restaurant_id)
+        
+        if not is_authorized:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This user cannot fulfill this order"
+            )
+        
+        # Close the order and get the aggregated result
+        result = await OrderRepository.close_order(order_id)
+        
+        if result["status"] == "error":
+            if result["message"] == "Order not found":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Order not found"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=result["message"]
+                )
+                
+        # Return the completed order
+        return OrderCompletedResponse(**result["data"])
+    
     except HTTPException:
         raise
     except Exception as e:

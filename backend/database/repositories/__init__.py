@@ -2,3 +2,4 @@
 from .order import OrderRepository
 from .restuarant import RestaurantRepository
 from .product import ProductRepository
+from .user import UserRepository

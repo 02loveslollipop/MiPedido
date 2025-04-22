@@ -1,7 +1,9 @@
 from bson import ObjectId
 from database import db
-from models.order import OrderBase, UserOrder, OrderProduct, OrderInDBCreate, OrderCreatedResponse, JoinOrderResponse
+from models.order import OrderBase, UserOrder, OrderProduct, OrderInDBCreate, OrderCreatedResponse, JoinOrderResponse, FinalOrderProduct, OrderCompletedResponse
 from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime
+from fastapi import HTTPException
 
 class OrderRepository:
     collection = db.db.db["orders"]
@@ -75,19 +77,26 @@ class OrderRepository:
             # Get the order from the database
             order = await cls.collection.find_one({"_id": ObjectId(order_id)})
             if not order:
-                raise Exception("Order not found")
+                raise HTTPException(status_code=404, detail="Order not found")
             
             # Check if the user exists in the order
             user_oid = ObjectId(user_id)
             if str(user_oid) not in order["users"]:
-                raise Exception("User not found in order")
+                raise HTTPException(status_code=404, detail="User not found in order")
             
             # Get the product details from the products collection
             product_collection = db.db.db["products"]
-            product = await product_collection.find_one({"_id": ObjectId(product_id)})
+            # Only allow active products
+            product = await product_collection.find_one({
+                "_id": ObjectId(product_id),
+                "$or": [
+                    {"active": True},
+                    {"active": {"$exists": False}}
+                ]
+            })
             
             if not product:
-                return Exception("Product not found")
+                return HTTPException(status_code=404, detail="Product not found")
             
             # Validate ingredients if provided
             if ingredients:
@@ -95,7 +104,7 @@ class OrderRepository:
                 valid_ingredients = set(product.get("ingredients", []))
                 for ingredient in ingredients:
                     if ingredient not in valid_ingredients:
-                        raise Exception(f"Invalid ingredient: {ingredient}")
+                        raise HTTPException(status_code=400, detail=f"Invalid ingredient: {ingredient}")
             
             # Find if the product already exists in the user's order
             user_products = order["users"][str(user_oid)]["products"]
@@ -165,14 +174,83 @@ class OrderRepository:
                 
             order = await cls.collection.find_one({"_id": order_obj_id})
             if not order:
-                raise Exception("Order not found")
+                raise HTTPException(status_code=404, detail="Order not found")
             
             # Check if the user exists in the order
             if user_id not in order["users"]:
-                raise Exception("User not found in order")
+                raise HTTPException(status_code=404, detail="User not found in order")
             
             # Return the user's products
             user_products = order["users"][user_id]["products"]
             return {"status": "success", "data": user_products}
         except Exception as e:
             raise e
+    
+    @classmethod
+    async def close_order(cls, order_id: str) -> dict:
+        """
+        Close an order and return the final order with aggregated products
+        """
+        try:
+            # Get the order from the database
+            order = await cls.collection.find_one({"_id": ObjectId(order_id)})
+            if not order:
+                return {"status": "error", "message": "Order not found"}
+            
+            # Aggregate products across all users
+            aggregated_products = {}
+            total_quantity = 0
+            
+            # Iterate through all users and their products
+            for user_id, user_data in order["users"].items():
+                for product in user_data["products"]:
+                    # Create a unique key for each product + ingredients combination
+                    ingredients_key = ",".join(sorted(product["ingredients"]))
+                    product_key = f"{product['id']}|{ingredients_key}"
+                    
+                    if product_key not in aggregated_products:
+                        aggregated_products[product_key] = {
+                            "id": product["id"],
+                            "name": product["name"],
+                            "price_per_unit": product["price"],
+                            "img_url": product["img_url"],
+                            "quantity": 0,
+                            "ingredients": product["ingredients"]
+                        }
+                    
+                    # Increment quantity and update total
+                    aggregated_products[product_key]["quantity"] += product["quantity"]
+                    total_quantity += product["quantity"]
+            
+            # Calculate total prices
+            products_list = []
+            total_price = 0
+            
+            for product_key, product_data in aggregated_products.items():
+                # Calculate total price for this product
+                product_total = product_data["price_per_unit"] * product_data["quantity"]
+                product_data["total_price"] = product_total
+                total_price += product_total
+                
+                # Add to products list
+                products_list.append(product_data)
+            
+            # Create the response
+            result = {
+                "products": products_list,
+                "total_price": total_price,
+                "total_quantity": total_quantity,
+                "date_completed": datetime.now()
+            }
+            
+            # Update the order in the database to mark it as completed
+            await cls.collection.update_one(
+                {"_id": ObjectId(order_id)},
+                {"$set": {"status": "completed", "date_completed": datetime.now()}}
+            )
+            
+            return {"status": "success", "data": result}
+            
+        except Exception as e:
+            print(f"Error closing order: {e}")
+            return {"status": "error", "message": str(e)}
