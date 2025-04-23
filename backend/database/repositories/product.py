@@ -35,6 +35,33 @@ class ProductRepository:
         return products
     
     @classmethod
+    async def list_all_products_by_restaurant(cls, restaurant_id: str) -> List[Dict]:
+        """
+        Get all products (both active and inactive) for a specific restaurant
+        Used by business/admin users
+        """
+        products = []
+        # Retrieve all products regardless of active status
+        cursor = cls.collection.find({
+            "restaurant_id": restaurant_id
+        })
+        
+        async for document in cursor:
+            # Include the active status in each product
+            product = {
+                "id": str(document["_id"]),
+                "name": document["name"],
+                "description": document["description"],
+                "price": document["price"],
+                "img_url": document["img_url"],
+                "ingredients": document.get("ingredients", []),
+                "isEnabled": document.get("active", True)  # Default to True for backward compatibility
+            }
+            products.append(product)
+            
+        return products
+    
+    @classmethod
     async def get_product(cls, product_id: str, restaurant_id: str = None) -> Optional[Dict]:
         """
         Get a specific product by ID, including its active status

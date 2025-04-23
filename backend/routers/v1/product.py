@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from database.repositories import RestaurantRepository, ProductRepository, UserRepository
 from models import Restaurant, Product, OrderStatusResponse
 import traceback
-from typing import List
+from typing import List, Dict
 from utils.auth import get_current_user, TokenData, get_token_from_body, TokenRequest
 
 router = APIRouter(
@@ -28,6 +28,42 @@ async def list_products(restaurant_id: str):
         
         # Get all products for this restaurant
         products = await ProductRepository.list_products_by_restaurant(restaurant_id)
+        return products
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        raise HTTPException(status_code=500, detail=error_detail)
+
+@router.get("/{restaurant_id}/all", response_model=List[Dict])
+async def list_all_products(
+    restaurant_id: str,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Returns a list of all products (both enabled and disabled) for a specific restaurant.
+    Requires authentication and proper authorization.
+    If the restaurant does not exist, it returns an error.
+    """
+    try:
+        # First check if the restaurant exists
+        restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
+        if not restaurant:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Restaurant not found"
+            )
+        
+        # Check if user controls the restaurant
+        is_authorized = await UserRepository.user_controls_restaurant(current_user.user_id, restaurant_id)
+        if not is_authorized:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This user cannot access this restaurant's products"
+            )
+        
+        # Get all products for this restaurant (both active and inactive)
+        products = await ProductRepository.list_all_products_by_restaurant(restaurant_id)
         return products
     except HTTPException:
         raise

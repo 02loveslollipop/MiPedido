@@ -501,6 +501,96 @@
 }
 ```
 
+### List All Products of a Restaurant (Including Disabled)
+
+**URL**: `/v1/products/{restaurant_id}/all`
+
+**Method**: `GET`
+
+**Auth required**: `Yes`
+
+**Auth type**: `JWT Bearer Token`
+
+**Content-Type**: `application/json`
+
+**Description**: Returns a list of all products (both enabled and disabled) for a specific restaurant. This endpoint is intended for business users who need to manage all products. If the restaurant does not exist, it returns an error. The user must control the restaurant to access this endpoint.
+
+#### Input: Path variable
+```json
+{
+    "restaurant_id": String,
+}
+```
+
+#### Input: Header
+```
+Authorization: Bearer {access_token}
+```
+
+#### Output:
+
+- Products found.
+
+**HTTP** 200: OK
+
+```json
+{
+    [
+        {
+            "name": String,
+            "description": String,
+            "price": Number,
+            "img_url": String,
+            "id": String,
+            "ingredients": [
+                String,
+            ],
+            "isEnabled": Boolean
+        },
+    ]
+}
+```
+
+- Restaurant not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Restaurant not found"
+}
+```
+
+- Unauthorized access.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "This user cannot access this restaurant's products"
+}
+```
+
+- Invalid authentication.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "Invalid authentication credentials"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+    "error": String
+}
+```
+
 ### Get Product Details
 
 **URL**: `/v1/products/{restaurant_id}/{product_id}`
