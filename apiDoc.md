@@ -500,6 +500,77 @@
     "error": String
 }
 ```
+
+### Get Product Details
+
+**URL**: `/v1/products/{restaurant_id}/{product_id}`
+
+**Method**: `GET`
+
+**Auth required**: `No` (Optional)
+
+**Content-Type**: `application/json`
+
+**Description**: Returns detailed information about a specific product in a restaurant. If the product does not exist, it returns an error. If the restaurant does not exist, it returns an error.
+
+#### Input: Path variable
+```json
+{
+    "restaurant_id": String,
+    "product_id": String
+}
+```
+
+#### Output:
+
+- Product found.
+
+**HTTP** 200: OK
+
+```json
+{
+    "name": String,
+    "description": String,
+    "price": Number,
+    "img_url": String,
+    "id": String,
+    "ingredients": [
+        String,
+    ],
+    "isEnabled": Boolean
+}
+```
+
+- Product not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Product not found"
+}
+```
+
+- Restaurant not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Restaurant not found"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+    "error": String
+}
+```
+
 ### Disable Product
 
 **URL**: `/v1/products/{restaurant_id}/{product_id}`
@@ -586,11 +657,102 @@
 }
 ```
 
+### Enable Product
+
+**URL**: `/v1/products/{restaurant_id}/{product_id}/enable`
+
+**Method**: `PUT`
+
+**Auth required**: `Yes`
+
+**Auth type**: `JWT`
+
+**Content-Type**: `application/json`
+
+**Description**: Enables a previously disabled product in a restaurant. If the product does not exist, it returns an error. If the restaurant does not exist, it returns an error. If the bearer token is not valid, it returns an error. If the user exists, but in the users collection the given user id is not related to the restaurant of the order, it returns an error. (The users collection must have a `controls` field in the user object with the restaurant id).
+
+#### Input: Path variable
+```json
+{
+    "restaurant_id": String,
+    "product_id": String
+}
+```
+
+#### Input: JSON
+```json
+{
+    "access_token": String
+}
+```
+
+#### Output:
+
+- Product enabled.
+
+**HTTP** 200: OK
+
+```json
+{
+    "status": "Enabled"
+}
+```
+
+- Product not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Product not found"
+}
+```
+
+- Restaurant not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Restaurant not found"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+    "error": String
+}
+```
+
+- Invalid token.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "Invalid token"
+}
+```
+
+- Restaurant not found in the user controls.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "This user cannot fulfill this request"
+}
+```
+
 ## User
 
 ### Login
 
-**URL**: `/v1/login`
+**URL**: `/v1/user/login`
 
 **Method**: `POST`
 
@@ -625,6 +787,53 @@
 ```json
 {
     "error": "User not found"
+}
+```
+
+### Get User Restaurant
+
+**URL**: `/v1/user/restaurant`
+
+**Method**: `GET`
+
+**Auth required**: `Yes`
+
+**Auth type**: `JWT Bearer Token`
+
+**Content-Type**: `application/json`
+
+**Description**: Returns the primary restaurant ID associated with the authenticated user. Only returns one restaurant ID even if the user controls multiple restaurants.
+
+#### Input: Header
+```
+Authorization: Bearer {access_token}
+```
+
+#### Output:
+- Restaurant found.
+**HTTP** 200: OK
+
+```json
+{
+    "restaurant_id": String
+}
+```
+
+- No restaurant found for user.
+**HTTP** 404: Not Found
+
+```json
+{
+    "detail": "No restaurant found for this user"
+}
+```
+
+- Invalid authentication.
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "detail": "Invalid authentication credentials"
 }
 ```
 

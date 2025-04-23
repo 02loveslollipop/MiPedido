@@ -35,30 +35,33 @@ class ProductRepository:
         return products
     
     @classmethod
-    async def get_product(cls, product_id: str) -> Optional[Product]:
+    async def get_product(cls, product_id: str, restaurant_id: str = None) -> Optional[Dict]:
         """
-        Get a specific active product by ID
+        Get a specific product by ID, including its active status
+        If restaurant_id is provided, verify the product belongs to that restaurant
         """
         try:
-            document = await cls.collection.find_one({
-                "_id": ObjectId(product_id),
-                "$or": [
-                    {"active": True},
-                    {"active": {"$exists": False}}
-                ]
-            })
+            query = {"_id": ObjectId(product_id)}
+            
+            # Add restaurant_id to query if provided
+            if restaurant_id:
+                query["restaurant_id"] = restaurant_id
+            
+            document = await cls.collection.find_one(query)
             
             if not document:
                 return None
                 
-            return Product(
-                id=str(document["_id"]),
-                name=document["name"],
-                description=document["description"],
-                price=document["price"],
-                img_url=document["img_url"],
-                ingredients=document.get("ingredients", [])
-            )
+            # Include the active status in the response
+            return {
+                "id": str(document["_id"]),
+                "name": document["name"],
+                "description": document["description"],
+                "price": document["price"],
+                "img_url": document["img_url"],
+                "ingredients": document.get("ingredients", []),
+                "isEnabled": document.get("active", True)  # Default to True for backward compatibility
+            }
         except Exception as e:
             raise e
             
@@ -111,6 +114,35 @@ class ProductRepository:
                 raise Exception("Failed to disable product")
                 
             return {"status": "success", "message": "Disabled"}
+            
+        except Exception as e:
+            raise e
+            
+    @classmethod
+    async def enable_product(cls, product_id: str, restaurant_id: str) -> Dict[str, str]:
+        """
+        Enables a product by setting its 'active' status to True
+        """
+        try:
+            # Verify the product exists and belongs to the specified restaurant
+            product = await cls.collection.find_one({
+                "_id": ObjectId(product_id),
+                "restaurant_id": restaurant_id
+            })
+            
+            if not product:
+                raise Exception("Product not found or does not belong to the restaurant")
+                
+            # Update the product to enable it
+            result = await cls.collection.update_one(
+                {"_id": ObjectId(product_id)},
+                {"$set": {"active": True}}
+            )
+            
+            if result.modified_count == 0:
+                raise Exception("Failed to enable product")
+                
+            return {"status": "success", "message": "Enabled"}
             
         except Exception as e:
             raise e
