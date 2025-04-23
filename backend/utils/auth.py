@@ -50,7 +50,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
         # Extract user information
         username = payload.get("sub")
         user_id = payload.get("id")
-        exp = datetime.fromtimestamp(payload.get("exp"))
+        exp = datetime.fromtimestamp(payload.get("exp"), tz=timezone.utc)
         
         if not username or not user_id:
             raise HTTPException(
