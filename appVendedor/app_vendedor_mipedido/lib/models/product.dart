@@ -25,7 +25,7 @@ class Product {
       price: (json['price'] as num).toDouble(),
       imgUrl: json['img_url'] as String,
       ingredients: List<String>.from(json['ingredients'] as List),
-      isEnabled: json['enabled'] ?? true,
+      isEnabled: json['isEnabled'] ?? true,
     );
   }
 
@@ -37,7 +37,7 @@ class Product {
       'price': price,
       'img_url': imgUrl,
       'ingredients': ingredients,
-      'enabled': isEnabled,
+      'isEnabled': isEnabled,
     };
   }
 }

@@ -4,12 +4,14 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final VoidCallback? onBackPressed;
   final List<Widget>? actions;
+  final bool isBackButtonAlert;
 
   const NavBar({
     super.key,
     required this.title,
     this.onBackPressed,
     this.actions,
+    this.isBackButtonAlert = false,
   });
 
   @override
@@ -30,7 +32,10 @@ class NavBar extends StatelessWidget implements PreferredSizeWidget {
               ? IconButton(
                 icon: Icon(
                   Icons.arrow_back_sharp,
-                  color: colorScheme.onPrimary,
+                  color:
+                      isBackButtonAlert
+                          ? colorScheme.errorContainer
+                          : colorScheme.onPrimary,
                 ),
                 onPressed: onBackPressed,
               )

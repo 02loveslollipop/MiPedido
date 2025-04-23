@@ -3,6 +3,7 @@ import '../components/nav_bar.dart';
 import '../models/product.dart';
 import '../api/api_connector.dart';
 import 'product_detail_screen.dart';
+import 'main_menu.dart';
 
 class ProductsScreen extends StatefulWidget {
   final String restaurantId;
@@ -23,6 +24,54 @@ class _ProductsScreenState extends State<ProductsScreen> {
   void initState() {
     super.initState();
     _loadProducts();
+  }
+
+  void _showLogoutConfirmationDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Cerrar sesión'),
+          content: const Text('¿Deseas cerrar sesión?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('No', style: TextStyle(color: colorScheme.primary)),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop(); // Close the dialog
+
+                // Show loading indicator
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Cerrando sesión...'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+
+                // Logout and clear user data
+                await _apiConnector.logout();
+
+                // Navigate back to main menu screen
+                if (mounted) {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const MainMenu()),
+                    (route) => false, // Remove all previous routes
+                  );
+                }
+              },
+              style: TextButton.styleFrom(foregroundColor: colorScheme.error),
+              child: const Text('Sí'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _loadProducts() async {
@@ -135,7 +184,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     return Scaffold(
       appBar: NavBar(
         title: 'Productos',
-        onBackPressed: () => Navigator.pop(context),
+        isBackButtonAlert: true,
+        onBackPressed: _showLogoutConfirmationDialog,
       ),
       body:
           _isLoading
