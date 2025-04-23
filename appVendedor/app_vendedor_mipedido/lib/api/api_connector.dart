@@ -270,7 +270,7 @@ class ApiConnector {
     }
   }
 
-  // Get products by restaurant with disabled status
+  // Get all products by restaurant (including disabled)
   Future<Map<String, dynamic>> getProductsWithStatus(
     String restaurantId,
   ) async {
@@ -279,7 +279,7 @@ class ApiConnector {
     }
 
     final response = await http.get(
-      Uri.parse('$_baseUrl/products/$restaurantId'),
+      Uri.parse('$_baseUrl/products/$restaurantId/all'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $_accessToken',
