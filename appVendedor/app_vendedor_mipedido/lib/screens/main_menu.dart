@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../api/api_connector.dart';
-import '../screens/products_screen.dart';
-import 'nav_bar.dart';
+import 'products_screen.dart';
+import '../components/nav_bar.dart';
 
 class MainMenu extends StatefulWidget {
   const MainMenu({super.key});

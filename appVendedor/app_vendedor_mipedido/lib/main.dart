@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'components/main_menu.dart';
+import 'screens/main_menu.dart';
 import 'theme.dart';
 import 'api/api_connector.dart';
+import 'screens/products_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,13 +50,31 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
       });
 
       if (isLoggedIn) {
-        // Navigate to dashboard or home screen
-        // For now just show a placeholder
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const Placeholder(),
-          ), // Replace with your dashboard screen
-        );
+        // Navigate to products screen if user is already logged in
+        String? restaurantId = _apiConnector.restaurantId;
+
+        if (restaurantId != null) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => ProductsScreen(restaurantId: restaurantId),
+            ),
+          );
+        } else {
+          // If restaurant ID is not available, try to get it
+          final result = await _apiConnector.getUserRestaurant();
+          if (result['success'] && result['restaurant_id'] != null) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder:
+                    (context) =>
+                        ProductsScreen(restaurantId: result['restaurant_id']),
+              ),
+            );
+          } else {
+            // If we can't get restaurant ID, log out and show login screen
+            await _apiConnector.logout();
+          }
+        }
       }
     }
   }
