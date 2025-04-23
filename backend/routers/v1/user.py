@@ -23,8 +23,8 @@ async def login(user_auth: UserAuth):
         
         if not token:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found or invalid credentials"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
             )
             
         return token
