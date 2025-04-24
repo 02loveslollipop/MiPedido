@@ -54,7 +54,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error connecting to server: ${e.toString()}';
+        _errorMessage = 'Error al conectar con el servidor: ${e.toString()}';
         _isLoading = false;
       });
     }

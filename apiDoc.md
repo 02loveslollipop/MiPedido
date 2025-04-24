@@ -362,7 +362,7 @@
 #### Output:
 - Order found.
 
-***HTTP** 200: OK
+***HTTP** 201: Created
 
 ```json
 {

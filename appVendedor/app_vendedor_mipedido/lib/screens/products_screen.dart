@@ -4,6 +4,7 @@ import '../models/product.dart';
 import '../api/api_connector.dart';
 import 'product_detail_screen.dart';
 import 'main_menu.dart';
+import 'qr_scanner_screen.dart';
 
 class ProductsScreen extends StatefulWidget {
   final String restaurantId;
@@ -98,7 +99,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error connecting to server: ${e.toString()}';
+        _errorMessage = 'Error al conectar con el servidor: ${e.toString()}';
         _isLoading = false;
       });
     }
@@ -169,11 +170,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   void _navigateToQRScannerScreen() {
     // Navigate to QR scanner screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('QR Scanner screen to be implemented'),
-        duration: Duration(seconds: 2),
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const QRScannerScreen()),
     );
   }
 

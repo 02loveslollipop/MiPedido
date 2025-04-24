@@ -56,7 +56,8 @@ class _MainMenuState extends State<MainMenu> {
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Error connecting to server. Please try again.';
+        _errorMessage =
+            'Error al conectar con el servidor. Por favor, inténtalo de nuevo.';
         _isLoading = false;
       });
     }
