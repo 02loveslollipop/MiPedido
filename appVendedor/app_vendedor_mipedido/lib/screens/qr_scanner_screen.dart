@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
@@ -11,7 +12,8 @@ class QRScannerScreen extends StatefulWidget {
   State<QRScannerScreen> createState() => _QRScannerScreenState();
 }
 
-class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingObserver {
+class _QRScannerScreenState extends State<QRScannerScreen>
+    with WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
   bool isScanning = true;
@@ -45,8 +47,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
       }
     }
     // App in background, release camera resources
-    else if (state == AppLifecycleState.paused || 
-             state == AppLifecycleState.inactive) {
+    else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       controller?.pauseCamera();
     }
     // App is being destroyed, ensure camera is released
@@ -61,7 +63,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
     if (Platform.isAndroid) {
       controller?.pauseCamera();
     }
-    
+
     // Always resume the camera after a short delay to give the system time to reinitialize
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && controller != null) {
@@ -76,7 +78,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
       setState(() {
         hasPermission = status.isGranted;
       });
-      
+
       if (!hasPermission) {
         _showPermissionDeniedAlert();
       }
@@ -115,10 +117,10 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
-    
+
     // Resume the camera immediately after creation
     controller.resumeCamera();
-    
+
     controller.scannedDataStream.listen((scanData) {
       if (!isScanning || isLoading || !mounted) return;
 
@@ -130,13 +132,20 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
 
       // Pause the camera while processing
       controller.pauseCamera();
+      //create an alert dialog to show the scanned data for debugging purposes
 
       // Process the scanned QR code data
-      _processQrCode(scanData.code);
+      try{
+        _processQrCode(scanData.code);
+      }
+      catch(e){
+        _showInvalidQRCodeMessage('Error al procesar el código QR: ${e.toString()}');
+      }
     });
   }
 
   Future<void> _processQrCode(String? orderId) async {
+    
     if (orderId == null || orderId.isEmpty) {
       _showInvalidQRCodeMessage('Formato de código QR inválido');
       return;
@@ -153,15 +162,19 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
         // Navigate to order details screen with the order data
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => _OrderDetailsScreen(orderData: result['orderData']),
+            builder:
+                (context) =>
+                    _OrderDetailsScreen(orderData: result['orderData']),
           ),
         );
       } else {
         _showInvalidQRCodeMessage(result['error'] ?? 'ID de pedido inválido');
       }
     } catch (e) {
-      _showInvalidQRCodeMessage('Error al procesar el código QR: ${e.toString()}');
-      debugPrint('Error processing QR code: $e'); 
+      _showInvalidQRCodeMessage(
+        'Error al procesar el código QR: ${e.toString()}',
+      );
+      debugPrint('Error processing QR code: $e');
     }
   }
 
@@ -199,22 +212,24 @@ class _QRScannerScreenState extends State<QRScannerScreen> with WidgetsBindingOb
           // Button to toggle flash
           IconButton(
             icon: const Icon(Icons.flash_on),
-            onPressed: hasPermission
-                ? () async {
-                    await controller?.toggleFlash();
-                    if (mounted) setState(() {});
-                  }
-                : null,
+            onPressed:
+                hasPermission
+                    ? () async {
+                      await controller?.toggleFlash();
+                      if (mounted) setState(() {});
+                    }
+                    : null,
           ),
           // Button to flip camera
           IconButton(
             icon: const Icon(Icons.flip_camera_ios),
-            onPressed: hasPermission
-                ? () async {
-                    await controller?.flipCamera();
-                    if (mounted) setState(() {});
-                  }
-                : null,
+            onPressed:
+                hasPermission
+                    ? () async {
+                      await controller?.flipCamera();
+                      if (mounted) setState(() {});
+                    }
+                    : null,
           ),
         ],
       ),

@@ -175,7 +175,7 @@ class ApiConnector {
 
     final responseData = jsonDecode(response.body);
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 201) {
       return {'success': true, 'orderData': responseData};
     } else {
       return {
