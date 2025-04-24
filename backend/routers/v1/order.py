@@ -37,7 +37,6 @@ async def create_order(request: CreateOrderRequest):
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(
             status_code=500,
-            error=str(e),
             detail=error_detail
         )
 
@@ -63,7 +62,6 @@ async def join_order(order_id: str):
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(
             status_code=500,
-            error=str(e),
             detail=error_detail
         )
 

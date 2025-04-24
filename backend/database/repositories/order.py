@@ -46,8 +46,15 @@ class OrderRepository:
         Adds a user to an existing order. Returns the user id.
         """
         try:
-            # Verify order exists
-            order = await cls.collection.find_one({"_id": ObjectId(order_id)})
+            # Verify order exists and handle possible invalid ObjectId
+            try:
+                order_obj_id = ObjectId(order_id)
+            except Exception as e:
+                # If the order_id is not a valid ObjectId, return None
+                print(f"Invalid ObjectId format: {order_id}")
+                raise e
+                
+            order = await cls.collection.find_one({"_id": order_obj_id})
             if not order:
                 return None
             
@@ -56,7 +63,7 @@ class OrderRepository:
             
             # Update order with new user
             update_result = await cls.collection.update_one(
-                {"_id": ObjectId(order_id)},
+                {"_id": order_obj_id},
                 {"$set": {f"users.{new_user_id}": {"products": []}}}
             )
             
