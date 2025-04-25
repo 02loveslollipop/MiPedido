@@ -159,22 +159,21 @@ class ApiConnector {
     }
   }
 
-  // Close order and get final order details
-  Future<Map<String, dynamic>> closeOrder(String orderId) async {
+  // Finalize order and get final order details (formerly closeOrder)
+  Future<Map<String, dynamic>> finalizeOrder(String orderId) async {
     if (_accessToken == null) {
       return {'success': false, 'error': 'Not authenticated'};
     }
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/order/$orderId/close'),
+        Uri.parse('$_baseUrl/order/$orderId/finalize'),
         headers: {
           'Authorization': 'Bearer $_accessToken',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'access_token':
-              _accessToken, // Include token in the request body as required by the API
+          'access_token': _accessToken // Include token in the request body as required by the API
         }),
       );
 
@@ -183,28 +182,17 @@ class ApiConnector {
       if (response.statusCode == 201) {
         return {'success': true, 'orderData': responseData};
       } else if (response.statusCode == 404) {
-        return {
-          'success': false,
-          'error': responseData['detail'] ?? 'Order not found',
-        };
-
-      } else if (response.statusCode == 400) {
-        return {
-          'success': false,
-          'error': responseData['detail'] ?? 'Bad request',
-        };
+        return {'success': false, 'error': responseData['detail'] ?? 'Order not found'};
       } else if (response.statusCode == 401) {
+        return {'success': false, 'error': responseData['detail'] ?? 'Unauthorized access'};
+      } else if (response.statusCode == 409) {
+        // Handle conflict - order already fulfilled
         return {
           'success': false,
-          'error': responseData['detail'] ?? 'Unauthorized access',
+          'error': responseData['detail'] ?? 'Order already fulfilled',
+          'code': 409
         };
       } else {
-        log('Error closing order: ${responseData.toString()}',
-            name: 'ApiConnector-closeOrder');
-        log('Response status code: ${response.statusCode}',
-            name: 'ApiConnector-closeOrder');
-        log('Response body: ${response.body}',
-            name: 'ApiConnector-closeOrder');
         return {
           'success': false,
           'error': responseData['detail'] ?? 'Unknown error occurred',
@@ -213,6 +201,12 @@ class ApiConnector {
     } catch (e) {
       return {'success': false, 'error': 'Connection error: ${e.toString()}'};
     }
+  }
+
+  // For backward compatibility (deprecated, will be removed in future versions)
+  @Deprecated('Use finalizeOrder instead')
+  Future<Map<String, dynamic>> closeOrder(String orderId) async {
+    return finalizeOrder(orderId);
   }
 
   // Fulfill an order by its ID

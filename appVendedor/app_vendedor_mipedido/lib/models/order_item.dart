@@ -46,17 +46,21 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
+    // Extract products list and parse each item
     final List<OrderItem> orderItems =
-        (json['products'] as List).map((item) {
-          return OrderItem.fromJson(item as Map<String, dynamic>);
-        }).toList();
+        (json['products'] as List)
+            .map((item) => OrderItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+
+    // Extract or provide default for orderId which might not be in the response
+    String orderId = json['order_id'] ?? '';
 
     return Order(
       products: orderItems,
       totalPrice: (json['total_price'] as num).toDouble(),
       totalQuantity: json['total_quantity'] as int,
       dateCompleted: json['date_completed'] as String,
-      orderId: json['order_id'] as String,
+      orderId: orderId,
     );
   }
 }
