@@ -166,8 +166,11 @@ class ProductRepository:
                 {"$set": {"active": True}}
             )
             
-            if result.modified_count == 0:
-                raise Exception("Failed to enable product")
+            if result.modified_count == 0 and not await cls.collection.find_one({"_id": ObjectId(product_id)}):
+                return {"status": "error", "message": "Product not found"}
+            
+            elif await cls.collection.find_one({"_id": ObjectId(product_id), "active": True}):
+                return {"status": "success", "message": "Product already enabled"}
                 
             return {"status": "success", "message": "Enabled"}
             
