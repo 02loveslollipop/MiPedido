@@ -165,7 +165,7 @@ class ApiConnector {
     }
 
     try {
-      final response = await http.put(
+      final response = await http.post(
         Uri.parse('$_baseUrl/order/$orderId/'),
         headers: {
           'Authorization': 'Bearer $_accessToken',
