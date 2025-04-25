@@ -209,9 +209,9 @@ class OrderRepository:
             if order.get("fulfilled_at"):
                 return {"status": "error", "message": "Order already fulfilled"}
             
-            # Check if order has been closed/completed
-            if not order.get("status") == "completed":
-                return {"status": "error", "message": "Order must be closed before fulfillment"}
+            # Check if order has been finalized
+            if not order.get("status") == "finalized":
+                return {"status": "error", "message": "Order must be finalized before fulfillment"}
             
             # Set the fulfilled_at date and date_completed
             fulfilled_at = datetime.now()
@@ -233,9 +233,11 @@ class OrderRepository:
             return {"status": "error", "message": str(e)}
     
     @classmethod
-    async def close_order(cls, order_id: str) -> dict:
+    async def finalize_order(cls, order_id: str) -> dict:
         """
-        Close an order and return the final order with aggregated products
+        Finalizes an order and returns the final order with aggregated products.
+        This makes the order ready for fulfillment but doesn't mark it as fulfilled yet.
+        An order can be finalized multiple times as long as it hasn't been fulfilled.
         """
         try:
             # Get the order from the database
@@ -246,10 +248,6 @@ class OrderRepository:
             # Check if order is already fulfilled
             if order.get("fulfilled_at"):
                 return {"status": "error", "message": "Order already fulfilled", "code": 409}
-            
-            # Check if the order has already been closed
-            if order.get("status") == "completed":
-                return {"status": "error", "message": "Order already closed"}
             
             # Aggregate products across all users
             aggregated_products = {}
@@ -290,22 +288,20 @@ class OrderRepository:
                 products_list.append(product_data)
             
             # Create the response
-            date_completed = datetime.now()
             result = {
                 "products": products_list,
                 "total_price": total_price,
                 "total_quantity": total_quantity
             }
             
-            # Update the order in the database to mark it as completed
-            # Note: No date_completed field added here, it will be added during fulfillment
+            # Update the order in the database to mark it as finalized
             await cls.collection.update_one(
                 {"_id": ObjectId(order_id)},
-                {"$set": {"status": "completed"}}
+                {"$set": {"status": "finalized"}}
             )
             
             return {"status": "success", "data": result}
             
         except Exception as e:
-            print(f"Error closing order: {e}")
+            print(f"Error finalizing order: {e}")
             return {"status": "error", "message": str(e)}

@@ -336,14 +336,18 @@
 }
 ```
 
-### Close Order (Get final order)
+### Finalize Order (Get final order)
 
-**URL**: `/v1/order/{order_id}/close`
+**URL**: `/v1/order/{order_id}/finalize`
 **Method**: `POST`
 **Auth required**: `Yes`
 **Auth type**: `JWT`
 **Content-Type**: `application/json`
-**Description**: Closes the order and returns the final order with all the products and ingredients agregated by product and ingredients (So if two users have the same product with the same ingredients, it will be agregated. But if at least one ingredient is different, it will be considered a different product). If the order does not exist, it returns an error. If the bearer token is not valid, it returns an error. If the user exist, but the in the users collection the given user id is not related to the restaurant of the order, it returns an error. (The users collection must have a `controls` field in the user object with the restaurant id).
+**Description**: Finalizes the order and returns it with all products aggregated by product and ingredients (if two users have the same product with the same ingredients, it will be aggregated; if ingredients differ, they are considered different products). 
+
+This endpoint marks the order as ready for fulfillment, but it doesn't mark it as fulfilled yet. An order can be finalized multiple times as long as it hasn't been fulfilled. This allows reviewing and refreshing the final order details.
+
+If the order is already fulfilled, it returns a 409 Conflict error. The user must control the restaurant to access this endpoint.
 
 #### Input: Path variable
 ```json
@@ -360,7 +364,7 @@
 ```
 
 #### Output:
-- Order found.
+- Order finalized.
 
 ***HTTP** 201: Created
 
@@ -395,6 +399,16 @@
 }
 ```
 
+- Order already fulfilled.
+
+**HTTP** 409: Conflict
+
+```json
+{
+    "error": "Order already fulfilled"
+}
+```
+
 - User not found for order.
 
 **HTTP** 404: Not Found
@@ -402,6 +416,106 @@
 ```json
 {
     "error": "User not found for order"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+    "error": String
+}
+```
+
+- Invalid token.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "Invalid token"
+}
+```
+
+- Restaurant not found in the user controls.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+    "error": "This user cannot finalize this order"
+}
+```
+
+### Fulfill Order
+
+**URL**: `/v1/order/{order_id}/fulfill`
+**Method**: `POST`
+**Auth required**: `Yes`
+**Auth type**: `JWT`
+**Content-Type**: `application/json`
+**Description**: Marks an order as fulfilled by a business user. The order must be finalized before it can be fulfilled. 
+
+This endpoint sets the date_completed field in the database and marks the order as "fulfilled", which prevents further finalization or fulfillment.
+
+If the order is already fulfilled, it returns an error. If the order hasn't been finalized yet, it returns an error. The user must control the restaurant to access this endpoint.
+
+#### Input: Path variable
+```json
+{
+    "order_id": String,
+}
+```
+
+#### Input: JSON
+```json
+{
+    "access_token": String
+}
+```
+
+#### Output:
+
+- Order fulfilled.
+
+**HTTP** 200: OK
+
+```json
+{
+    "status": "Fulfilled",
+    "fulfilled_at": String  // ISO DateTime - also sets date_completed in database
+}
+```
+
+- Order not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "error": "Order not found"
+}
+```
+
+- Order already fulfilled.
+
+**HTTP** 400: Bad Request
+
+```json
+{
+    "error": "Order already fulfilled"
+}
+```
+
+- Order not finalized yet.
+
+**HTTP** 400: Bad Request
+
+```json
+{
+    "error": "Order must be finalized before fulfillment"
 }
 ```
 

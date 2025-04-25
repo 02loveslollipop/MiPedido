@@ -3,6 +3,7 @@ from typing import Dict, Any, List
 import traceback
 from bson import ObjectId
 from datetime import datetime
+import logging
 
 from database.repositories import OrderRepository, RestaurantRepository, UserRepository
 from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse, OrderCompletedResponse, OrderFulfillResponse
@@ -152,14 +153,16 @@ async def get_user_order(order_id: str, user_id: str):
             detail=error_detail
         )
 
-@router.post("/{order_id}/close", response_model=OrderCompletedResponse)
-async def close_order(
+@router.post("/{order_id}/finalize", response_model=OrderCompletedResponse)
+async def finalize_order(
     order_id: str, 
     token_request: TokenRequest,
     current_user: TokenData = Depends(get_token_from_body)
 ):
     """
-    Close the order and return the final order with all products aggregated.
+    Finalize the order and return the final order with all products aggregated.
+    This makes the order ready for fulfillment but doesn't mark it as fulfilled yet.
+    An order can be finalized multiple times as long as it hasn't been fulfilled.
     Requires JWT authentication provided in the request body.
     The user must control the restaurant of the order.
     """
@@ -171,7 +174,7 @@ async def close_order(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Order not found"
             )
-
+        
         # Check if user controls the restaurant
         restaurant_id = order_doc.get("restaurant_id")
         is_authorized = await UserRepository.user_controls_restaurant(current_user.user_id, restaurant_id)
@@ -179,11 +182,11 @@ async def close_order(
         if not is_authorized:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="This user cannot fulfill this order"
+                detail="This user cannot finalize this order"
             )
         
-        # Close the order and get the aggregated result
-        result = await OrderRepository.close_order(order_id)
+        # Finalize the order and get the aggregated result
+        result = await OrderRepository.finalize_order(order_id)
         
         if result["status"] == "error":
             if result["message"] == "Order not found":
@@ -195,11 +198,6 @@ async def close_order(
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="Order already fulfilled"
-                )
-            elif result["message"] == "Order already closed":
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Order already closed"
                 )
             else:
                 raise HTTPException(
@@ -231,7 +229,7 @@ async def fulfill_order(
     Mark an order as fulfilled by a business user.
     Requires JWT authentication provided in the request body.
     The user must control the restaurant of the order.
-    The order must be closed before it can be fulfilled.
+    The order must be finalized before it can be fulfilled.
     This endpoint adds the date_completed field to the order.
     """
     try:
@@ -267,10 +265,10 @@ async def fulfill_order(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Order already fulfilled"
                 )
-            elif result["message"] == "Order must be closed before fulfillment":
+            elif result["message"] == "Order must be finalized before fulfillment":
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Order must be closed before fulfillment"
+                    detail="Order must be finalized before fulfillment"
                 )
             else:
                 raise HTTPException(
