@@ -21,6 +21,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
   List<Product> _products = [];
   String? _errorMessage;
 
+  // Track if any toggle operation is in progress
+  bool _isTogglingAnyProduct = false;
+  String? _togglingProductName;
+
   @override
   void initState() {
     super.initState();
@@ -106,6 +110,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Future<void> _toggleProductStatus(Product product) async {
+    // Check if any product is already being toggled
+    if (_isTogglingAnyProduct) {
+      return; // Exit if already processing a product
+    }
+
+    // Set the toggling state
+    setState(() {
+      _isTogglingAnyProduct = true;
+      _togglingProductName = product.name;
+    });
+
     try {
       Map<String, dynamic> result;
       if (product.isEnabled) {
@@ -124,17 +139,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         setState(() {
           product.isEnabled = !product.isEnabled;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              product.isEnabled
-                  ? '${product.name} habilitado'
-                  : '${product.name} deshabilitado',
-            ),
-            backgroundColor: product.isEnabled ? Colors.green : Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -152,6 +156,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
           duration: const Duration(seconds: 3),
         ),
       );
+    } finally {
+      // Clear the toggling state when the operation is complete
+      if (mounted) {
+        setState(() {
+          _isTogglingAnyProduct = false;
+          _togglingProductName = null;
+        });
+      }
     }
   }
 
@@ -186,7 +198,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
         isBackButtonAlert: true,
         onBackPressed: _showLogoutConfirmationDialog,
       ),
-      body:
+      body: Stack(
+        children: [
           _isLoading
               ? Center(
                 child: CircularProgressIndicator(color: colorScheme.primary),
@@ -249,9 +262,50 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   },
                 ),
               ),
+
+          // Loading overlay
+          if (_isTogglingAnyProduct)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 24,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: colorScheme.primary),
+                          const SizedBox(height: 16),
+                          Text(
+                            _togglingProductName != null
+                                ? 'Actualizando $_togglingProductName'
+                                : 'Actualizando producto',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToQRScannerScreen,
-        backgroundColor: colorScheme.primary,
+        onPressed: _isTogglingAnyProduct ? null : _navigateToQRScannerScreen,
+        backgroundColor:
+            _isTogglingAnyProduct ? Colors.grey : colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         icon: const Icon(Icons.qr_code_scanner),
         label: const Text('Leer QR'),

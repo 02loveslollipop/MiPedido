@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
@@ -158,30 +159,113 @@ class ApiConnector {
     }
   }
 
-  // Close order and get final order details
-  Future<Map<String, dynamic>> closeOrder(String orderId) async {
+  // Finalize order and get final order details (formerly closeOrder)
+  Future<Map<String, dynamic>> finalizeOrder(String orderId) async {
     if (_accessToken == null) {
       return {'success': false, 'error': 'Not authenticated'};
     }
 
-    final response = await http.put(
-      Uri.parse('$_baseUrl/order/$orderId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_accessToken',
-      },
-      body: jsonEncode({'access_token': _accessToken}),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/order/$orderId/finalize'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'access_token':
+              _accessToken, // Include token in the request body as required by the API
+        }),
+      );
 
-    final responseData = jsonDecode(response.body);
+      final responseData = jsonDecode(response.body);
 
-    if (response.statusCode == 201) {
-      return {'success': true, 'orderData': responseData};
-    } else {
-      return {
-        'success': false,
-        'error': responseData['error'] ?? 'Unknown error occurred',
-      };
+      if (response.statusCode == 200) {
+        return {'success': true, 'orderData': responseData};
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Order not found',
+        };
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Unauthorized access',
+        };
+      } else if (response.statusCode == 409) {
+        // Handle conflict - order already fulfilled
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Order already fulfilled',
+          'code': 409,
+        };
+      } else {
+        log(response.body.toString(), name: 'Finalize Order Error');
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Unknown error occurred',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
+    }
+  }
+
+  // For backward compatibility (deprecated, will be removed in future versions)
+  @Deprecated('Use finalizeOrder instead')
+  Future<Map<String, dynamic>> closeOrder(String orderId) async {
+    return finalizeOrder(orderId);
+  }
+
+  // Fulfill an order by its ID
+  Future<Map<String, dynamic>> fulfillOrder(String orderId) async {
+    if (_accessToken == null) {
+      return {'success': false, 'error': 'Not authenticated'};
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/order/$orderId/fulfill'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'access_token':
+              _accessToken, // Include token in the request body as required by the API
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'status': responseData['status'] ?? 'Fulfilled',
+        };
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Order not found',
+        };
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Unauthorized access',
+        };
+      } else if (response.statusCode == 409) {
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Order already fulfilled',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Unknown error occurred',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
     }
   }
 

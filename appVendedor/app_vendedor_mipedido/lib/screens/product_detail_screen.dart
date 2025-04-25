@@ -22,6 +22,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _isLoading = true;
   Product? _product;
   String? _errorMessage;
+  bool _isTogglingStatus = false; // Keep this to track toggle state
 
   @override
   void initState() {
@@ -61,7 +62,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Future<void> _toggleProductStatus() async {
-    if (_product == null) return;
+    // Prevent multiple rapid clicks
+    if (_isTogglingStatus || _product == null) {
+      return;
+    }
+
+    setState(() {
+      _isTogglingStatus = true;
+    });
 
     try {
       Map<String, dynamic> result;
@@ -81,17 +89,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         setState(() {
           _product!.isEnabled = !_product!.isEnabled;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _product!.isEnabled
-                  ? '${_product!.name} habilitado'
-                  : '${_product!.name} deshabilitado',
-            ),
-            backgroundColor: _product!.isEnabled ? Colors.green : Colors.orange,
-            duration: const Duration(seconds: 2),
-          ),
-        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -109,6 +106,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           duration: const Duration(seconds: 3),
         ),
       );
+    } finally {
+      // Always reset the toggling state when done
+      if (mounted) {
+        setState(() {
+          _isTogglingStatus = false;
+        });
+      }
     }
   }
 
@@ -122,7 +126,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _isLoading ? 'Detalle de producto' : _product?.name ?? 'Producto',
         onBackPressed: () => Navigator.pop(context),
       ),
-      body:
+      body: Stack(
+        children: [
           _isLoading
               ? Center(
                 child: CircularProgressIndicator(color: colorScheme.primary),
@@ -238,6 +243,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                             ),
                             const SizedBox(width: 8),
+                            // Keep switch enabled all the time
                             Switch(
                               value: _product!.isEnabled,
                               onChanged: (_) => _toggleProductStatus(),
@@ -345,6 +351,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ],
                 ),
               ),
+
+          // Loading overlay during toggle operation
+          if (_isTogglingStatus && _product != null)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 24,
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: colorScheme.primary),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Actualizando ${_product!.name}',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

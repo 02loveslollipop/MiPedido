@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../api/api_connector.dart';
+import 'order_details_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);
@@ -132,20 +133,19 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
       // Pause the camera while processing
       controller.pauseCamera();
-      //create an alert dialog to show the scanned data for debugging purposes
 
       // Process the scanned QR code data
-      try{
+      try {
         _processQrCode(scanData.code);
-      }
-      catch(e){
-        _showInvalidQRCodeMessage('Error al procesar el código QR: ${e.toString()}');
+      } catch (e) {
+        _showInvalidQRCodeMessage(
+          'Error al procesar el código QR: ${e.toString()}',
+        );
       }
     });
   }
 
   Future<void> _processQrCode(String? orderId) async {
-    
     if (orderId == null || orderId.isEmpty) {
       _showInvalidQRCodeMessage('Formato de código QR inválido');
       return;
@@ -153,22 +153,31 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
     try {
       // Call API to validate the order ID
-      final result = await _apiConnector.closeOrder(orderId);
+      final result = await _apiConnector.finalizeOrder(orderId);
 
       if (result['success']) {
         // Valid order ID, navigate to order details screen
         if (!mounted) return;
 
-        // Navigate to order details screen with the order data
+        // Add the order_id to the data being passed to OrderDetailsScreen
+        final orderData = result['orderData'];
+        orderData['order_id'] = orderId; // Add the order_id to the data
+
+        // Navigate to our dedicated OrderDetailsScreen with the order data
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder:
-                (context) =>
-                    _OrderDetailsScreen(orderData: result['orderData']),
+            builder: (context) => OrderDetailsScreen(orderData: orderData),
           ),
         );
       } else {
-        _showInvalidQRCodeMessage(result['error'] ?? 'ID de pedido inválido');
+        // Check if the order was already fulfilled
+        if (result['code'] == 409 ||
+            (result['error'] != null &&
+                result['error'].contains('already fulfilled'))) {
+          _showOrderAlreadyFulfilledDialog(orderId);
+        } else {
+          _showInvalidQRCodeMessage(result['error'] ?? 'ID de pedido inválido');
+        }
       }
     } catch (e) {
       _showInvalidQRCodeMessage(
@@ -176,6 +185,37 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       );
       debugPrint('Error processing QR code: $e');
     }
+  }
+
+  void _showOrderAlreadyFulfilledDialog(String orderId) {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Pedido Ya Completado'),
+          content: const Text(
+            'Este pedido ya ha sido completado y no puede ser procesado nuevamente.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                // Resume camera scanning
+                setState(() {
+                  isScanning = true;
+                  isLoading = false;
+                });
+                controller?.resumeCamera();
+              },
+              child: const Text('Entendido'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showInvalidQRCodeMessage(String message) {
@@ -283,55 +323,6 @@ class _QRScannerScreenState extends State<QRScannerScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// A placeholder screen for order details
-// This should be replaced with your actual order details screen
-class _OrderDetailsScreen extends StatelessWidget {
-  final Map<String, dynamic> orderData;
-
-  const _OrderDetailsScreen({Key? key, required this.orderData})
-    : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Detalles del Pedido')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Pedido Validado Correctamente',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Display order details
-            // This is a placeholder - replace with your actual order detail UI
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('ID del Pedido: ${orderData['order_id'] ?? 'N/A'}'),
-                    const SizedBox(height: 8),
-                    Text('Estado: ${orderData['status'] ?? 'Completado'}'),
-                    // Add more order details as needed
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
