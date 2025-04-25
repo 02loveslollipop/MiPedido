@@ -4,6 +4,7 @@ from models import Restaurant, Product, OrderStatusResponse
 import traceback
 from typing import List, Dict
 from utils.auth import get_current_user, TokenData, get_token_from_body, TokenRequest
+import logging
 
 router = APIRouter(
     prefix="/products",
@@ -205,4 +206,6 @@ async def enable_product(
         raise
     except Exception as e:
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        LOG = logging.getLogger("uvicorn.error")
+        LOG.error(f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=error_detail)
