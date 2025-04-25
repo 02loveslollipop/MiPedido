@@ -166,7 +166,7 @@ class ApiConnector {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/order/$orderId/'),
+        Uri.parse('$_baseUrl/order/$orderId/close'),
         headers: {
           'Authorization': 'Bearer $_accessToken',
           'Content-Type': 'application/json',
