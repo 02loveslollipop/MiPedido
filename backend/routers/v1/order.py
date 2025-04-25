@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any, List
 import traceback
 from bson import ObjectId
+import logging
 
 from database.repositories import OrderRepository, RestaurantRepository, UserRepository
 from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse, OrderCompletedResponse, OrderFulfillResponse
@@ -170,6 +171,9 @@ async def close_order(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Order not found"
             )
+            
+        LOG = logging.getLogger("uvicorn.error")
+        LOG.info(f"Order document: {order_doc}")
         
         # Check if user controls the restaurant
         restaurant_id = order_doc.get("restaurant_id")
