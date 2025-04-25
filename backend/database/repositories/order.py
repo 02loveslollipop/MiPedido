@@ -194,6 +194,45 @@ class OrderRepository:
             raise e
     
     @classmethod
+    async def fulfill_order(cls, order_id: str) -> Dict[str, Any]:
+        """
+        Mark an order as fulfilled by a business user.
+        Returns a status dictionary with status, message, and fulfilled_at date.
+        """
+        try:
+            # Get the order from the database
+            order = await cls.collection.find_one({"_id": ObjectId(order_id)})
+            if not order:
+                return {"status": "error", "message": "Order not found"}
+            
+            # Check if order is already fulfilled
+            if order.get("fulfilled_at"):
+                return {"status": "error", "message": "Order already fulfilled"}
+            
+            # Check if order has been closed/completed
+            if not order.get("status") == "completed":
+                return {"status": "error", "message": "Order must be closed before fulfillment"}
+            
+            # Set the fulfilled_at date
+            fulfilled_at = datetime.now()
+            
+            # Update the order in the database
+            await cls.collection.update_one(
+                {"_id": ObjectId(order_id)},
+                {"$set": {"status": "fulfilled", "fulfilled_at": fulfilled_at}}
+            )
+            
+            return {
+                "status": "success", 
+                "message": "Fulfilled",
+                "fulfilled_at": fulfilled_at
+            }
+            
+        except Exception as e:
+            print(f"Error fulfilling order: {e}")
+            return {"status": "error", "message": str(e)}
+    
+    @classmethod
     async def close_order(cls, order_id: str) -> dict:
         """
         Close an order and return the final order with aggregated products
@@ -203,6 +242,14 @@ class OrderRepository:
             order = await cls.collection.find_one({"_id": ObjectId(order_id)})
             if not order:
                 return {"status": "error", "message": "Order not found"}
+            
+            # Check if order is already fulfilled
+            if order.get("fulfilled_at"):
+                return {"status": "error", "message": "Order already fulfilled"}
+            
+            # Check if the order has already been closed
+            if order.get("status") == "completed":
+                return {"status": "error", "message": "Order already closed"}
             
             # Aggregate products across all users
             aggregated_products = {}
@@ -243,17 +290,18 @@ class OrderRepository:
                 products_list.append(product_data)
             
             # Create the response
+            date_completed = datetime.now()
             result = {
                 "products": products_list,
                 "total_price": total_price,
                 "total_quantity": total_quantity,
-                "date_completed": datetime.now()
+                "date_completed": date_completed
             }
             
             # Update the order in the database to mark it as completed
             await cls.collection.update_one(
                 {"_id": ObjectId(order_id)},
-                {"$set": {"status": "completed", "date_completed": datetime.now()}}
+                {"$set": {"status": "completed", "date_completed": date_completed}}
             )
             
             return {"status": "success", "data": result}
