@@ -338,8 +338,8 @@
 
 ### Close Order (Get final order)
 
-**URL**: `/v1/order/{order_id}`
-**Method**: `PUT`
+**URL**: `/v1/order/{order_id}/close`
+**Method**: `POST`
 **Auth required**: `Yes`
 **Auth type**: `JWT`
 **Content-Type**: `application/json`
@@ -381,7 +381,7 @@
     ]
     total_price: Number,
     total_quantity: Number,
-    date_completed: String,
+    date_completed: String, // Placeholder - actual value set on fulfillment
 }
 ```
 

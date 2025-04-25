@@ -25,6 +25,10 @@ class CreateOrderRequest(BaseModel):
     """Request model for creating an order"""
     restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
 
+class OrderFulfillRequest(BaseModel):
+    """Request model for fulfilling an order"""
+    order_id: str = Field(..., description="Unique identifier of the order to fulfill")
+
 # Response models
 class JoinOrderResponse(BaseModel):
     """Response model for joining an order"""
@@ -33,6 +37,11 @@ class JoinOrderResponse(BaseModel):
 class OrderStatusResponse(BaseModel):
     """Response model for order modification status"""
     status: str = Field(..., description="Status of the operation (Created, Updated, or Deleted)")
+
+class OrderFulfillResponse(BaseModel):
+    """Response model for order fulfillment status"""
+    status: str = Field(..., description="Status of the operation (Fulfilled)")
+    fulfilled_at: datetime = Field(..., description="Date and time when the order was fulfilled")
 
 class FinalOrderProduct(BaseModel):
     """Product in a finalized order with total price calculation"""
@@ -51,7 +60,7 @@ class OrderCompletedResponse(BaseModel):
     products: List[FinalOrderProduct] = Field(..., description="List of products in the final order")
     total_price: float = Field(..., description="Total price of the order")
     total_quantity: int = Field(..., description="Total quantity of products")
-    date_completed: datetime = Field(..., description="Date and time when the order was completed")
+    date_completed: datetime = Field(default_factory=datetime.now, description="Date and time when the order was fulfilled. This field is populated when the order is fulfilled, not when closed.")
     
 class UserOrder(BaseModel):
     products: List[OrderProduct] = Field(default_factory=list, description="List of products in the order")
@@ -88,3 +97,8 @@ class Order(BaseModel):
 class OrderCreatedResponse(BaseModel):
     order_id: str = Field(..., description="Unique identifier for the created order")
     user_id: str = Field(..., description="Unique identifier for the user who created the order")
+
+class OrderFulfillResponse(BaseModel):
+    """Response model for order fulfillment status"""
+    status: str = Field(..., description="Status of the operation (Fulfilled)")
+    fulfilled_at: datetime = Field(..., description="Date and time when the order was fulfilled and completed")

@@ -2,9 +2,10 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any, List
 import traceback
 from bson import ObjectId
+from datetime import datetime
 
 from database.repositories import OrderRepository, RestaurantRepository, UserRepository
-from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse, OrderCompletedResponse
+from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse, OrderCompletedResponse, OrderFulfillResponse
 from utils.auth import get_current_user, TokenData, get_token_from_body, TokenRequest
 
 router = APIRouter(
@@ -170,7 +171,7 @@ async def close_order(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Order not found"
             )
-        
+
         # Check if user controls the restaurant
         restaurant_id = order_doc.get("restaurant_id")
         is_authorized = await UserRepository.user_controls_restaurant(current_user.user_id, restaurant_id)
@@ -190,15 +191,99 @@ async def close_order(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Order not found"
                 )
+            elif result["message"] == "Order already fulfilled":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Order already fulfilled"
+                )
+            elif result["message"] == "Order already closed":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Order already closed"
+                )
             else:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=result["message"]
                 )
                 
-        # Return the completed order
-        return OrderCompletedResponse(**result["data"])
+        # Return the completed order with current datetime as placeholder for date_completed
+        # The actual date_completed will be set when the order is fulfilled
+        response_data = {**result["data"], "date_completed": datetime.now()}
+        return OrderCompletedResponse(**response_data)
     
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_detail
+        )
+
+@router.post("/{order_id}/fulfill", response_model=OrderFulfillResponse)
+async def fulfill_order(
+    order_id: str,
+    token_request: TokenRequest,
+    current_user: TokenData = Depends(get_token_from_body)
+):
+    """
+    Mark an order as fulfilled by a business user.
+    Requires JWT authentication provided in the request body.
+    The user must control the restaurant of the order.
+    The order must be closed before it can be fulfilled.
+    This endpoint adds the date_completed field to the order.
+    """
+    try:
+        # Get the order to check the restaurant_id
+        order_doc = await OrderRepository.collection.find_one({"_id": ObjectId(order_id)})
+        if not order_doc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found"
+            )
+        
+        # Check if user controls the restaurant
+        restaurant_id = order_doc.get("restaurant_id")
+        is_authorized = await UserRepository.user_controls_restaurant(current_user.user_id, restaurant_id)
+        
+        if not is_authorized:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="This user cannot fulfill this order"
+            )
+            
+        # Fulfill the order
+        result = await OrderRepository.fulfill_order(order_id)
+        
+        if result["status"] == "error":
+            if result["message"] == "Order not found":
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Order not found"
+                )
+            elif result["message"] == "Order already fulfilled":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Order already fulfilled"
+                )
+            elif result["message"] == "Order must be closed before fulfillment":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Order must be closed before fulfillment"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=result["message"]
+                )
+                
+        # Return the fulfillment response
+        return OrderFulfillResponse(
+            status="Fulfilled",
+            fulfilled_at=result["fulfilled_at"]
+        )
+        
     except HTTPException:
         raise
     except Exception as e:
