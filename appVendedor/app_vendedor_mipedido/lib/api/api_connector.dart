@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
@@ -171,6 +172,10 @@ class ApiConnector {
           'Authorization': 'Bearer $_accessToken',
           'Content-Type': 'application/json',
         },
+        body: jsonEncode({
+          'access_token':
+              _accessToken, // Include token in the request body as required by the API
+        }),
       );
 
       final responseData = jsonDecode(response.body);
@@ -180,17 +185,29 @@ class ApiConnector {
       } else if (response.statusCode == 404) {
         return {
           'success': false,
-          'error': responseData['error'] ?? 'Order not found',
+          'error': responseData['detail'] ?? 'Order not found',
+        };
+
+      } else if (response.statusCode == 400) {
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Bad request',
         };
       } else if (response.statusCode == 401) {
         return {
           'success': false,
-          'error': responseData['error'] ?? 'Unauthorized access',
+          'error': responseData['detail'] ?? 'Unauthorized access',
         };
       } else {
+        log('Error closing order: ${responseData.toString()}',
+            name: 'ApiConnector-closeOrder');
+        log('Response status code: ${response.statusCode}',
+            name: 'ApiConnector-closeOrder');
+        log('Response body: ${response.body}',
+            name: 'ApiConnector-closeOrder');
         return {
           'success': false,
-          'error': responseData['error'] ?? 'Unknown error occurred',
+          'error': responseData['detail'] ?? 'Unknown error occurred',
         };
       }
     } catch (e) {
@@ -211,6 +228,10 @@ class ApiConnector {
           'Authorization': 'Bearer $_accessToken',
           'Content-Type': 'application/json',
         },
+        body: jsonEncode({
+          'access_token':
+              _accessToken, // Include token in the request body as required by the API
+        }),
       );
 
       final responseData = jsonDecode(response.body);
@@ -223,22 +244,22 @@ class ApiConnector {
       } else if (response.statusCode == 404) {
         return {
           'success': false,
-          'error': responseData['error'] ?? 'Order not found',
+          'error': responseData['detail'] ?? 'Order not found',
         };
       } else if (response.statusCode == 401) {
         return {
           'success': false,
-          'error': responseData['error'] ?? 'Unauthorized access',
+          'error': responseData['detail'] ?? 'Unauthorized access',
         };
       } else if (response.statusCode == 409) {
         return {
           'success': false,
-          'error': responseData['error'] ?? 'Order already fulfilled',
+          'error': responseData['detail'] ?? 'Order already fulfilled',
         };
       } else {
         return {
           'success': false,
-          'error': responseData['error'] ?? 'Unknown error occurred',
+          'error': responseData['detail'] ?? 'Unknown error occurred',
         };
       }
     } catch (e) {
