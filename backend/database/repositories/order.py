@@ -213,13 +213,13 @@ class OrderRepository:
             if not order.get("status") == "completed":
                 return {"status": "error", "message": "Order must be closed before fulfillment"}
             
-            # Set the fulfilled_at date
+            # Set the fulfilled_at date and date_completed
             fulfilled_at = datetime.now()
             
             # Update the order in the database
             await cls.collection.update_one(
                 {"_id": ObjectId(order_id)},
-                {"$set": {"status": "fulfilled", "fulfilled_at": fulfilled_at}}
+                {"$set": {"status": "fulfilled", "fulfilled_at": fulfilled_at, "date_completed": fulfilled_at}}
             )
             
             return {
@@ -245,7 +245,7 @@ class OrderRepository:
             
             # Check if order is already fulfilled
             if order.get("fulfilled_at"):
-                return {"status": "error", "message": "Order already fulfilled"}
+                return {"status": "error", "message": "Order already fulfilled", "code": 409}
             
             # Check if the order has already been closed
             if order.get("status") == "completed":
@@ -294,14 +294,14 @@ class OrderRepository:
             result = {
                 "products": products_list,
                 "total_price": total_price,
-                "total_quantity": total_quantity,
-                "date_completed": date_completed
+                "total_quantity": total_quantity
             }
             
             # Update the order in the database to mark it as completed
+            # Note: No date_completed field added here, it will be added during fulfillment
             await cls.collection.update_one(
                 {"_id": ObjectId(order_id)},
-                {"$set": {"status": "completed", "date_completed": date_completed}}
+                {"$set": {"status": "completed"}}
             )
             
             return {"status": "success", "data": result}

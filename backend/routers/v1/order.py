@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Dict, Any, List
 import traceback
 from bson import ObjectId
-import logging
+from datetime import datetime
 
 from database.repositories import OrderRepository, RestaurantRepository, UserRepository
 from models.order import OrderItemUpdate, OrderCreatedResponse, OrderProduct, CreateOrderRequest, JoinOrderResponse, OrderStatusResponse, OrderCompletedResponse, OrderFulfillResponse
@@ -171,10 +171,7 @@ async def close_order(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Order not found"
             )
-            
-        LOG = logging.getLogger("uvicorn.error")
-        LOG.info(f"Order document: {order_doc}")
-        
+
         # Check if user controls the restaurant
         restaurant_id = order_doc.get("restaurant_id")
         is_authorized = await UserRepository.user_controls_restaurant(current_user.user_id, restaurant_id)
@@ -196,7 +193,7 @@ async def close_order(
                 )
             elif result["message"] == "Order already fulfilled":
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
+                    status_code=status.HTTP_409_CONFLICT,
                     detail="Order already fulfilled"
                 )
             elif result["message"] == "Order already closed":
@@ -210,8 +207,10 @@ async def close_order(
                     detail=result["message"]
                 )
                 
-        # Return the completed order
-        return OrderCompletedResponse(**result["data"])
+        # Return the completed order with current datetime as placeholder for date_completed
+        # The actual date_completed will be set when the order is fulfilled
+        response_data = {**result["data"], "date_completed": datetime.now()}
+        return OrderCompletedResponse(**response_data)
     
     except HTTPException:
         raise
@@ -233,6 +232,7 @@ async def fulfill_order(
     Requires JWT authentication provided in the request body.
     The user must control the restaurant of the order.
     The order must be closed before it can be fulfilled.
+    This endpoint adds the date_completed field to the order.
     """
     try:
         # Get the order to check the restaurant_id

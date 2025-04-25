@@ -343,7 +343,7 @@
 **Auth required**: `Yes`
 **Auth type**: `JWT`
 **Content-Type**: `application/json`
-**Description**: Closes the order and returns the final order with all the products and ingredients agregated by product and ingredients (So if two users have the same product with the same ingredients, it will be agregated. But if at least one ingredient is different, it will be considered a different product). If the order does not exist, it returns an error. If the bearer token is not valid, it returns an error. If the user exist, but the in the users collection the given user id is not related to the restaurant of the order, it returns an error. (The users collection must have a `controls` field in the user object with the restaurant id). If the order is already fulfilled, it returns an error. If the order is already closed, it returns an error.
+**Description**: Closes the order and returns the final order with all the products and ingredients agregated by product and ingredients (So if two users have the same product with the same ingredients, it will be agregated. But if at least one ingredient is different, it will be considered a different product). If the order does not exist, it returns an error. If the bearer token is not valid, it returns an error. If the user exist, but the in the users collection the given user id is not related to the restaurant of the order, it returns an error. (The users collection must have a `controls` field in the user object with the restaurant id).
 
 #### Input: Path variable
 ```json
@@ -381,7 +381,7 @@
     ]
     total_price: Number,
     total_quantity: Number,
-    date_completed: String,
+    date_completed: String, // Placeholder - actual value set on fulfillment
 }
 ```
 
@@ -392,26 +392,6 @@
 ```json
 {
     "error": "Order not found"
-}
-```
-
-- Order already fulfilled.
-
-**HTTP** 400: Bad Request
-
-```json
-{
-    "error": "Order already fulfilled"
-}
-```
-
-- Order already closed.
-
-**HTTP** 400: Bad Request
-
-```json
-{
-    "error": "Order already closed"
 }
 ```
 
@@ -422,102 +402,6 @@
 ```json
 {
     "error": "User not found for order"
-}
-```
-
-- Internal error.
-
-**HTTP** 500: Internal Server Error
-
-```json
-{
-    "error": String
-}
-```
-
-- Invalid token.
-
-**HTTP** 401: Unauthorized
-
-```json
-{
-    "error": "Invalid token"
-}
-```
-
-- Restaurant not found in the user controls.
-
-**HTTP** 401: Unauthorized
-
-```json
-{
-    "error": "This user cannot fulfill this order"
-}
-```
-
-### Fulfill Order
-
-**URL**: `/v1/order/{order_id}/fulfill`
-**Method**: `POST`
-**Auth required**: `Yes`
-**Auth type**: `JWT`
-**Content-Type**: `application/json`
-**Description**: Marks an order as fulfilled by a business user. The order must be closed before it can be fulfilled. If the order does not exist, it returns an error. If the bearer token is not valid, it returns an error. If the user exists, but in the users collection the given user id is not related to the restaurant of the order, it returns an error. (The users collection must have a `controls` field in the user object with the restaurant id). If the order is already fulfilled, it returns an error. If the order is not closed yet, it returns an error.
-
-#### Input: Path variable
-```json
-{
-    "order_id": String,
-}
-```
-
-#### Input: JSON
-```json
-{
-    "access_token": String
-}
-```
-
-#### Output:
-
-- Order fulfilled.
-
-**HTTP** 200: OK
-
-```json
-{
-    "status": "Fulfilled",
-    "fulfilled_at": String  // ISO DateTime
-}
-```
-
-- Order not found.
-
-**HTTP** 404: Not Found
-
-```json
-{
-    "error": "Order not found"
-}
-```
-
-- Order already fulfilled.
-
-**HTTP** 400: Bad Request
-
-```json
-{
-    "error": "Order already fulfilled"
-}
-```
-
-- Order not closed yet.
-
-**HTTP** 400: Bad Request
-
-```json
-{
-    "error": "Order must be closed before fulfillment"
 }
 ```
 
