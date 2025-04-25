@@ -173,26 +173,34 @@ class ApiConnector {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'access_token': _accessToken // Include token in the request body as required by the API
+          'access_token':
+              _accessToken, // Include token in the request body as required by the API
         }),
       );
 
       final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         return {'success': true, 'orderData': responseData};
       } else if (response.statusCode == 404) {
-        return {'success': false, 'error': responseData['detail'] ?? 'Order not found'};
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Order not found',
+        };
       } else if (response.statusCode == 401) {
-        return {'success': false, 'error': responseData['detail'] ?? 'Unauthorized access'};
+        return {
+          'success': false,
+          'error': responseData['detail'] ?? 'Unauthorized access',
+        };
       } else if (response.statusCode == 409) {
         // Handle conflict - order already fulfilled
         return {
           'success': false,
           'error': responseData['detail'] ?? 'Order already fulfilled',
-          'code': 409
+          'code': 409,
         };
       } else {
+        log(response.body.toString(), name: 'Finalize Order Error');
         return {
           'success': false,
           'error': responseData['detail'] ?? 'Unknown error occurred',

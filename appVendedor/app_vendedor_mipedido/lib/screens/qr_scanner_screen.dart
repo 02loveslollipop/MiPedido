@@ -171,8 +171,9 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         );
       } else {
         // Check if the order was already fulfilled
-        if (result['code'] == 409 || 
-            (result['error'] != null && result['error'].contains('already fulfilled'))) {
+        if (result['code'] == 409 ||
+            (result['error'] != null &&
+                result['error'].contains('already fulfilled'))) {
           _showOrderAlreadyFulfilledDialog(orderId);
         } else {
           _showInvalidQRCodeMessage(result['error'] ?? 'ID de pedido inválido');
@@ -188,7 +189,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   void _showOrderAlreadyFulfilledDialog(String orderId) {
     if (!mounted) return;
-    
+
     showDialog(
       context: context,
       barrierDismissible: false,
