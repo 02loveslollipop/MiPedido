@@ -11,11 +11,11 @@ from utils import env
 async def lifespan(app: FastAPI):
     # Database is already connected at import time, but we can reconnect if needed
     if db.db is None:
-        db.connect_to_db()
+        db.db = db.Database()
     print("FastAPI application started")
     yield
     # Shutdown: Close database connection
-    db.close_db_connection()
+    db.db.close_db_connection()
     print("FastAPI application shutdown")
 
 app = FastAPI(
