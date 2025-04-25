@@ -164,24 +164,85 @@ class ApiConnector {
       return {'success': false, 'error': 'Not authenticated'};
     }
 
-    final response = await http.put(
-      Uri.parse('$_baseUrl/order/$orderId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_accessToken',
-      },
-      body: jsonEncode({'access_token': _accessToken}),
-    );
+    try {
+      final response = await http.put(
+        Uri.parse('$_baseUrl/order/$orderId/'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
 
-    final responseData = jsonDecode(response.body);
+      final responseData = jsonDecode(response.body);
 
-    if (response.statusCode == 201) {
-      return {'success': true, 'orderData': responseData};
-    } else {
-      return {
-        'success': false,
-        'error': responseData['error'] ?? 'Unknown error occurred',
-      };
+      if (response.statusCode == 201) {
+        return {'success': true, 'orderData': responseData};
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Order not found',
+        };
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Unauthorized access',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Unknown error occurred',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
+    }
+  }
+
+  // Fulfill an order by its ID
+  Future<Map<String, dynamic>> fulfillOrder(String orderId) async {
+    if (_accessToken == null) {
+      return {'success': false, 'error': 'Not authenticated'};
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/order/$orderId/fulfill'),
+        headers: {
+          'Authorization': 'Bearer $_accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'status': responseData['status'] ?? 'Fulfilled',
+        };
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Order not found',
+        };
+      } else if (response.statusCode == 401) {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Unauthorized access',
+        };
+      } else if (response.statusCode == 409) {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Order already fulfilled',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Unknown error occurred',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
     }
   }
 
