@@ -4,13 +4,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import uk.app02loveslollipop.mipedido.cliente.screens.ProductsScreen
+import uk.app02loveslollipop.mipedido.cliente.screens.QrCodeScreen
+import uk.app02loveslollipop.mipedido.cliente.screens.RestaurantsScreen
 import uk.app02loveslollipop.mipedido.cliente.ui.theme.MiPedidoTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,29 +24,63 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MiPedidoTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                MiPedidoApp()
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MiPedidoTheme {
-        Greeting("Android")
+fun MiPedidoApp() {
+    val navController = rememberNavController()
+    
+    NavHost(
+        navController = navController,
+        startDestination = "restaurants",
+        modifier = Modifier.fillMaxSize()
+    ) {
+        // Restaurants Screen
+        composable("restaurants") {
+            RestaurantsScreen(
+                onNavigateToProductsScreen = { restaurantId ->
+                    navController.navigate("products/$restaurantId")
+                },
+                onNavigateToQrScreen = { restaurantId, orderId, userId ->
+                    navController.navigate("qr/$restaurantId/$orderId/$userId")
+                }
+            )
+        }
+        
+        // Products Screen
+        composable(
+            route = "products/{restaurantId}",
+            arguments = listOf(navArgument("restaurantId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+            ProductsScreen(
+                restaurantId = restaurantId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        
+        // QR Code Screen
+        composable(
+            route = "qr/{restaurantId}/{orderId}/{userId}",
+            arguments = listOf(
+                navArgument("restaurantId") { type = NavType.StringType },
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            QrCodeScreen(
+                restaurantId = restaurantId,
+                orderId = orderId,
+                userId = userId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }

@@ -2,7 +2,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Required permission to access the internet -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Optional: Recommended permission to check network status -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Optional: Add if you plan to implement QR code SCANNING later -->
+    <!-- <uses-permission android:name="android.permission.CAMERA" /> -->
+    <!-- If adding CAMERA permission, also consider adding camera features -->
+    <!-- <uses-feature android:name="android.hardware.camera" android:required="false" /> -->
+    <!-- <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" /> -->
+
+
     <application
+        android:usesCleartextTraffic="true" 
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
