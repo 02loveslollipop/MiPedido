@@ -15,7 +15,7 @@ interface MiPedidoApiService {
     suspend fun getRestaurants(): Response<List<Restaurant>>
     
     // Product endpoints
-    @GET("products/{restaurantId}/")
+    @GET("products/{restaurantId}")
     suspend fun getProductsByRestaurant(
         @Path("restaurantId") restaurantId: String
     ): Response<List<Product>>
@@ -43,7 +43,7 @@ interface MiPedidoApiService {
         @Path("userId") userId: String
     ): Response<List<OrderItem>>
     
-    @PUT("order/{orderId}/{userId}/")
+    @PUT("order/{orderId}/{userId}")
     suspend fun modifyOrderForUser(
         @Path("orderId") orderId: String,
         @Path("userId") userId: String,

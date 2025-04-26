@@ -23,11 +23,14 @@ import uk.app02loveslollipop.mipedido.cliente.api.ApiConnector
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.ProductCard
 import uk.app02loveslollipop.mipedido.cliente.models.Product
+import uk.app02loveslollipop.mipedido.cliente.models.OrderModificationRequest
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun ProductsScreen(
     restaurantId: String,
+    orderId: String,
+    userId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -42,27 +45,60 @@ fun ProductsScreen(
     val cartItems = remember { mutableStateMapOf<String, Int>() }
     val totalCartItems = remember { derivedStateOf { cartItems.values.sum() } }
     
+    // Function to modify order in the API
+    fun modifyOrderInAPI(product: Product, quantity: Int) {
+        coroutineScope.launch {
+            try {
+                // Create request with empty ingredients list (can be enhanced to include selected ingredients)
+                val modificationRequest = OrderModificationRequest(
+                    productId = product.id,
+                    quantity = quantity,
+                    ingredients = emptyList() // Default to empty ingredients list
+                )
+                
+                val result = apiConnector.modifyOrderForUser(orderId, userId, modificationRequest)
+                result.fold(
+                    onSuccess = { _ ->
+                        Log.d("ProductsScreen", "Successfully modified order for product ${product.name}, quantity: $quantity")
+                    },
+                    onFailure = { throwable ->
+                        Log.e("ProductsScreen", "Error modifying order: ${throwable.message}")
+                        error = throwable.message ?: "No se pudo modificar el pedido"
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("ProductsScreen", "Exception modifying order: ${e.message}")
+                error = e.message ?: "Error desconocido al modificar el pedido"
+            }
+        }
+    }
+    
     // Cart handling functions
     fun handleAddToCart(product: Product) {
         cartItems[product.id] = 1
+        modifyOrderInAPI(product, 1)
         Log.d("ProductsScreen", "Added ${product.name}. Cart: $cartItems")
     }
     
     fun handleIncreaseQuantity(product: Product) {
-        cartItems.computeIfPresent(product.id) { _, currentQuantity -> currentQuantity + 1 }
+        val newQuantity = (cartItems[product.id] ?: 0) + 1
+        cartItems[product.id] = newQuantity
+        modifyOrderInAPI(product, newQuantity)
         Log.d("ProductsScreen", "Increased ${product.name}. Cart: $cartItems")
     }
     
     fun handleDecreaseQuantity(product: Product) {
-        val currentQuantity = cartItems[product.id]
-        if (currentQuantity != null) {
-            if (currentQuantity > 1) {
-                cartItems[product.id] = currentQuantity - 1
-                Log.d("ProductsScreen", "Decreased ${product.name}. Cart: $cartItems")
-            } else {
-                cartItems.remove(product.id)
-                Log.d("ProductsScreen", "Removed ${product.name}. Cart: $cartItems")
-            }
+        val currentQuantity = cartItems[product.id] ?: 0
+        if (currentQuantity > 1) {
+            val newQuantity = currentQuantity - 1
+            cartItems[product.id] = newQuantity
+            modifyOrderInAPI(product, newQuantity)
+            Log.d("ProductsScreen", "Decreased ${product.name}. Cart: $cartItems")
+        } else {
+            cartItems.remove(product.id)
+            // Send 0 quantity to remove the product from the order
+            modifyOrderInAPI(product, 0)
+            Log.d("ProductsScreen", "Removed ${product.name}. Cart: $cartItems")
         }
     }
     

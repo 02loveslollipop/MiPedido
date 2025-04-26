@@ -176,4 +176,21 @@ class ApiConnector private constructor() {
             apiService.modifyOrderForUser(orderId, userId, request) 
         }
     }
+    
+    /**
+     * Modify an order item for a user using the OrderModificationRequest object
+     * @param orderId ID of the order
+     * @param userId ID of the user
+     * @param modificationRequest OrderModificationRequest containing the product details
+     * @return Result containing a status response or an error
+     */
+    suspend fun modifyOrderForUser(
+        orderId: String,
+        userId: String,
+        modificationRequest: OrderModificationRequest
+    ): Result<Map<String, String>> {
+        return apiCall { 
+            apiService.modifyOrderForUser(orderId, userId, modificationRequest) 
+        }
+    }
 }

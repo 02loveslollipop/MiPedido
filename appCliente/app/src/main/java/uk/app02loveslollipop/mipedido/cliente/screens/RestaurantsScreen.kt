@@ -25,7 +25,7 @@ import uk.app02loveslollipop.mipedido.cliente.models.Restaurant
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun RestaurantsScreen(
-    onNavigateToProductsScreen: (restaurantId: String) -> Unit,
+    onNavigateToProductsScreen: (restaurantId: String, orderId: String, userId: String) -> Unit,
     onNavigateToQrScreen: (restaurantId: String, orderId: String, userId: String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -76,6 +76,31 @@ fun RestaurantsScreen(
                     onSuccess = { response ->
                         // Navigate to QR screen with order ID and user ID
                         onNavigateToQrScreen(restaurantId, response.orderId, response.userId)
+                    },
+                    onFailure = { throwable ->
+                        error = throwable.message ?: "No se pudo crear la orden"
+                    }
+                )
+            } catch (e: Exception) {
+                error = e.message ?: "Error desconocido"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+    
+    // Create normal order function
+    fun createNormalOrder(restaurantId: String) {
+        coroutineScope.launch {
+            isLoading = true
+            error = null
+            
+            try {
+                val result = apiConnector.createOrder(restaurantId)
+                result.fold(
+                    onSuccess = { response ->
+                        // Navigate to Products screen with restaurant ID, order ID and user ID
+                        onNavigateToProductsScreen(restaurantId, response.orderId, response.userId)
                     },
                     onFailure = { throwable ->
                         error = throwable.message ?: "No se pudo crear la orden"
@@ -194,7 +219,7 @@ fun RestaurantsScreen(
                             onClick = {
                                 showOrderTypeDialog = false
                                 selectedRestaurant?.let { restaurant ->
-                                    onNavigateToProductsScreen(restaurant.id)
+                                    createNormalOrder(restaurant.id)
                                 }
                             }
                         ) {

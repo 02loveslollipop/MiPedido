@@ -42,8 +42,8 @@ fun MiPedidoApp() {
         // Restaurants Screen
         composable("restaurants") {
             RestaurantsScreen(
-                onNavigateToProductsScreen = { restaurantId ->
-                    navController.navigate("products/$restaurantId")
+                onNavigateToProductsScreen = { restaurantId, orderId, userId ->
+                    navController.navigate("products/$restaurantId/$orderId/$userId")
                 },
                 onNavigateToQrScreen = { restaurantId, orderId, userId ->
                     navController.navigate("qr/$restaurantId/$orderId/$userId")
@@ -53,12 +53,20 @@ fun MiPedidoApp() {
         
         // Products Screen
         composable(
-            route = "products/{restaurantId}",
-            arguments = listOf(navArgument("restaurantId") { type = NavType.StringType })
+            route = "products/{restaurantId}/{orderId}/{userId}",
+            arguments = listOf(
+                navArgument("restaurantId") { type = NavType.StringType },
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.StringType }
+            )
         ) { backStackEntry ->
             val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
             ProductsScreen(
                 restaurantId = restaurantId,
+                orderId = orderId,
+                userId = userId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
