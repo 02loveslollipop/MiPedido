@@ -387,4 +387,27 @@ class ApiConnector {
       };
     }
   }
+
+  // Helper method to check if an API error is due to token expiration
+  bool isTokenExpiredError(String error) {
+    // Common messages that indicate token expiration
+    final List<String> expiredTokenMessages = [
+      'token has expired',
+      'expired token',
+      'jwt expired',
+      'token expired',
+      'signature has expired',
+      'invalid token',
+      'token is invalid',
+      'token signature is invalid',
+      'invalid authentication credentials',
+      'not authenticated',
+    ];
+
+    // Case insensitive check
+    final lowercaseError = error.toLowerCase();
+    return expiredTokenMessages.any(
+      (message) => lowercaseError.contains(message.toLowerCase()),
+    );
+  }
 }

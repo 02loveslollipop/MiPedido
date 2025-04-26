@@ -1,8 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internet Permission -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
     <application
-        android:label="app_vendedor_mipedido"
+        android:label="Mi pedido - Vendedor"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"

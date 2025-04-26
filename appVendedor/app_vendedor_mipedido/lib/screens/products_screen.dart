@@ -5,6 +5,7 @@ import '../api/api_connector.dart';
 import 'product_detail_screen.dart';
 import 'main_menu.dart';
 import 'qr_scanner_screen.dart';
+import 'dart:developer';
 
 class ProductsScreen extends StatefulWidget {
   final String restaurantId;
@@ -100,12 +101,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
           _errorMessage = result['error'];
           _isLoading = false;
         });
+
+        // Check if token expired and handle it
+        if (result['error'] != null) {
+          _handleTokenExpiration(result['error']);
+        }
       }
     } catch (e) {
+      final errorMsg = 'Error al conectar con el servidor: ${e.toString()}';
       setState(() {
-        _errorMessage = 'Error al conectar con el servidor: ${e.toString()}';
+        _errorMessage = errorMsg;
         _isLoading = false;
       });
+
+      // Check for token expiration in exception as well
+      _handleTokenExpiration(errorMsg);
     }
   }
 
@@ -147,15 +157,24 @@ class _ProductsScreenState extends State<ProductsScreen> {
             duration: const Duration(seconds: 3),
           ),
         );
+
+        // Check if token expired and handle it
+        if (result['error'] != null) {
+          _handleTokenExpiration(result['error']);
+        }
       }
     } catch (e) {
+      final errorMsg = e.toString();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${e.toString()}'),
+          content: Text('Error: $errorMsg'),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
         ),
       );
+
+      // Check for token expiration in exception as well
+      _handleTokenExpiration(errorMsg);
     } finally {
       // Clear the toggling state when the operation is complete
       if (mounted) {
@@ -167,8 +186,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  void _navigateToProductDetails(Product product) {
-    Navigator.push(
+  Future<void> _navigateToProductDetails(Product product) async {
+    // Navigate to detail screen and wait for it to return
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder:
@@ -178,6 +198,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
       ),
     );
+
+    // Always reload products when returning from detail screen
+    _loadProducts();
   }
 
   void _navigateToQRScannerScreen() {
@@ -186,6 +209,31 @@ class _ProductsScreenState extends State<ProductsScreen> {
       context,
       MaterialPageRoute(builder: (context) => const QRScannerScreen()),
     );
+  }
+
+  // Handle token expiration by redirecting to main menu
+  void _handleTokenExpiration(String errorMessage) {
+    if (_apiConnector.isTokenExpiredError(errorMessage)) {
+      // Log out the user
+      _apiConnector.logout().then((_) {
+        // Show a message to the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        // Navigate to the main menu
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const MainMenu()),
+          (route) => false, // Remove all previous routes
+        );
+      });
+    }
   }
 
   @override

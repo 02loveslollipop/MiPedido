@@ -38,6 +38,29 @@ dependencies:
   http: ^1.3.0
   shared_preferences: ^2.5.3
   permission_handler: ^12.0.0+1
+  flutter_launcher_icons: ^0.14.3
+  rename: ^3.0.2
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "assets/background.png"
+  adaptive_icon_foreground: "assets/foreground.png"
+
+  web:
+    generate: true
+    image_path: "assets/icon.png"
+    background_color: "#009688"
+    theme_color: "#009688"
+  windows:
+    generate: true
+    image_path: "assets/icon.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/icon.png"
 
 dev_dependencies:
   flutter_test:
