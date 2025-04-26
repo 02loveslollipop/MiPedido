@@ -5,7 +5,6 @@ import '../api/api_connector.dart';
 import 'product_detail_screen.dart';
 import 'main_menu.dart';
 import 'qr_scanner_screen.dart';
-import 'dart:developer';
 
 class ProductsScreen extends StatefulWidget {
   final String restaurantId;
