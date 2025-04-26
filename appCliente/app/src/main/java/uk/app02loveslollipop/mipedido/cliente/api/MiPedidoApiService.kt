@@ -11,39 +11,39 @@ import uk.app02loveslollipop.mipedido.cliente.models.*
 interface MiPedidoApiService {
     
     // Restaurant endpoints
-    @GET("restaurant")
+    @GET("restaurant/")
     suspend fun getRestaurants(): Response<List<Restaurant>>
     
     // Product endpoints
-    @GET("products/{restaurantId}")
+    @GET("products/{restaurantId}/")
     suspend fun getProductsByRestaurant(
         @Path("restaurantId") restaurantId: String
     ): Response<List<Product>>
     
-    @GET("products/{restaurantId}/{productId}")
+    @GET("products/{restaurantId}/{productId}/")
     suspend fun getProductDetails(
         @Path("restaurantId") restaurantId: String,
         @Path("productId") productId: String
     ): Response<Product>
     
     // Order endpoints
-    @POST("order")
+    @POST("order/")
     suspend fun createOrder(
         @Body request: Map<String, String>
     ): Response<OrderCreationResponse>
     
-    @PUT("order/{orderId}")
+    @PUT("order/{orderId}/")
     suspend fun joinOrder(
         @Path("orderId") orderId: String
     ): Response<JoinOrderResponse>
     
-    @GET("order/{orderId}/{userId}")
+    @GET("order/{orderId}/{userId}/")
     suspend fun getUserOrder(
         @Path("orderId") orderId: String,
         @Path("userId") userId: String
     ): Response<List<OrderItem>>
     
-    @PUT("order/{orderId}/{userId}")
+    @PUT("order/{orderId}/{userId}/")
     suspend fun modifyOrderForUser(
         @Path("orderId") orderId: String,
         @Path("userId") userId: String,

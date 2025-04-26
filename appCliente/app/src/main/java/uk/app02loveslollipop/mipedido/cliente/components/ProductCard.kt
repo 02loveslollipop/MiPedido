@@ -1,6 +1,5 @@
 package uk.app02loveslollipop.mipedido.cliente.components
 
-import androidx.compose.foundation.clickable // Keep clickable if needed for detail view later
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -100,9 +99,9 @@ fun ProductCard(
                     if (quantityInCart == 0) {
                         // Add to Cart Button
                         Button(onClick = onAddToCart) {
-                            Icon(Icons.Default.Add, contentDescription = "Add to Cart")
+                            Icon(Icons.Default.Add, contentDescription = "Añadir al Carrito")
                             Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                            Text("Add")
+                            Text("Añadir")
                         }
                     } else {
                         // Quantity Controls
@@ -115,7 +114,7 @@ fun ProductCard(
                             ) {
                                 Icon(
                                     if (quantityInCart == 1) Icons.Default.Delete else Icons.Default.Close,
-                                    contentDescription = if (quantityInCart == 1) "Remove from Cart" else "Decrease Quantity"
+                                    contentDescription = if (quantityInCart == 1) "Quitar del carrito" else "Disminuir cantidad"
                                 )
                             }
 
@@ -132,7 +131,7 @@ fun ProductCard(
                                 modifier = Modifier.size(40.dp),
                                 contentPadding = PaddingValues(0.dp)
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = "Increase Quantity")
+                                Icon(Icons.Default.Add, contentDescription = "Aumentar cantidad")
                             }
                         }
                     }

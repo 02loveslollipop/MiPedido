@@ -26,7 +26,7 @@ fun QrCodeScreen(
     Scaffold(
         topBar = {
             NavBar(
-                title = "Share Order",
+                title = "Comparte el pedido",
                 onBackPressed = onNavigateBack
             )
         }
@@ -41,7 +41,7 @@ fun QrCodeScreen(
         ) {
             // Title
             Text(
-                text = "Collaborative Order",
+                text = "Orden grupal",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center
@@ -49,7 +49,7 @@ fun QrCodeScreen(
             
             // Description
             Text(
-                text = "Share this QR code with others to join your order",
+                text = "Comparte este código QR con otros para unirse a tu pedido",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center
             )
@@ -89,52 +89,36 @@ fun QrCodeScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // User ID Card
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Your User ID",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = userId,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = "Keep this ID to track your items in the order",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                    )
-                }
-            }
+            // // User ID Card
+            // Card(
+            //     colors = CardDefaults.cardColors(
+            //         containerColor = MaterialTheme.colorScheme.secondaryContainer
+            //     ),
+            //     modifier = Modifier
+            //         .fillMaxWidth()
+            //         .padding(horizontal = 24.dp)
+            // ) {
+            //     Column(
+            //         modifier = Modifier.padding(16.dp)
+            //     ) {
+            //         Text(
+            //             text = "Your User ID: $userId",
+            //             style = MaterialTheme.typography.titleMedium,
+            //             color = MaterialTheme.colorScheme.onSecondaryContainer
+            //         )
+            //     }
+            // }
             
-            Spacer(modifier = Modifier.weight(1f))
+            //Spacer(modifier = Modifier.weight(1f))
             
             // View Order Button
             Button(
-                onClick = { /* TODO: Navigate to order status screen */ },
+                onClick = { /* TODO: Navigate to order selection screen */ },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
             ) {
-                Text("View Order Status")
+                Text("Iniciar mi pedido")
             }
         }
     }

@@ -36,7 +36,7 @@ fun QrCodeGenerator(
         qrBitmap?.let {
             Image(
                 bitmap = it.asImageBitmap(),
-                contentDescription = "QR Code for Order ID: $content",
+                contentDescription = "Codigo QR del pedido con Order ID: $content",
                 modifier = Modifier.size(size.dp)
             )
         }

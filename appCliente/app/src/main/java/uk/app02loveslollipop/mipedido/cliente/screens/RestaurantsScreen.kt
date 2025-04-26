@@ -53,11 +53,11 @@ fun RestaurantsScreen(
                         restaurants = restaurantsList
                     },
                     onFailure = { throwable ->
-                        error = throwable.message ?: "Failed to load restaurants"
+                        error = throwable.message ?: "No se pudieron cargar los restaurantes"
                     }
                 )
             } catch (e: Exception) {
-                error = e.message ?: "Unknown error occurred"
+                error = e.message ?: "Error desconocido"
             } finally {
                 isLoading = false
             }
@@ -78,11 +78,11 @@ fun RestaurantsScreen(
                         onNavigateToQrScreen(restaurantId, response.orderId, response.userId)
                     },
                     onFailure = { throwable ->
-                        error = throwable.message ?: "Failed to create order"
+                        error = throwable.message ?: "No se pudo crear la orden"
                     }
                 )
             } catch (e: Exception) {
-                error = e.message ?: "Unknown error occurred"
+                error = e.message ?: "Error desconocido"
             } finally {
                 isLoading = false
             }
@@ -103,12 +103,12 @@ fun RestaurantsScreen(
     Scaffold(
         topBar = {
             NavBar(
-                title = "Restaurants",
+                title = "Mi Pedido - Restaurantes",
                 actions = {
                     IconButton(onClick = { loadRestaurants() }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh"
+                            contentDescription = "Recargar"
                         )
                     }
                 }
@@ -130,7 +130,7 @@ fun RestaurantsScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = error ?: "Unknown error",
+                        text = error ?: "Error desconocido",
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.error
@@ -139,12 +139,12 @@ fun RestaurantsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Button(onClick = { loadRestaurants() }) {
-                        Text("Retry")
+                        Text("Reintentar")
                     }
                 }
             } else if (restaurants.isEmpty() && !isLoading) {
                 Text(
-                    text = "No restaurants found",
+                    text = "No se encontraron restaurantes",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -185,9 +185,9 @@ fun RestaurantsScreen(
                         showOrderTypeDialog = false
                         selectedRestaurant = null
                     },
-                    title = { Text("Select Order Type") },
+                    title = { Text("Selecciona el tipo de pedido") },
                     text = { 
-                        Text("Do you want to create a normal order or a collaborative order?") 
+                        Text("¿Deseas hacer un pedido normal o grupal?")
                     },
                     confirmButton = {
                         Button(
@@ -198,7 +198,7 @@ fun RestaurantsScreen(
                                 }
                             }
                         ) {
-                            Text("Normal Order")
+                            Text("Orden Normal")
                         }
                     },
                     dismissButton = {
@@ -210,7 +210,7 @@ fun RestaurantsScreen(
                                 }
                             }
                         ) {
-                            Text("Collaborative Order")
+                            Text("Orden Grupal")
                         }
                     }
                 )

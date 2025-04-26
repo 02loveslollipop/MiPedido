@@ -79,11 +79,11 @@ fun ProductsScreen(
                         products = productsList
                     },
                     onFailure = { throwable ->
-                        error = throwable.message ?: "Failed to load products"
+                        error = throwable.message ?: "No se pudieron cargar los productos"
                     }
                 )
             } catch (e: Exception) {
-                error = e.message ?: "Unknown error occurred"
+                error = e.message ?: "Error desconocido"
             } finally {
                 isLoading = false
             }
@@ -104,7 +104,7 @@ fun ProductsScreen(
     Scaffold(
         topBar = {
             NavBar(
-                title = "Menu",
+                title = "Menú",
                 onBackPressed = onNavigateBack,
                 actions = {
                     // Shopping cart icon with badge
@@ -118,7 +118,7 @@ fun ProductsScreen(
                         IconButton(onClick = { /* TODO: Navigate to Cart Screen */ }) {
                             Icon(
                                 imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = "Shopping Cart"
+                                contentDescription = "Carrito de Compras"
                             )
                         }
                     }
@@ -141,7 +141,7 @@ fun ProductsScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = error ?: "Unknown error",
+                        text = error ?: "Error desconocido",
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.error
@@ -150,12 +150,12 @@ fun ProductsScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     
                     Button(onClick = { loadProducts() }) {
-                        Text("Retry")
+                        Text("Reintentar")
                     }
                 }
             } else if (products.isEmpty() && !isLoading) {
                 Text(
-                    text = "No products found",
+                    text = "No se encontraron productos",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
