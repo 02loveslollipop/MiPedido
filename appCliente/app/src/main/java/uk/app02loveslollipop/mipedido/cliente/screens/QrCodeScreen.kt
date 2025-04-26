@@ -21,7 +21,8 @@ fun QrCodeScreen(
     orderId: String,
     userId: String,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateToProducts: (restaurantId: String, orderId: String, userId: String) -> Unit = { _, _, _ -> }
 ) {
     Scaffold(
         topBar = {
@@ -113,7 +114,9 @@ fun QrCodeScreen(
             
             // View Order Button
             Button(
-                onClick = { /* TODO: Navigate to order selection screen */ },
+                onClick = { 
+                    onNavigateToProducts(restaurantId, orderId, userId)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)

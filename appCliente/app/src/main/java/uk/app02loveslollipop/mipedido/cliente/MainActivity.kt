@@ -87,7 +87,10 @@ fun MiPedidoApp() {
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToProducts = { resId, oId, uId ->
+                    navController.navigate("products/$resId/$oId/$uId")
+                }
             )
         }
     }
