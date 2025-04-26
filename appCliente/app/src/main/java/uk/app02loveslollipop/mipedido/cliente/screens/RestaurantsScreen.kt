@@ -6,19 +6,23 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import uk.app02loveslollipop.mipedido.cliente.api.ApiConnector
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.RestaurantCard
 import uk.app02loveslollipop.mipedido.cliente.models.Restaurant
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun RestaurantsScreen(
     onNavigateToProductsScreen: (restaurantId: String) -> Unit,
@@ -90,10 +94,16 @@ fun RestaurantsScreen(
         loadRestaurants()
     }
     
+    // Modern pull refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isLoading,
+        onRefresh = { loadRestaurants() }
+    )
+    
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Restaurants") },
+            NavBar(
+                title = "Restaurants",
                 actions = {
                     IconButton(onClick = { loadRestaurants() }) {
                         Icon(
@@ -109,10 +119,9 @@ fun RestaurantsScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .pullRefresh(pullRefreshState)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (error != null) {
+            if (error != null) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -133,7 +142,7 @@ fun RestaurantsScreen(
                         Text("Retry")
                     }
                 }
-            } else if (restaurants.isEmpty()) {
+            } else if (restaurants.isEmpty() && !isLoading) {
                 Text(
                     text = "No restaurants found",
                     style = MaterialTheme.typography.bodyLarge,
@@ -161,6 +170,13 @@ fun RestaurantsScreen(
                     }
                 }
             }
+            
+            // Pull Refresh Indicator - must be at the end of the Box
+            PullRefreshIndicator(
+                refreshing = isLoading,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
             
             // Order Type Dialog
             if (showOrderTypeDialog) {

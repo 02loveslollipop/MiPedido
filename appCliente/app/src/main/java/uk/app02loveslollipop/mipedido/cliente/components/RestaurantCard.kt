@@ -24,33 +24,47 @@ fun RestaurantCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .height(80.dp) // Make the card more compact
             .clickable { onClick() },
         colors = CardDefaults.cardColors(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column {
-            // Restaurant Image
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(restaurant.imageUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = restaurant.name,
+        // Horizontal layout with image on the left (30%) and text on the right (70%)
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Restaurant Image (30% of width)
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp)
-                    .clip(MaterialTheme.shapes.extraSmall),
-                contentScale = ContentScale.Crop,
-            )
+                    .fillMaxHeight()
+                    .weight(0.3f) // 30% of the width
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(restaurant.imageUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = restaurant.name,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(MaterialTheme.shapes.extraSmall),
+                    contentScale = ContentScale.Crop,
+                )
+            }
             
-            // Restaurant Name
-            Column(
-                modifier = Modifier.padding(16.dp)
+            // Restaurant Name (70% of width)
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .weight(0.7f) // 70% of the width
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterStart
             ) {
                 Text(
                     text = restaurant.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }

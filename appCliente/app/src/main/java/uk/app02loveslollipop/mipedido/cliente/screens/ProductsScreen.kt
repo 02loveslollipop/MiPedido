@@ -6,52 +6,53 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateMap // Import needed
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import uk.app02loveslollipop.mipedido.cliente.api.ApiConnector
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.ProductCard
 import uk.app02loveslollipop.mipedido.cliente.models.Product
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun ProductsScreen(
     restaurantId: String,
     onNavigateBack: () -> Unit,
-    // onProductSelected: (Product) -> Unit, // Removed - interaction via buttons now
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
     val apiConnector = ApiConnector.getInstance()
-
+    
     var isLoading by remember { mutableStateOf(false) }
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
-
-    // New: State to hold cart items (productId -> quantity)
+    
+    // Cart items (productId -> quantity)
     val cartItems = remember { mutableStateMapOf<String, Int>() }
-    val totalCartItems = remember { derivedStateOf { cartItems.values.sum() } } // Calculate total items
-
-    // --- Cart Handling Functions ---
+    val totalCartItems = remember { derivedStateOf { cartItems.values.sum() } }
+    
+    // Cart handling functions
     fun handleAddToCart(product: Product) {
         cartItems[product.id] = 1
         Log.d("ProductsScreen", "Added ${product.name}. Cart: $cartItems")
-        // TODO: Persist cart or send update to API if needed immediately
     }
-
+    
     fun handleIncreaseQuantity(product: Product) {
         cartItems.computeIfPresent(product.id) { _, currentQuantity -> currentQuantity + 1 }
         Log.d("ProductsScreen", "Increased ${product.name}. Cart: $cartItems")
-        // TODO: Persist cart or send update to API if needed immediately
     }
-
+    
     fun handleDecreaseQuantity(product: Product) {
         val currentQuantity = cartItems[product.id]
         if (currentQuantity != null) {
@@ -59,23 +60,18 @@ fun ProductsScreen(
                 cartItems[product.id] = currentQuantity - 1
                 Log.d("ProductsScreen", "Decreased ${product.name}. Cart: $cartItems")
             } else {
-                // Remove item if quantity becomes 0
                 cartItems.remove(product.id)
                 Log.d("ProductsScreen", "Removed ${product.name}. Cart: $cartItems")
             }
-            // TODO: Persist cart or send update to API if needed immediately
         }
     }
-    // --- End Cart Handling Functions ---
-
-
+    
     // Function to load products
     fun loadProducts() {
-        // ... existing loadProducts code ...
-         coroutineScope.launch {
+        coroutineScope.launch {
             isLoading = true
             error = null
-
+            
             try {
                 val result = apiConnector.getProductsByRestaurant(restaurantId)
                 result.fold(
@@ -93,27 +89,25 @@ fun ProductsScreen(
             }
         }
     }
-
+    
     // Load products on first composition
     LaunchedEffect(key1 = restaurantId) {
         loadProducts()
-        // TODO: Load existing cart items if persisted
     }
 
+    // Modern pull refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isLoading,
+        onRefresh = { loadProducts() }
+    )
+    
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Menu") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
+            NavBar(
+                title = "Menu",
+                onBackPressed = onNavigateBack,
                 actions = {
-                    // Cart icon with badge
+                    // Shopping cart icon with badge
                     BadgedBox(
                         badge = {
                             if (totalCartItems.value > 0) {
@@ -136,13 +130,10 @@ fun ProductsScreen(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .pullRefresh(pullRefreshState)
         ) {
-            if (isLoading) {
-                // ... existing loading indicator ...
-                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (error != null) {
-                // ... existing error display ...
-                 Column(
+            if (error != null) {
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp),
@@ -155,16 +146,15 @@ fun ProductsScreen(
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.error
                     )
-
+                    
                     Spacer(modifier = Modifier.height(16.dp))
-
+                    
                     Button(onClick = { loadProducts() }) {
                         Text("Retry")
                     }
                 }
-            } else if (products.isEmpty()) {
-                // ... existing empty state ...
-                 Text(
+            } else if (products.isEmpty() && !isLoading) {
+                Text(
                     text = "No products found",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
@@ -175,7 +165,7 @@ fun ProductsScreen(
                 )
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 300.dp), // Adjusted minSize for controls
+                    columns = GridCells.Adaptive(minSize = 300.dp),
                     contentPadding = PaddingValues(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -183,7 +173,7 @@ fun ProductsScreen(
                     items(products) { product ->
                         ProductCard(
                             product = product,
-                            quantityInCart = cartItems[product.id] ?: 0, // Pass current quantity
+                            quantityInCart = cartItems[product.id] ?: 0,
                             onAddToCart = { handleAddToCart(product) },
                             onIncrease = { handleIncreaseQuantity(product) },
                             onDecrease = { handleDecreaseQuantity(product) }
@@ -191,6 +181,14 @@ fun ProductsScreen(
                     }
                 }
             }
+            
+            // PullRefreshIndicator must be the last composable in the Box 
+            // so it shows up on top of the content
+            PullRefreshIndicator(
+                refreshing = isLoading,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }

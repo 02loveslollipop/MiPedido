@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.QrCodeGenerator
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,16 +25,9 @@ fun QrCodeScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Share Order") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                }
+            NavBar(
+                title = "Share Order",
+                onBackPressed = onNavigateBack
             )
         }
     ) { paddingValues ->
