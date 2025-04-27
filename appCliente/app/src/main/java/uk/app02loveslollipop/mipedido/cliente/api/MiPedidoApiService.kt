@@ -4,10 +4,7 @@ import retrofit2.Response
 import retrofit2.http.*
 import uk.app02loveslollipop.mipedido.cliente.models.*
 
-/**
- * Retrofit API interface for MiPedido API
- * Contains all non-authentication required endpoints
- */
+
 interface MiPedidoApiService {
     
     // Restaurant endpoints

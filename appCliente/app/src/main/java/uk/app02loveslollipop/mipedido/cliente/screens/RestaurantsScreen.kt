@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
@@ -27,6 +28,7 @@ import uk.app02loveslollipop.mipedido.cliente.models.Restaurant
 fun RestaurantsScreen(
     onNavigateToProductsScreen: (restaurantId: String, orderId: String, userId: String) -> Unit,
     onNavigateToQrScreen: (restaurantId: String, orderId: String, userId: String) -> Unit,
+    onNavigateToQrScanner: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -137,6 +139,22 @@ fun RestaurantsScreen(
                         )
                     }
                 }
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    onNavigateToQrScanner()
+                },
+                icon = { 
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Escanear código QR"
+                    )
+                },
+                text = { Text("Unirse a la orden") },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     ) { paddingValues ->

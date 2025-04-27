@@ -15,6 +15,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import uk.app02loveslollipop.mipedido.cliente.screens.ProductsScreen
 import uk.app02loveslollipop.mipedido.cliente.screens.QrCodeScreen
+import uk.app02loveslollipop.mipedido.cliente.screens.QrScannerScreen
 import uk.app02loveslollipop.mipedido.cliente.screens.RestaurantsScreen
 import uk.app02loveslollipop.mipedido.cliente.ui.theme.MiPedidoTheme
 
@@ -47,6 +48,9 @@ fun MiPedidoApp() {
                 },
                 onNavigateToQrScreen = { restaurantId, orderId, userId ->
                     navController.navigate("qr/$restaurantId/$orderId/$userId")
+                },
+                onNavigateToQrScanner = {
+                    navController.navigate("qr-scanner")
                 }
             )
         }
@@ -90,6 +94,18 @@ fun MiPedidoApp() {
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToProducts = { resId, oId, uId ->
                     navController.navigate("products/$resId/$oId/$uId")
+                }
+            )
+        }
+        
+        // QR Scanner Screen
+        composable("qr-scanner") {
+            QrScannerScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToProductsScreen = { restaurantId, orderId, userId ->
+                    // Pop the scanner screen and navigate to products screen
+                    navController.popBackStack()
+                    navController.navigate("products/$restaurantId/$orderId/$userId")
                 }
             )
         }

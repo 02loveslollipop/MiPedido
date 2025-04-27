@@ -8,12 +8,11 @@
     <!-- Optional: Recommended permission to check network status -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-    <!-- Optional: Add if you plan to implement QR code SCANNING later -->
-    <!-- <uses-permission android:name="android.permission.CAMERA" /> -->
-    <!-- If adding CAMERA permission, also consider adding camera features -->
-    <!-- <uses-feature android:name="android.hardware.camera" android:required="false" /> -->
-    <!-- <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" /> -->
-
+    <!-- Camera permission for QR code scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Camera features -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
         android:usesCleartextTraffic="true" 
