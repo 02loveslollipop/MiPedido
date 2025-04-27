@@ -33,7 +33,8 @@ class OrderFulfillRequest(BaseModel):
 class JoinOrderResponse(BaseModel):
     """Response model for joining an order"""
     user_id: str = Field(..., description="Unique identifier for the user who joined the order")
-    
+    restaurant_id: str = Field(..., description="Unique identifier for the restaurant of the order")
+
 class OrderStatusResponse(BaseModel):
     """Response model for order modification status"""
     status: str = Field(..., description="Status of the operation (Created, Updated, or Deleted)")

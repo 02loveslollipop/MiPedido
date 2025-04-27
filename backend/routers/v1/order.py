@@ -46,18 +46,18 @@ async def create_order(request: CreateOrderRequest):
 async def join_order(order_id: str):
     """
     Adds a user to an existing order.
-    Returns the user id for the specific order.
+    Returns the user id for the specific order and the restaurant id.
     If the order does not exist, it returns an error.
     """
     try:
-        user_id = await OrderRepository.join_order(order_id)
-        if not user_id:
+        result = await OrderRepository.join_order(order_id)
+        if not result:
             raise HTTPException(
                 status_code=404,
                 detail="Order not found"
             )
         
-        return JoinOrderResponse(user_id=user_id)
+        return JoinOrderResponse(user_id=result["user_id"], restaurant_id=result["restaurant_id"])
     except HTTPException:
         raise
     except Exception as e:

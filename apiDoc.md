@@ -115,7 +115,7 @@
 
 **Content-Type**: `application/json`
 
-***Description**: Adds a user to an existing order. Returns the user id (for the specific order). If the order does not exist, it returns an error.
+***Description**: Adds a user to an existing order. Returns the user id (for the specific order) and the restaurant id. If the order does not exist, it returns an error.
 
 #### Input: Path variable
 ```json
@@ -132,7 +132,8 @@
 
 ```json
 {
-    "user_id": String
+    "user_id": String,
+    "restaurant_id": String
 }
 ```
 

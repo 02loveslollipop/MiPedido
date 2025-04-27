@@ -41,9 +41,9 @@ class OrderRepository:
             raise e
     
     @classmethod
-    async def join_order(cls, order_id: str) -> Optional[str]:
+    async def join_order(cls, order_id: str) -> Optional[Dict[str, str]]:
         """
-        Adds a user to an existing order. Returns the user id.
+        Adds a user to an existing order. Returns the user id and restaurant id.
         """
         try:
             # Verify order exists and handle possible invalid ObjectId
@@ -70,7 +70,7 @@ class OrderRepository:
             if update_result.modified_count == 0:
                 return None
                 
-            return new_user_id
+            return {"user_id": new_user_id, "restaurant_id": order["restaurant_id"]}
         except Exception as e:
             raise e
     
