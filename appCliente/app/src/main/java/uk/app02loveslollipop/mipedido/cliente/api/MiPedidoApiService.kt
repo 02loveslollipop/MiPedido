@@ -29,7 +29,7 @@ interface MiPedidoApiService {
         @Body request: Map<String, String>
     ): Response<OrderCreationResponse>
     
-    @PUT("order/{orderId}/")
+    @PUT("order/{orderId}")
     suspend fun joinOrder(
         @Path("orderId") orderId: String
     ): Response<JoinOrderResponse>

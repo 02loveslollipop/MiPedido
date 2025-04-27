@@ -13,6 +13,8 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -21,6 +23,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
@@ -83,8 +87,14 @@ fun QrScannerScreen(
     // Barcode scanner
     val scanner = remember { BarcodeScanning.getClient(options) }
 
+    // Store theme colors as regular Color values to use in drawWithContent
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val errorColor = MaterialTheme.colorScheme.error
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
     // Function to handle errors and show appropriate messages
-    // Move this function definition before processQrCode
     fun handleError(throwable: Throwable) {
         val errorCode = when (throwable) {
             is Exception -> {
@@ -128,16 +138,20 @@ fun QrScannerScreen(
                 val result = apiConnector.joinOrder(qrContent)
                 result.fold(
                     onSuccess = { response ->
-                        // Success - we need to get the restaurant ID from the order
-                        // In a real implementation, you may need to fetch the restaurant ID
-                        // For now, we'll use a placeholder that you can replace later
-
-                        // Navigate to products screen with order ID and user ID
-                        onNavigateToProductsScreen(
-                            "restaurant_id_placeholder", // Replace with actual restaurant ID in your implementation
-                            qrContent, // orderId
-                            response.userId // userId from join response
-                        )
+                        // Add null safety checks and logging
+                        if (response.restaurantId.isNullOrEmpty()) {
+                            Log.e("QrScannerScreen", "Error: Received empty restaurant ID from server")
+                            errorMessage = "Error: No se recibió ID de restaurante válido"
+                            showErrorDialog = true
+                        } else {
+                            Log.d("QrScannerScreen", "Success joining order: restaurantId=${response.restaurantId}, userId=${response.userId}")
+                            // Navigate to products screen with order ID and user ID
+                            onNavigateToProductsScreen(
+                                response.restaurantId,
+                                qrContent, // orderId
+                                response.userId // userId from join response
+                            )
+                        }
                     },
                     onFailure = { throwable ->
                         handleError(throwable)
@@ -152,8 +166,6 @@ fun QrScannerScreen(
             }
         }
     }
-
-
     
     // Camera permission check
     LaunchedEffect(Unit) {
@@ -256,6 +268,7 @@ fun QrScannerScreen(
                                     )
                                 }
                             
+
                             try {
                                 cameraProvider.unbindAll()
                                 cameraProvider.bindToLifecycle(
@@ -274,6 +287,23 @@ fun QrScannerScreen(
                     modifier = Modifier.fillMaxSize()
                 )
                 
+                // QR code scanning guide box
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Scanning frame to guide users where to position the QR code
+                    Box(
+                        modifier = Modifier
+                            .size(250.dp)
+                            .border(
+                                width = 2.dp,
+                                color = primaryColor,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                    )
+                }
+                
                 // Scanning indicator
                 if (isLoading) {
                     Box(
@@ -285,7 +315,7 @@ fun QrScannerScreen(
                         Card(
                             modifier = Modifier.padding(16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
+                                containerColor = surfaceColor
                             )
                         ) {
                             Column(
@@ -299,25 +329,37 @@ fun QrScannerScreen(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 CircularProgressIndicator(
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = primaryColor
                                 )
                             }
                         }
                     }
                 } else {
-                    // Guidance overlay for the user
+                    // Guidance text moved to the bottom of the screen
                     Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.BottomCenter
                     ) {
-                        Text(
-                            text = "Escanea un código QR para unirte a una orden",
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodyLarge,
+                        Card(
                             modifier = Modifier
-                                .padding(32.dp)
-                                .align(Alignment.TopCenter)
-                        )
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = surfaceVariantColor.copy(alpha = 0.9f)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "Coloca el código QR dentro del recuadro",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = onSurfaceVariantColor
+                                )
+                            }
+                        }
                     }
                 }
             } else {
@@ -332,7 +374,7 @@ fun QrScannerScreen(
                     Icon(
                         imageVector = Icons.Default.Info,
                         contentDescription = "Info",
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = errorColor,
                         modifier = Modifier.size(48.dp)
                     )
                     
