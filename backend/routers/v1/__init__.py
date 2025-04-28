@@ -10,6 +10,7 @@ from .product import router as product_router
 from .order import router as order_router 
 from .user import router as user_router
 from .review import router as review_router
+from .shortener import router as shortener_router
 
 # Include all routers
 api_router.include_router(restaurant_router)
@@ -17,3 +18,4 @@ api_router.include_router(product_router)
 api_router.include_router(order_router)
 api_router.include_router(user_router)
 api_router.include_router(review_router)
+api_router.include_router(shortener_router)
