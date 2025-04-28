@@ -45,20 +45,27 @@ fun ProductsScreen(
     val cartItems = remember { mutableStateMapOf<String, Int>() }
     val totalCartItems = remember { derivedStateOf { cartItems.values.sum() } }
     
+    // State for the currently selected product for personalization
+    var selectedProduct by remember { mutableStateOf<Product?>(null) }
+    
     // Function to modify order in the API
-    fun modifyOrderInAPI(product: Product, quantity: Int) {
+    fun modifyOrderInAPI(product: Product, quantity: Int, ingredients: List<String>) {
         coroutineScope.launch {
             try {
-                // Create request with empty ingredients list (can be enhanced to include selected ingredients)
                 val modificationRequest = OrderModificationRequest(
                     productId = product.id,
                     quantity = quantity,
-                    ingredients = emptyList() // Default to empty ingredients list
+                    ingredients = ingredients
                 )
                 
                 val result = apiConnector.modifyOrderForUser(orderId, userId, modificationRequest)
                 result.fold(
                     onSuccess = { _ ->
+                        if (quantity > 0) {
+                            cartItems[product.id] = quantity
+                        } else {
+                            cartItems.remove(product.id)
+                        }
                         Log.d("ProductsScreen", "Successfully modified order for product ${product.name}, quantity: $quantity")
                     },
                     onFailure = { throwable ->
@@ -70,35 +77,6 @@ fun ProductsScreen(
                 Log.e("ProductsScreen", "Exception modifying order: ${e.message}")
                 error = e.message ?: "Error desconocido al modificar el pedido"
             }
-        }
-    }
-    
-    // Cart handling functions
-    fun handleAddToCart(product: Product) {
-        cartItems[product.id] = 1
-        modifyOrderInAPI(product, 1)
-        Log.d("ProductsScreen", "Added ${product.name}. Cart: $cartItems")
-    }
-    
-    fun handleIncreaseQuantity(product: Product) {
-        val newQuantity = (cartItems[product.id] ?: 0) + 1
-        cartItems[product.id] = newQuantity
-        modifyOrderInAPI(product, newQuantity)
-        Log.d("ProductsScreen", "Increased ${product.name}. Cart: $cartItems")
-    }
-    
-    fun handleDecreaseQuantity(product: Product) {
-        val currentQuantity = cartItems[product.id] ?: 0
-        if (currentQuantity > 1) {
-            val newQuantity = currentQuantity - 1
-            cartItems[product.id] = newQuantity
-            modifyOrderInAPI(product, newQuantity)
-            Log.d("ProductsScreen", "Decreased ${product.name}. Cart: $cartItems")
-        } else {
-            cartItems.remove(product.id)
-            // Send 0 quantity to remove the product from the order
-            modifyOrderInAPI(product, 0)
-            Log.d("ProductsScreen", "Removed ${product.name}. Cart: $cartItems")
         }
     }
     
@@ -126,105 +104,178 @@ fun ProductsScreen(
         }
     }
     
-    // Load products on first composition
+    // Function to load current cart items
+    fun loadCartItems() {
+        coroutineScope.launch {
+            try {
+                val result = apiConnector.getUserOrder(orderId, userId)
+                result.fold(
+                    onSuccess = { orderItems ->
+                        // Reset and refill cart items
+                        cartItems.clear()
+                        orderItems.forEach { item ->
+                            cartItems[item.id] = item.quantity
+                        }
+                        Log.d("ProductsScreen", "Successfully loaded ${orderItems.size} items in cart")
+                    },
+                    onFailure = { throwable ->
+                        Log.e("ProductsScreen", "Error loading cart items: ${throwable.message}")
+                        // Don't show error to user as this might be an empty cart
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("ProductsScreen", "Exception loading cart items: ${e.message}")
+            }
+        }
+    }
+    
+    // Load products and cart items on first composition
     LaunchedEffect(key1 = restaurantId) {
         loadProducts()
+        loadCartItems()
     }
 
-    // Modern pull refresh state
+    // Pull refresh state
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isLoading,
-        onRefresh = { loadProducts() }
+        onRefresh = { 
+            loadProducts()
+            loadCartItems()
+        }
     )
     
-    Scaffold(
-        topBar = {
-            NavBar(
-                title = "Menú",
-                onBackPressed = onNavigateBack,
-                actions = {
-                    // Shopping cart icon with badge
-                    BadgedBox(
-                        badge = {
-                            if (totalCartItems.value > 0) {
-                                Badge { Text("${totalCartItems.value}") }
+    if (selectedProduct != null) {
+        PersonalizeProductScreen(
+            product = selectedProduct!!,
+            quantity = cartItems[selectedProduct!!.id] ?: 0,
+            onQuantityChange = { newQuantity -> 
+                if (newQuantity == 0) {
+                    cartItems.remove(selectedProduct!!.id)
+                } else {
+                    cartItems[selectedProduct!!.id] = newQuantity
+                }
+            },
+            onConfirm = { selectedIngredients ->
+                modifyOrderInAPI(
+                    selectedProduct!!, 
+                    cartItems[selectedProduct!!.id] ?: 0,
+                    selectedIngredients
+                )
+                selectedProduct = null
+            },
+            onNavigateBack = { selectedProduct = null }
+        )
+    } else {
+        Scaffold(
+            topBar = {
+                NavBar(
+                    title = "Menú",
+                    onBackPressed = onNavigateBack,
+                    actions = {
+                        BadgedBox(
+                            badge = {
+                                if (totalCartItems.value > 0) {
+                                    Badge { Text("${totalCartItems.value}") }
+                                }
+                            }
+                        ) {
+                            IconButton(onClick = { /* TODO: Navigate to Cart Screen */ }) {
+                                Icon(
+                                    imageVector = Icons.Default.ShoppingCart,
+                                    contentDescription = "Carrito de Compras"
+                                )
                             }
                         }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .pullRefresh(pullRefreshState)
+            ) {
+                if (error != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        IconButton(onClick = { /* TODO: Navigate to Cart Screen */ }) {
-                            Icon(
-                                imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = "Carrito de Compras"
+                        Text(
+                            text = error ?: "Error desconocido",
+                            style = MaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Button(onClick = { loadProducts() }) {
+                            Text("Reintentar")
+                        }
+                    }
+                } else if (products.isEmpty() && !isLoading) {
+                    Text(
+                        text = "No se encontraron productos",
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .align(Alignment.Center)
+                    )
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 300.dp),
+                        contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(products) { product ->
+                            val quantity = cartItems[product.id] ?: 0
+                            
+                            ProductCard(
+                                product = product,
+                                onClick = { selectedProduct = product },
+                                cartQuantity = quantity,
+                                onIncreaseQuantity = {
+                                    if (quantity > 0) {
+                                        // If already in cart, just increase the quantity with existing ingredients
+                                        modifyOrderInAPI(
+                                            product = product,
+                                            quantity = quantity + 1,
+                                            ingredients = product.ingredients
+                                        )
+                                    } else {
+                                        // If not in cart, go to personalize screen
+                                        selectedProduct = product
+                                    }
+                                },
+                                onDecreaseQuantity = {
+                                    if (quantity > 0) {
+                                        // If quantity would go to 0, remove from cart
+                                        // Otherwise reduce quantity
+                                        modifyOrderInAPI(
+                                            product = product,
+                                            quantity = quantity - 1,
+                                            ingredients = product.ingredients
+                                        )
+                                    }
+                                }
                             )
                         }
                     }
                 }
-            )
-        }
-    ) { paddingValues ->
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .pullRefresh(pullRefreshState)
-        ) {
-            if (error != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = error ?: "Error desconocido",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Button(onClick = { loadProducts() }) {
-                        Text("Reintentar")
-                    }
-                }
-            } else if (products.isEmpty() && !isLoading) {
-                Text(
-                    text = "No se encontraron productos",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .align(Alignment.Center)
+                
+                PullRefreshIndicator(
+                    refreshing = isLoading,
+                    state = pullRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter)
                 )
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 300.dp),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(products) { product ->
-                        ProductCard(
-                            product = product,
-                            quantityInCart = cartItems[product.id] ?: 0,
-                            onAddToCart = { handleAddToCart(product) },
-                            onIncrease = { handleIncreaseQuantity(product) },
-                            onDecrease = { handleDecreaseQuantity(product) }
-                        )
-                    }
-                }
             }
-            
-            // PullRefreshIndicator must be the last composable in the Box 
-            // so it shows up on top of the content
-            PullRefreshIndicator(
-                refreshing = isLoading,
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
         }
     }
 }
