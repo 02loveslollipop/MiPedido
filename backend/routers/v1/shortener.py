@@ -16,7 +16,7 @@ router = APIRouter(
 
 
 
-@router.get("/{short_code}", response_model=ShortCodeResponse)
+@router.get("/{short_code}", response_model=None)
 async def decode_short_code(short_code: str):
     """
     Decode a base36 shortened code back to a MongoDB ObjectID.
