@@ -1049,4 +1049,72 @@ Authorization: Bearer {access_token}
 }
 ```
 
+## Review
+
+### Create Review
+
+**URL**: `/v1/review/`
+
+**Method**: `POST`
+
+**Auth required**: `No`
+
+**Content-Type**: `application/json`
+
+**Description**: Create an anonymous review for a restaurant. The review starts with "pending" status and will be processed by a background job to update the restaurant's rating. Rating must be between 1 and 5 stars.
+
+#### Input: JSON
+```json
+{
+    "restaurant_id": String,
+    "rating": Number  // 1-5
+}
+```
+
+#### Output:
+
+- Review created.
+
+**HTTP** 201: Created
+
+```json
+{
+    "id": String,
+    "restaurant_id": String,
+    "rating": Number,
+    "status": "pending",
+    "created_at": String  // ISO DateTime
+}
+```
+
+- Invalid rating.
+
+**HTTP** 400: Bad Request
+
+```json
+{
+    "detail": "Rating must be between 1 and 5"
+}
+```
+
+- Restaurant not found.
+
+**HTTP** 404: Not Found
+
+```json
+{
+    "detail": "Restaurant not found"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+    "detail": String
+}
+```
+
 
