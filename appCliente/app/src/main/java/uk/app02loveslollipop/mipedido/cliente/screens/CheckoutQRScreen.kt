@@ -75,7 +75,7 @@ fun CheckoutQRScreen(
                 ) {
                     // QR Code generator
                     QrCodeGenerator(
-                        content = "$orderId|$userId",
+                        content = orderId,
                         size = 250,
                         padding = 12,
                         modifier = Modifier.padding(bottom = 16.dp)
