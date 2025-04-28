@@ -21,7 +21,6 @@ func ConnectDatabase() (*mongo.Database, error) {
 
 	if err != nil {
 		log.Printf("Error loading .env file, if you are running in production, you can ignore this error: %v", err)
-		return nil, err
 	}
 
 	// Get MongoDB connection string from environment variable or use default
