@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, Literal, Annotated
 from datetime import datetime
 from bson import ObjectId
 
@@ -15,8 +15,8 @@ class PyObjectId(ObjectId):
         return ObjectId(v)
 
     @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+    def __get_pydantic_json_schema__(cls, core_schema, handler):
+        return {"type": "string"}
 
 class Review(BaseModel):
     """
@@ -28,11 +28,11 @@ class Review(BaseModel):
     status: Literal["pending", "processed"] = Field(default="pending")
     created_at: datetime = Field(default_factory=datetime.now)
     
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-        schema_extra = {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str},
+        json_schema_extra={
             "example": {
                 "restaurant_id": "60d4b3e7c9e9f3f5c8a1b2c3",
                 "rating": 4,
@@ -40,3 +40,4 @@ class Review(BaseModel):
                 "created_at": "2023-01-01T12:00:00.000Z"
             }
         }
+    )
