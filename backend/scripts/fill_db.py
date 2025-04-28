@@ -124,6 +124,7 @@ def seed_database():
     db.products.delete_many({})
     db.orders.delete_many({})
     db.users.delete_many({})
+    db.reviews.delete_many({})  # Clear existing reviews
     
     print("Creating restaurants...")
     restaurant_ids = create_restaurants(db)
@@ -148,6 +149,9 @@ def seed_database():
     
     print("Creating sample orders for Burger Heaven...")
     create_orders_for_burger_heaven(db, burger_heaven_id, product_ids_by_restaurant.get(burger_heaven_id, []))
+    
+    print("Creating anonymous reviews for restaurants...")
+    create_reviews(db, restaurant_ids)
     
     print("Database seeded successfully!")
     return client
@@ -214,7 +218,8 @@ def create_restaurants(db):
             "rating": round(random.uniform(3.0, 5.0), 1),  # Random rating between 3.0 and 5.0
             "type": RESTAURANT_TYPES.get(restaurant_name, "Other"),
             "description": RESTAURANT_DESCRIPTIONS.get(restaurant_name, f"Delicious food at {restaurant_name}"),
-            "position": RESTAURANT_POSITIONS.get(restaurant_name, {"lat": 40.7128, "lng": -74.0060})  # Default to NYC coords
+            "position": RESTAURANT_POSITIONS.get(restaurant_name, {"lat": 40.7128, "lng": -74.0060}),  # Default to NYC coords
+            "_review_count": 0  # Initialize review count to 0
         }
         
         result = db.restaurants.insert_one(restaurant)
@@ -333,6 +338,38 @@ def create_orders_for_burger_heaven(db, burger_heaven_id, burger_heaven_products
         
         result = db.orders.insert_one(order)
         print(f"Created order {i+1}/5 for Burger Heaven with {user_count} users (Order ID: {result.inserted_id})")
+
+def create_reviews(db, restaurant_ids):
+    """Create anonymous reviews for restaurants in the reviews collection"""
+    review_count = 0
+    
+    for restaurant_id in restaurant_ids:
+        # Get restaurant info
+        restaurant = db.restaurants.find_one({"_id": ObjectId(restaurant_id)})
+        restaurant_name = restaurant['name']
+        
+        # Generate 3-10 reviews per restaurant
+        num_reviews = random.randint(3, 10)
+        
+        for _ in range(num_reviews):
+            # Generate random rating between 1 and 5 (whole numbers only)
+            rating = random.randint(1, 5)
+                
+            # Create review (anonymous - only restaurant_id, rating, and status)
+            review = {
+                "restaurant_id": restaurant_id,
+                "rating": rating,
+                "status": "pending",  # All new reviews start as pending
+                "created_at": datetime.now()
+            }
+            
+            # Insert into reviews collection
+            result = db.reviews.insert_one(review)
+            review_count += 1
+            
+            print(f"Created pending review for {restaurant_name}: {rating} stars (ID: {result.inserted_id})")
+    
+    print(f"Total pending reviews created: {review_count}")
 
 def main():
     print(f"Connecting to MongoDB at {MONGODB_URL}")
