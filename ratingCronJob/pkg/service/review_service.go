@@ -34,6 +34,7 @@ func (s *ReviewService) ProcessPendingReviews(ctx context.Context) error {
 		},
 	}
 
+	// Group by restaurant_id and calculate average rating and review count
 	groupStage := bson.M{
 		"$group": bson.M{
 			"_id": "$restaurant_id",
@@ -122,7 +123,7 @@ func (s *ReviewService) ProcessPendingReviews(ctx context.Context) error {
 		)
 		if err != nil {
 			log.Printf("Error marking reviews as processed for restaurant %s: %v", result.RestaurantID, err)
-			continue
+			continue //Continue to the next restaurant even if this fails
 		}
 
 		log.Printf("Processed %d reviews for restaurant %s. New rating: %.1f",
