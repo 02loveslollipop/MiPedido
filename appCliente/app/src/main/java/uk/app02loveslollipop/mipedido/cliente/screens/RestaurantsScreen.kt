@@ -198,15 +198,7 @@ fun RestaurantsScreen(
     Scaffold(
         topBar = {
             NavBar(
-                title = "Mi Pedido - Restaurantes",
-                actions = {
-                    IconButton(onClick = { loadRestaurants() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Recargar"
-                        )
-                    }
-                }
+                title = "Mi Pedido - Restaurantes"
             )
         },
         floatingActionButton = {
