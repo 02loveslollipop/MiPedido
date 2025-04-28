@@ -17,3 +17,5 @@ from .restaurant import RestaurantBase, RestaurantInDB, Restaurant, RestaurantCr
 from .product import ProductBase, ProductInDB, Product, ProductCreate
 
 from .user import UserBase, UserAuth, UserInDB, User, Token
+
+from .review import Review
