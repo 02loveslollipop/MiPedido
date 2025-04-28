@@ -1,8 +1,10 @@
+import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../api/api_connector.dart';
+import '../api/base_36_utils.dart'; // Import Base36Utils
 import 'order_details_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
@@ -21,17 +23,27 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   bool isLoading = false;
   final ApiConnector _apiConnector = ApiConnector();
 
+  // Text controller for desktop platforms
+  final TextEditingController _base36Controller = TextEditingController();
+
+  // Check if running on desktop platform (Windows, macOS, Linux)
+  bool get isDesktop =>
+      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _requestCameraPermission();
+    if (!isDesktop) {
+      _requestCameraPermission();
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     controller?.dispose();
+    _base36Controller.dispose();
     super.dispose();
   }
 
@@ -186,6 +198,33 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     }
   }
 
+  // Process Base36 input from desktop platforms
+  void _processBase36Input() {
+    final base36Input = _base36Controller.text.trim();
+    if (base36Input.isEmpty) {
+      _showInvalidQRCodeMessage('Por favor, ingrese un código Base36 válido');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      // Convert Base36 to MongoDB ObjectId hex format if needed
+      final String orderId = Base36Utils.decodeToHex(base36Input);
+      log('Decoded Base36 to hex: $orderId', name: 'QRScannerScreen');
+      _processQrCode(orderId);
+    } catch (e) {
+      _showInvalidQRCodeMessage(
+        'Formato de código Base36 inválido: ${e.toString()}',
+      );
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
   void _showOrderAlreadyFulfilledDialog(String orderId) {
     if (!mounted) return;
 
@@ -246,81 +285,145 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear Código QR del Pedido'),
+        title: Text(
+          isDesktop
+              ? 'Ingresar Código del Pedido'
+              : 'Escanear Código QR del Pedido',
+        ),
         actions: [
-          // Button to toggle flash
-          IconButton(
-            icon: const Icon(Icons.flash_on),
-            onPressed:
-                hasPermission
-                    ? () async {
-                      await controller?.toggleFlash();
-                      if (mounted) setState(() {});
-                    }
-                    : null,
-          ),
-          // Button to flip camera
-          IconButton(
-            icon: const Icon(Icons.flip_camera_ios),
-            onPressed:
-                hasPermission
-                    ? () async {
-                      await controller?.flipCamera();
-                      if (mounted) setState(() {});
-                    }
-                    : null,
-          ),
+          // Show camera controls only on mobile platforms
+          if (!isDesktop) ...[
+            // Button to toggle flash
+            IconButton(
+              icon: const Icon(Icons.flash_on),
+              onPressed:
+                  hasPermission
+                      ? () async {
+                        await controller?.toggleFlash();
+                        if (mounted) setState(() {});
+                      }
+                      : null,
+            ),
+            // Button to flip camera
+            IconButton(
+              icon: const Icon(Icons.flip_camera_ios),
+              onPressed:
+                  hasPermission
+                      ? () async {
+                        await controller?.flipCamera();
+                        if (mounted) setState(() {});
+                      }
+                      : null,
+            ),
+          ],
         ],
       ),
       body: Stack(
         children: [
-          // Show QR scanner only if we have camera permission
-          if (hasPermission)
-            QRView(
-              key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
-              overlay: QrScannerOverlayShape(
-                borderColor: Theme.of(context).primaryColor,
-                borderRadius: 10,
-                borderLength: 30,
-                borderWidth: 10,
-                cutOutSize: MediaQuery.of(context).size.width * 0.8,
+          // Show QR scanner on mobile platforms
+          if (!isDesktop) ...[
+            if (hasPermission)
+              QRView(
+                key: qrKey,
+                onQRViewCreated: _onQRViewCreated,
+                overlay: QrScannerOverlayShape(
+                  borderColor: Theme.of(context).primaryColor,
+                  borderRadius: 10,
+                  borderLength: 30,
+                  borderWidth: 10,
+                  cutOutSize: MediaQuery.of(context).size.width * 0.8,
+                ),
+                formatsAllowed: const [BarcodeFormat.qrcode],
+              )
+            else
+              const Center(
+                child: Text(
+                  'Permiso de cámara no concedido',
+                  style: TextStyle(fontSize: 18),
+                ),
               ),
-              // Add formatting options to increase scanning reliability
-              formatsAllowed: const [BarcodeFormat.qrcode],
-            )
+          ]
+          // Show Base36 input on desktop platforms
           else
-            const Center(
-              child: Text(
-                'Permiso de cámara no concedido',
-                style: TextStyle(fontSize: 18),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Ingrese el código Base36 del pedido',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _base36Controller,
+                    decoration: InputDecoration(
+                      labelText: 'Código del Pedido',
+                      hintText: 'Ejemplo: ABC123',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      prefixIcon: const Icon(Icons.qr_code),
+                    ),
+                    textCapitalization: TextCapitalization.characters,
+                    autofocus: true,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                    onSubmitted: (_) => _processBase36Input(),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text(
+                      'Procesar Pedido',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                    ),
+                    onPressed: _processBase36Input,
+                  ),
+                  const SizedBox(height: 40),
+                  const Text(
+                    'Ingrese el código Base36 que se muestra en la aplicación del cliente.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
               ),
             ),
 
-          // Loading indicator
+          // Loading indicator (for both platforms)
           if (isLoading)
             Container(
               color: Colors.black54,
               child: const Center(child: CircularProgressIndicator()),
             ),
 
-          // Scan instructions
-          Positioned(
-            bottom: 20,
-            left: 0,
-            right: 0,
-            child: Container(
-              alignment: Alignment.center,
-              child: const Text(
-                'Alinea el código QR dentro del marco para escanear',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+          // Scan instructions (mobile only)
+          if (!isDesktop)
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: Container(
+                alignment: Alignment.center,
+                child: const Text(
+                  'Alinea el código QR dentro del marco para escanear',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
