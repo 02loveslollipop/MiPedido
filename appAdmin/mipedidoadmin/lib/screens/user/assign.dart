@@ -17,7 +17,7 @@ class _AssignUserScreenState extends State<AssignUserScreen> {
   @override
   Widget build(BuildContext context) {
     return ScaffoldPage(
-      header: const PageHeader(title: Text('Asignar Roles')),
+      header: const PageHeader(title: Text('Asignar Restaurante')),
       content: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
