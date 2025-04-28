@@ -20,6 +20,48 @@ RESTAURANT_NAMES = [
     "Mediterranean Magic", "Veggie Delights", "Steak House", "Seafood Sensation", "Breakfast Club"
 ]
 
+# Restaurant types associated with names
+RESTAURANT_TYPES = {
+    "Burger Heaven": "Fast Food",
+    "Pizza Palace": "Italian",
+    "Taco Time": "Mexican",
+    "Sushi Supreme": "Japanese",
+    "Pasta Paradise": "Italian", 
+    "Mediterranean Magic": "Mediterranean",
+    "Veggie Delights": "Vegetarian",
+    "Steak House": "American",
+    "Seafood Sensation": "Seafood",
+    "Breakfast Club": "Breakfast"
+}
+
+# Restaurant descriptions
+RESTAURANT_DESCRIPTIONS = {
+    "Burger Heaven": "The best burgers in town with a variety of options for all tastes.",
+    "Pizza Palace": "Authentic Italian pizzas with fresh ingredients and crispy crust.",
+    "Taco Time": "Authentic Mexican tacos with homemade salsas and fresh toppings.",
+    "Sushi Supreme": "Fresh sushi and sashimi prepared by experienced Japanese chefs.",
+    "Pasta Paradise": "Homemade pasta dishes with authentic Italian sauces.",
+    "Mediterranean Magic": "Delicious Mediterranean cuisine with fresh ingredients.",
+    "Veggie Delights": "Healthy vegetarian and vegan options for conscious eaters.",
+    "Steak House": "Premium quality steaks cooked to perfection.",
+    "Seafood Sensation": "Fresh seafood delivered daily from local fishermen.",
+    "Breakfast Club": "Start your day with our delicious breakfast options."
+}
+
+# Sample positions for restaurants (latitude, longitude)
+RESTAURANT_POSITIONS = {
+    "Burger Heaven": {"lat": 40.7128, "lng": -74.0060},
+    "Pizza Palace": {"lat": 40.7282, "lng": -73.9942},
+    "Taco Time": {"lat": 40.7489, "lng": -73.9680},
+    "Sushi Supreme": {"lat": 40.7831, "lng": -73.9712},
+    "Pasta Paradise": {"lat": 40.7214, "lng": -74.0052},
+    "Mediterranean Magic": {"lat": 40.7551, "lng": -73.9815},
+    "Veggie Delights": {"lat": 40.7437, "lng": -73.9873},
+    "Steak House": {"lat": 40.7589, "lng": -73.9851},
+    "Seafood Sensation": {"lat": 40.7061, "lng": -74.0119},
+    "Breakfast Club": {"lat": 40.7411, "lng": -74.0079}
+}
+
 FOOD_IMAGES = [
     "https://images.unsplash.com/photo-1571091718767-18b5b1457add",
     "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38",
@@ -86,27 +128,44 @@ def seed_database():
     print("Creating restaurants...")
     restaurant_ids = create_restaurants(db)
     
+    # Find the ID of "Burger Heaven" for special handling
+    burger_heaven_id = None
+    for restaurant_id in restaurant_ids:
+        restaurant = db.restaurants.find_one({"_id": ObjectId(restaurant_id)})
+        if restaurant and restaurant["name"] == "Burger Heaven":
+            burger_heaven_id = str(restaurant_id)
+            break
+    
+    if not burger_heaven_id:
+        print("ERROR: Burger Heaven restaurant not found!")
+        return client
+    
     print("Creating users...")
-    create_users(db, restaurant_ids)
+    create_users(db, restaurant_ids, burger_heaven_id)
     
     print("Creating products for each restaurant...")
-    create_products(db, restaurant_ids)
+    product_ids_by_restaurant = create_products(db, restaurant_ids)
     
-    print("Creating sample orders...")
-    create_orders(db, restaurant_ids)
+    print("Creating sample orders for Burger Heaven...")
+    create_orders_for_burger_heaven(db, burger_heaven_id, product_ids_by_restaurant.get(burger_heaven_id, []))
     
     print("Database seeded successfully!")
     return client
 
-def create_users(db, restaurant_ids):
+def create_users(db, restaurant_ids, burger_heaven_id):
     """Create test users with restaurant controls"""
     user_ids = []
     
-    # Assign random restaurants to admin users
-    admin_restaurant_assignments = {}
-    for restaurant_id in restaurant_ids:
-        # Randomly assign each restaurant to admin or manager
-        admin_user = random.choice([user for user in TEST_USERS if user["is_admin"]])
+    # Assign Burger Heaven to the main admin user
+    admin_restaurant_assignments = {
+        "admin": [burger_heaven_id]
+    }
+    
+    # Assign random restaurants to other admin users
+    other_restaurants = [rid for rid in restaurant_ids if rid != burger_heaven_id]
+    for restaurant_id in other_restaurants:
+        # Randomly assign each restaurant to admin or manager (but not the main admin)
+        admin_user = random.choice([user for user in TEST_USERS if user["is_admin"] and user["username"] != "admin"])
         if admin_user["username"] not in admin_restaurant_assignments:
             admin_restaurant_assignments[admin_user["username"]] = []
         admin_restaurant_assignments[admin_user["username"]].append(restaurant_id)
@@ -143,13 +202,19 @@ def create_users(db, restaurant_ids):
     return user_ids
 
 def create_restaurants(db):
-    """Create dummy restaurants"""
+    """Create dummy restaurants with the new fields"""
     restaurant_ids = []
     
     for i in range(len(RESTAURANT_NAMES)):
+        restaurant_name = RESTAURANT_NAMES[i]
+        
         restaurant = {
-            "name": RESTAURANT_NAMES[i],
+            "name": restaurant_name,
             "img_url": f"{FOOD_IMAGES[i]}?w=400&h=300",
+            "rating": round(random.uniform(3.0, 5.0), 1),  # Random rating between 3.0 and 5.0
+            "type": RESTAURANT_TYPES.get(restaurant_name, "Other"),
+            "description": RESTAURANT_DESCRIPTIONS.get(restaurant_name, f"Delicious food at {restaurant_name}"),
+            "position": RESTAURANT_POSITIONS.get(restaurant_name, {"lat": 40.7128, "lng": -74.0060})  # Default to NYC coords
         }
         
         result = db.restaurants.insert_one(restaurant)
@@ -217,19 +282,17 @@ def create_products(db, restaurant_ids):
     
     return product_ids_by_restaurant
 
-def create_orders(db, restaurant_ids):
-    """Create sample orders with users and products"""
+def create_orders_for_burger_heaven(db, burger_heaven_id, burger_heaven_products):
+    """Create sample orders for Burger Heaven restaurant only"""
+    if not burger_heaven_products:
+        print("No products found for Burger Heaven, skipping order creation")
+        return
+    
+    # Get products for this restaurant
+    products = list(db.products.find({"restaurant_id": burger_heaven_id}))
+    
     # Create 5 sample orders
     for i in range(5):
-        # Select a random restaurant
-        restaurant_id = random.choice(restaurant_ids)
-        
-        # Get products for this restaurant
-        products = list(db.products.find({"restaurant_id": restaurant_id}))
-        
-        if not products:
-            continue
-        
         # Generate 1-3 users for this order
         user_count = random.randint(1, 3)
         users = {}
@@ -263,13 +326,13 @@ def create_orders(db, restaurant_ids):
         
         # Create the order
         order = {
-            "restaurant_id": restaurant_id,
+            "restaurant_id": burger_heaven_id,
             "users": users,
             "created_at": datetime.now()
         }
         
         result = db.orders.insert_one(order)
-        print(f"Created order {i+1}/5 with {user_count} users for restaurant ID: {restaurant_id} (Order ID: {result.inserted_id})")
+        print(f"Created order {i+1}/5 for Burger Heaven with {user_count} users (Order ID: {result.inserted_id})")
 
 def main():
     print(f"Connecting to MongoDB at {MONGODB_URL}")

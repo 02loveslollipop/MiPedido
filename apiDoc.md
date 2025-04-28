@@ -30,7 +30,14 @@
         {
             "name": String,
             "img_url": String,
-            "id": String
+            "id": String,
+            "rating": Number,
+            "type": String,
+            "description": String,
+            "position": {
+                "lat": Number,
+                "lng": Number
+            }
         },
         ...
     ]
