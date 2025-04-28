@@ -5,10 +5,8 @@ from typing import Dict, Any
 import sys
 import os
 from pathlib import Path
-
-# Add parent directory to path to import reduced_order_id
-sys.path.append(str(Path(__file__).parent.parent.parent.parent))
-from reduced_order_id import from_str, get_object_id
+from database.repositories.shortener import ShortenerRepository
+from models.shortener import ShortCodeResponse
 
 router = APIRouter(
     prefix="/shortener",
@@ -16,9 +14,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-class ShortCodeResponse(Dict[str, Any]):
-    """Response model for the shortcode endpoint"""
-    pass
+
 
 @router.get("/{short_code}", response_model=ShortCodeResponse)
 async def decode_short_code(short_code: str):
@@ -31,7 +27,7 @@ async def decode_short_code(short_code: str):
     try:
         # Parse the base36 encoded string and convert to binary values
         try:
-            t_bin_decoded, c_bin_decoded = from_str(short_code)
+            t_bin_decoded, c_bin_decoded = ShortenerRepository.from_str(short_code)
             timestamp = int(t_bin_decoded, 2)
             counter = int(c_bin_decoded, 2)
         except Exception as e:
@@ -41,7 +37,7 @@ async def decode_short_code(short_code: str):
             )
         
         # Get the ObjectId from the timestamp and counter
-        object_id = get_object_id(timestamp, counter)
+        object_id = ShortenerRepository.get_object_id(timestamp, counter)
         
         if not object_id:
             raise HTTPException(

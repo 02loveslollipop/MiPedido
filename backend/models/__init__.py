@@ -19,3 +19,5 @@ from .product import ProductBase, ProductInDB, Product, ProductCreate
 from .user import UserBase, UserAuth, UserInDB, User, Token
 
 from .review import Review
+
+from .shortener import ShortCodeResponse
