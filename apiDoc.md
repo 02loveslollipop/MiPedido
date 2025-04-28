@@ -1117,4 +1117,16 @@ Authorization: Bearer {access_token}
 }
 ```
 
+# Documentación otros
+
+## Reduced OrderID
+
+The order ID is reduced to a 6-character to be easier to manage for users, this reduced OrderID is generated in the following way:
+
+1. Take the ObjectID of the order, which is a 24-character hexadecimal string.
+
+2. Convert it into a Base36 string. (A-Z and 0-9)
+
+3. The result will be a string of 6 characters.
+
 

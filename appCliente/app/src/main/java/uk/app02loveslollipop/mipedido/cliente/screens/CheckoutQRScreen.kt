@@ -1,16 +1,12 @@
 package uk.app02loveslollipop.mipedido.cliente.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
@@ -19,26 +15,24 @@ import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QrCodeScreen(
+fun CheckoutQRScreen(
     restaurantId: String,
     orderId: String,
     userId: String,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier,
-    onNavigateToProducts: (restaurantId: String, orderId: String, userId: String) -> Unit = { _, _, _ -> }
+    modifier: Modifier = Modifier
 ) {
     // Use Base36 encoding for order ID display - converts to a 6-character alphanumeric code
     val encodedOrderId = Base36Utils.encodeOrderId(orderId)
-
+    
     Scaffold(
         topBar = {
             NavBar(
-                title = "Comparte el pedido",
+                title = "Finalizar Pedido",
                 onBackPressed = onNavigateBack
             )
         }
     ) { paddingValues ->
-        // Add verticalScroll modifier to make content scrollable
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -50,7 +44,7 @@ fun QrCodeScreen(
         ) {
             // Title
             Text(
-                text = "Orden grupal",
+                text = "Tu pedido está listo",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.primary,
                 textAlign = TextAlign.Center
@@ -58,7 +52,7 @@ fun QrCodeScreen(
             
             // Description
             Text(
-                text = "Comparte este código QR con otros para unirse a tu pedido",
+                text = "Muestra este código QR al personal del restaurante para completar tu pedido",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center
             )
@@ -81,7 +75,7 @@ fun QrCodeScreen(
                 ) {
                     // QR Code generator
                     QrCodeGenerator(
-                        content = orderId,
+                        content = "$orderId|$userId",
                         size = 250,
                         padding = 12,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -89,7 +83,7 @@ fun QrCodeScreen(
                     
                     // Order ID - using Base36 encoded version
                     Text(
-                        text = "Orden: $encodedOrderId",
+                        text = "Pedido: $encodedOrderId",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -98,17 +92,15 @@ fun QrCodeScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Instructions Card - Adding instructions for better user understanding
             Card(
+                modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
+                )
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp)
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Instrucciones",
@@ -119,31 +111,26 @@ fun QrCodeScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "1. Comparte este código QR con tus amigos\n" +
-                               "2. Ellos pueden escanearlo usando la app\n" +
-                               "3. Cada persona puede agregar sus propios productos\n" +
-                               "4. Todos pueden ver y modificar el pedido en tiempo real",
+                        text = "1. Muestra este código QR al personal del restaurante\n" +
+                               "2. Espera a que escaneen el código\n" +
+                               "3. Paga el pedido\n" +
+                               "4. Recoge tu comida cuando esté lista",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        textAlign = TextAlign.Start
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            // Order status message
+            Text(
+                text = "El restaurante recibirá tu orden al mostrar el código QR",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.outline
+            )
             
-            // View Order Button
-            Button(
-                onClick = { 
-                    onNavigateToProducts(restaurantId, orderId, userId)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Text("Iniciar mi pedido")
-            }
-            
-            // Add padding at the bottom to ensure everything is visible when scrolling
+            // Add extra padding at the bottom to ensure everything is accessible when scrolling
             Spacer(modifier = Modifier.height(24.dp))
         }
     }

@@ -32,6 +32,7 @@ fun ProductsScreen(
     orderId: String,
     userId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToCart: (String, String, String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -179,7 +180,11 @@ fun ProductsScreen(
                                 }
                             }
                         ) {
-                            IconButton(onClick = { /* TODO: Navigate to Cart Screen */ }) {
+                            IconButton(
+                                onClick = { 
+                                    onNavigateToCart(restaurantId, orderId, userId)
+                                }
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.ShoppingCart,
                                     contentDescription = "Carrito de Compras"

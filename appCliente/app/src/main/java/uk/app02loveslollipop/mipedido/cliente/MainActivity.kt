@@ -13,10 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import uk.app02loveslollipop.mipedido.cliente.screens.ProductsScreen
-import uk.app02loveslollipop.mipedido.cliente.screens.QrCodeScreen
-import uk.app02loveslollipop.mipedido.cliente.screens.QrScannerScreen
-import uk.app02loveslollipop.mipedido.cliente.screens.RestaurantsScreen
+import uk.app02loveslollipop.mipedido.cliente.screens.*
 import uk.app02loveslollipop.mipedido.cliente.ui.theme.MiPedidoTheme
 
 class MainActivity : ComponentActivity() {
@@ -71,7 +68,10 @@ fun MiPedidoApp() {
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCart = { resId, oId, uId ->
+                    navController.navigate("cart/$resId/$oId/$uId")
+                }
             )
         }
         
@@ -107,6 +107,49 @@ fun MiPedidoApp() {
                     navController.popBackStack()
                     navController.navigate("products/$restaurantId/$orderId/$userId")
                 }
+            )
+        }
+        
+        // Cart Screen
+        composable(
+            route = "cart/{restaurantId}/{orderId}/{userId}",
+            arguments = listOf(
+                navArgument("restaurantId") { type = NavType.StringType },
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            CartScreen(
+                restaurantId = restaurantId,
+                orderId = orderId,
+                userId = userId,
+                onNavigateBack = { navController.popBackStack() },
+                onCheckout = { resId, oId, uId ->
+                    navController.navigate("checkout-qr/$resId/$oId/$uId")
+                }
+            )
+        }
+        
+        // Checkout QR Screen
+        composable(
+            route = "checkout-qr/{restaurantId}/{orderId}/{userId}",
+            arguments = listOf(
+                navArgument("restaurantId") { type = NavType.StringType },
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            CheckoutQRScreen(
+                restaurantId = restaurantId,
+                orderId = orderId,
+                userId = userId,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }
