@@ -388,6 +388,36 @@ class ApiConnector {
     }
   }
 
+  // Get full Order ID from short code
+  Future<Map<String, dynamic>> getFullOrderIdFromShortCode(
+    String shortCode,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/shortener/$shortCode'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'object_id': responseData['object_id']};
+      } else if (response.statusCode == 404) {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Short code not found',
+        };
+      } else {
+        return {
+          'success': false,
+          'error': responseData['error'] ?? 'Unknown error occurred',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Connection error: ${e.toString()}'};
+    }
+  }
+
   // Helper method to check if an API error is due to token expiration
   bool isTokenExpiredError(String error) {
     // Common messages that indicate token expiration

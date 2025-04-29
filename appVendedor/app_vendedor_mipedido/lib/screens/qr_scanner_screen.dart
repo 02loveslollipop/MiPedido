@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../api/api_connector.dart';
-import '../api/base_36_utils.dart'; // Import Base36Utils
 import 'order_details_screen.dart';
+import 'package:flutter/foundation.dart'; // Import for kIsWeb
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);
@@ -28,7 +28,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   // Check if running on desktop platform (Windows, macOS, Linux)
   bool get isDesktop =>
-      Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+      kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux; // Short circuit evaluation
 
   @override
   void initState() {
@@ -197,12 +197,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       debugPrint('Error processing QR code: $e');
     }
   }
-
-  // Process Base36 input from desktop platforms
-  void _processBase36Input() {
-    final base36Input = _base36Controller.text.trim();
-    if (base36Input.isEmpty) {
-      _showInvalidQRCodeMessage('Por favor, ingrese un código Base36 válido');
+  void _processBase36Input() async {
+    final base36Input = _base36Controller.text.trim().toUpperCase();
+    if (base36Input.isEmpty || base36Input.length != 8) { // Basic validation
+      _showInvalidQRCodeMessage(
+        'Por favor, ingrese un código de 6 caracteres Base36 válido',
+      );
       return;
     }
 
@@ -211,18 +211,38 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     });
 
     try {
-      // Convert Base36 to MongoDB ObjectId hex format if needed
-      final String orderId = Base36Utils.decodeToHex(base36Input);
-      log('Decoded Base36 to hex: $orderId', name: 'QRScannerScreen');
-      _processQrCode(orderId);
+      // Call the shortener endpoint to get the full ObjectId
+      final result = await _apiConnector.getFullOrderIdFromShortCode(base36Input);
+
+      if (result['success']) {
+        final String fullOrderId = result['object_id'];
+        log('Retrieved full Order ID: $fullOrderId for short code: $base36Input',
+            name: 'QRScannerScreen');
+        // Now process the full order ID
+        await _processQrCode(fullOrderId); // Pass the full ID
+      } else {
+        // Handle errors from the shortener endpoint (e.g., not found)
+        _showInvalidQRCodeMessage(
+          result['error'] ?? 'Código corto no encontrado o inválido.',
+        );
+        // Reset loading state only on error, success navigates away
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
     } catch (e) {
       _showInvalidQRCodeMessage(
-        'Formato de código Base36 inválido: ${e.toString()}',
+        'Error al buscar el código corto: ${e.toString()}',
       );
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
+    // No need to set isLoading = false here if successful, as navigation occurs
   }
 
   void _showOrderAlreadyFulfilledDialog(String orderId) {
@@ -352,7 +372,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Ingrese el código Base36 del pedido',
+                    'Ingrese el código del pedido',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
@@ -361,7 +381,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                     controller: _base36Controller,
                     decoration: InputDecoration(
                       labelText: 'Código del Pedido',
-                      hintText: 'Ejemplo: ABC123',
+                      hintText: 'Ejemplo: A1B2-YA3',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -391,7 +411,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                   ),
                   const SizedBox(height: 40),
                   const Text(
-                    'Ingrese el código Base36 que se muestra en la aplicación del cliente.',
+                    'Ingrese el código que se muestra en la aplicación del cliente.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.grey),
                   ),

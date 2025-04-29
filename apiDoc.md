@@ -1119,9 +1119,9 @@ Authorization: Bearer {access_token}
 
 ## Shortener
 
-### Get Short Code for Order
+### Get full Order ID from Short Code
 
-**URL**: `/v1/shortener/{order_id}`
+**URL**: `/v1/shortener/{short_code}` // Corrected path parameter
 
 **Method**: `GET`
 
@@ -1129,34 +1129,34 @@ Authorization: Bearer {access_token}
 
 **Content-Type**: `application/json`
 
-**Description**: Returns the 6-character short code corresponding to a full MongoDB Order ID. If the order ID does not exist, it returns an error.
+**Description**: Returns the full Order ID from a short code. The short code is a 6-character Base36 string. If the short code does not correspond to an existing order, it returns an error.
 
 #### Input: Path variable
 ```json
 {
-    "order_id": String, // The full 24-character hexadecimal Order ID
+    "short_code": String, // The 6-character Base36 short code
 }
 ```
 
 #### Output:
 
-- Short code found.
+- Order found.
 
 **HTTP** 200: OK
 
 ```json
 {
-    "short_code": String // The 6-character Base36 short code
+    "object_id": String // The full 24-character hexadecimal Order ID
 }
 ```
 
-- Order not found.
+- Short code not found. // Corrected error description
 
 **HTTP** 404: Not Found
 
 ```json
 {
-    "error": "Order not found"
+    "error": "Short code not found" // Corrected error message
 }
 ```
 
@@ -1174,30 +1174,22 @@ Authorization: Bearer {access_token}
 
 ## Reduced OrderID
 
-The order ID is reduced to a shorter, more user-friendly format. This is achieved by extracting specific parts of the MongoDB ObjectId and encoding them.
+The order ID is reduced to a shorter, more user-friendly format using Base36 encoding of parts of the original MongoDB ObjectId. This is primarily used for display and manual input (like the 6-character code).
 
-**Encoding Process:**
-1.  **Extract Data from ObjectId**: A MongoDB ObjectId consists of:
-    *   4 bytes: timestamp
-    *   3 bytes: machine identifier
-    *   2 bytes: process ID
-    *   3 bytes: counter
+**Encoding Process (Conceptual - Actual implementation might vary slightly):**
+1. **Extract Data from ObjectId**: A MongoDB ObjectId consists of:
+    * 4 bytes: timestamp
+    * 3 bytes: machine identifier
+    * 2 bytes: process ID
+    * 3 bytes: counter
+2. **Select Bits**: To create a short code, specific bits are selected (e.g., from timestamp and counter). The exact selection determines the uniqueness and collision probability. *Note: The previous description mentioning 22 bits of timestamp and 16 bits of counter might be inaccurate or outdated based on the `/v1/shortener` endpoint's behavior.* A common approach is to use a dedicated shortener mapping in the database.
+3. **Base36 Encode**: The selected data (or a generated unique sequence) is encoded into a Base36 string (0-9, A-Z), typically padded to a fixed length (e.g., 6 characters).
 
-2.  **Truncate Data**: To create a shorter ID, we take:
-    *   The 22 least significant bits of the **timestamp** (from the original 4 bytes).
-    *   The 16 least significant bits of the **counter** (from the original 3 bytes).
+**Retrieval Process (Using `/v1/shortener/{short_code}`):**
+1. **Input**: Provide the 6-character Base36 `short_code`.
+2. **Lookup**: The server looks up this `short_code` in its shortener mapping table or collection.
+3. **Return**: If found, the server returns the corresponding full 24-character hexadecimal `object_id` (the original Order ID).
 
-3.  **Base36 Encode**: The truncated timestamp (22 bits) and counter (16 bits) are treated as integers and then converted into Base36 strings (using characters 0-9 and A-Z).
-
-4.  **Combine**: The Base36 encoded timestamp and counter are combined into a single string, typically separated by a hyphen (e.g., `TIMESTAMP_BASE36-COUNTER_BASE36`). This combined string is the Reduced Order ID.
-
-**Decoding Process (Server-Side):**
-1.  **Split**: The Reduced Order ID string is split back into its Base36 timestamp and counter parts.
-2.  **Base36 Decode**: Each part is decoded back into an integer.
-3.  **Database Query**: The server queries the database to find an ObjectId where:
-    *   The 16 least significant bits of its counter match the decoded counter integer.
-    *   The 22 least significant bits of its timestamp match the decoded timestamp integer.
-
-This allows the server to retrieve the full original ObjectId using the shorter, reduced representation.
+This `/v1/shortener` endpoint simplifies retrieving the full ID from the short code without needing client-side decoding logic.
 
 

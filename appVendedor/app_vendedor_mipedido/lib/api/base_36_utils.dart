@@ -1,5 +1,3 @@
-import 'dart:math';
-
 /// Utility class for Base36 encoding and decoding operations
 class Base36Utils {
   static const String _base36Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
