@@ -84,7 +84,7 @@ class ShortenerRepository:
         return t_bin, c_bin
 
     @classmethod
-    async def get_object_id(cls, short_code: str, collection_name: str = "users") -> Dict[str, str]:
+    async def get_object_id(cls, short_code: str, collection_name: str = "orders") -> Dict[str, str]:
         """
         Decode a base36 shortened code back to a MongoDB ObjectID.
         
