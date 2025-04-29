@@ -123,7 +123,7 @@ class ShortenerRepository:
             async for doc in cursor:
                 # Check if the document's ObjectId timestamp matches our timestamp
                 if int.from_bytes(doc["_id"].binary[:4], 'big') & 0x3FFFFF == timestamp:
-                    return {"object_id": str(doc["_id"])}
+                    return str(doc["_id"])
             
             raise ValueError(f"No matching ObjectId found for the short code {short_code}")
             
