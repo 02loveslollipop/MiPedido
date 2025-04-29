@@ -1,6 +1,6 @@
 > NOTA: El contenido del QR es el id del pedido.
 
-# Documentación API
+# Documentación API publica de MiPedido
 
 ## Restaurant
 
@@ -1169,6 +1169,666 @@ Authorization: Bearer {access_token}
     "error": String
 }
 ```
+
+# MiPedido Admin API Documentation
+
+This document outlines the administrative endpoints available in the MiPedido API system.
+
+## Authentication
+
+All admin endpoints require authentication using a bearer token. To get a token, administrators must first login using the authentication endpoint.
+
+### Admin Login
+
+```
+POST /v1/admin/login
+```
+
+Authenticates an admin user and returns an access token.
+
+**Request:**
+
+```json
+{
+  "username": "admin",
+  "password": "adminpassword"
+}
+```
+
+**Response:**
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "admin_id": "612e4c8212ab3f4e10d9ef4a",
+  "username": "admin"
+}
+```
+
+### Get Current Admin
+
+```
+GET /v1/admin/me
+```
+
+Returns information about the currently authenticated admin.
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef4a",
+  "username": "admin"
+}
+```
+
+## Admin Management
+
+### List All Admins
+
+```
+GET /v1/admin/
+```
+
+Lists all admin users in the system.
+
+**Response:**
+
+```json
+[
+  {
+    "id": "612e4c8212ab3f4e10d9ef4a",
+    "username": "admin"
+  },
+  {
+    "id": "612e4c8212ab3f4e10d9ef4b",
+    "username": "manager"
+  }
+]
+```
+
+### Create Admin
+
+```
+POST /v1/admin/
+```
+
+Creates a new admin user. Only existing admins can create new admins.
+
+**Request:**
+
+```json
+{
+  "username": "newadmin",
+  "password": "securepassword"
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef4c",
+  "username": "newadmin"
+}
+```
+
+### Update Admin
+
+```
+PUT /v1/admin/{admin_id}
+```
+
+Updates an existing admin's details.
+
+**Request:**
+
+```json
+{
+  "username": "updatedname",
+  "password": "newpassword"  // Optional
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef4c",
+  "username": "updatedname"
+}
+```
+
+### Delete Admin
+
+```
+DELETE /v1/admin/{admin_id}
+```
+
+Deletes an admin user. Admins cannot delete themselves.
+
+**Response:** HTTP 204 No Content
+
+## Restaurant Management
+
+### List All Restaurants
+
+```
+GET /v1/admin/restaurants/
+```
+
+Lists all restaurants in the system.
+
+**Response:**
+
+```json
+[
+  {
+    "id": "612e4c8212ab3f4e10d9ef60",
+    "name": "Burger Heaven",
+    "type": "Fast Food",
+    "img_url": "https://example.com/image.jpg",
+    "rating": 4.5,
+    "description": "Best burgers in town"
+  }
+]
+```
+
+### Get Restaurant
+
+```
+GET /v1/admin/restaurants/{restaurant_id}
+```
+
+Get details of a specific restaurant.
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef60",
+  "name": "Burger Heaven",
+  "type": "Fast Food",
+  "img_url": "https://example.com/image.jpg",
+  "rating": 4.5,
+  "description": "Best burgers in town",
+  "position": {
+    "lat": 40.7128,
+    "lng": -74.0060
+  }
+}
+```
+
+### Create Restaurant
+
+```
+POST /v1/admin/restaurants/
+```
+
+Creates a new restaurant.
+
+**Request:**
+
+```json
+{
+  "name": "New Restaurant",
+  "type": "Italian",
+  "img_url": "https://example.com/img.jpg",
+  "description": "Authentic Italian cuisine",
+  "position": {
+    "lat": 40.7128,
+    "lng": -74.0060
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef61",
+  "name": "New Restaurant",
+  "type": "Italian",
+  "img_url": "https://example.com/img.jpg",
+  "description": "Authentic Italian cuisine",
+  "rating": 0,
+  "position": {
+    "lat": 40.7128,
+    "lng": -74.0060
+  }
+}
+```
+
+### Update Restaurant
+
+```
+PUT /v1/admin/restaurants/{restaurant_id}
+```
+
+Updates a restaurant's details.
+
+**Request:**
+
+```json
+{
+  "name": "Updated Name",
+  "description": "Updated description",
+  "img_url": "https://example.com/new-image.jpg",
+  "type": "Fusion"
+}
+```
+
+**Response:** Returns the updated restaurant object.
+
+### Delete Restaurant
+
+```
+DELETE /v1/admin/restaurants/{restaurant_id}
+```
+
+Deletes a restaurant.
+
+**Response:** HTTP 204 No Content
+
+### Update Restaurant Rating
+
+```
+PUT /v1/admin/restaurants/{restaurant_id}/update-rating
+```
+
+Manually updates a restaurant's rating.
+
+**Request:**
+
+```json
+{
+  "rating": 4.7
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Rating updated successfully"
+}
+```
+
+## Product Management
+
+### List Products by Restaurant
+
+```
+GET /v1/admin/products/restaurant/{restaurant_id}
+```
+
+Lists all products for a specific restaurant, including disabled ones.
+
+**Response:**
+
+```json
+[
+  {
+    "id": "612e4c8212ab3f4e10d9ef70",
+    "name": "Classic Burger",
+    "description": "Our signature burger with beef patty",
+    "price": 12.99,
+    "img_url": "https://example.com/burger.jpg",
+    "ingredients": ["Beef patty", "Lettuce", "Tomato", "Special sauce"],
+    "restaurant_id": "612e4c8212ab3f4e10d9ef60",
+    "active": true
+  }
+]
+```
+
+### Get Product
+
+```
+GET /v1/admin/products/{product_id}
+```
+
+Get details of a specific product.
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef70",
+  "name": "Classic Burger",
+  "description": "Our signature burger with beef patty",
+  "price": 12.99,
+  "img_url": "https://example.com/burger.jpg",
+  "ingredients": ["Beef patty", "Lettuce", "Tomato", "Special sauce"],
+  "restaurant_id": "612e4c8212ab3f4e10d9ef60",
+  "active": true
+}
+```
+
+### Create Product
+
+```
+POST /v1/admin/products/
+```
+
+Creates a new product.
+
+**Request:**
+
+```json
+{
+  "restaurant_id": "612e4c8212ab3f4e10d9ef60",
+  "name": "Veggie Burger",
+  "description": "Plant-based burger",
+  "price": 10.99,
+  "img_url": "https://example.com/veggie-burger.jpg",
+  "ingredients": ["Plant-based patty", "Lettuce", "Tomato"]
+}
+```
+
+**Response:** Returns the created product object.
+
+### Update Product
+
+```
+PUT /v1/admin/products/{product_id}
+```
+
+Updates a product's details.
+
+**Request:**
+
+```json
+{
+  "name": "Super Veggie Burger",
+  "price": 11.99,
+  "ingredients": ["Plant-based patty", "Lettuce", "Tomato", "Vegan mayo"]
+}
+```
+
+**Response:** Returns the updated product object.
+
+### Delete Product
+
+```
+DELETE /v1/admin/products/{product_id}
+```
+
+Permanently deletes a product.
+
+**Response:** HTTP 204 No Content
+
+### Enable Product
+
+```
+PUT /v1/admin/products/{product_id}/enable
+```
+
+Enables a disabled product.
+
+**Response:**
+
+```json
+{
+  "message": "Product enabled successfully"
+}
+```
+
+### Disable Product
+
+```
+PUT /v1/admin/products/{product_id}/disable
+```
+
+Disables a product, making it unavailable for ordering.
+
+**Response:**
+
+```json
+{
+  "message": "Product disabled successfully"
+}
+```
+
+## User Management
+
+### List All Users
+
+```
+GET /v1/admin/users/
+```
+
+Lists all users in the system.
+
+**Response:**
+
+```json
+[
+  {
+    "id": "612e4c8212ab3f4e10d9ef80",
+    "username": "user1",
+    "controls": ["612e4c8212ab3f4e10d9ef60"]
+  }
+]
+```
+
+### Get User
+
+```
+GET /v1/admin/users/{user_id}
+```
+
+Get details of a specific user, including which restaurants they control.
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef80",
+  "username": "user1",
+  "controls": ["612e4c8212ab3f4e10d9ef60"],
+  "restaurants": [
+    {
+      "id": "612e4c8212ab3f4e10d9ef60",
+      "name": "Burger Heaven"
+    }
+  ]
+}
+```
+
+### Create User
+
+```
+POST /v1/admin/users/
+```
+
+Creates a new user.
+
+**Request:**
+
+```json
+{
+  "username": "newuser",
+  "password": "userpassword"
+}
+```
+
+**Response:** Returns the created user object.
+
+### Update User
+
+```
+PUT /v1/admin/users/{user_id}
+```
+
+Updates a user's details.
+
+**Request:**
+
+```json
+{
+  "username": "updateduser",
+  "password": "newpassword"  // Optional
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "User updated successfully"
+}
+```
+
+### Delete User
+
+```
+DELETE /v1/admin/users/{user_id}
+```
+
+Deletes a user.
+
+**Response:** HTTP 204 No Content
+
+### Assign Restaurant to User
+
+```
+PUT /v1/admin/users/{user_id}/assign-restaurant
+```
+
+Assigns control of a restaurant to a user.
+
+**Request:**
+
+```json
+{
+  "restaurant_id": "612e4c8212ab3f4e10d9ef60"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Restaurant assigned successfully"
+}
+```
+
+### Revoke Restaurant from User
+
+```
+PUT /v1/admin/users/{user_id}/revoke-restaurant
+```
+
+Revokes a user's control of a restaurant.
+
+**Request:**
+
+```json
+{
+  "restaurant_id": "612e4c8212ab3f4e10d9ef60"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "Restaurant access revoked successfully"
+}
+```
+
+## Admin Activity Logs
+
+The system automatically logs all admin operations to an audit trail.
+
+### List Admin Logs
+
+```
+GET /v1/admin/logs/
+```
+
+Lists admin operation logs with optional filtering.
+
+**Query Parameters:**
+- `admin_id`: Filter logs by admin ID
+- `admin_username`: Filter logs by admin username
+- `operation`: Filter by operation type (create, update, delete, etc.)
+- `target_type`: Filter by target resource type (restaurant, product, user, etc.)
+- `target_id`: Filter by target resource ID
+- `from_date`: Filter logs from this date/time (ISO format)
+- `to_date`: Filter logs until this date/time (ISO format)
+- `skip`: Number of records to skip for pagination
+- `limit`: Maximum number of records to return
+
+**Response:**
+
+```json
+{
+  "logs": [
+    {
+      "id": "612e4c8212ab3f4e10d9ef90",
+      "admin_id": "612e4c8212ab3f4e10d9ef4a",
+      "admin_username": "admin",
+      "operation": "create",
+      "target_type": "restaurant",
+      "target_id": "612e4c8212ab3f4e10d9ef60",
+      "details": {
+        "name": "Burger Heaven"
+      },
+      "timestamp": "2025-04-28T10:30:15.123Z"
+    }
+  ],
+  "total": 42,
+  "skip": 0,
+  "limit": 100
+}
+```
+
+### Get Specific Log Entry
+
+```
+GET /v1/admin/logs/{log_id}
+```
+
+Get details of a specific log entry.
+
+**Response:**
+
+```json
+{
+  "id": "612e4c8212ab3f4e10d9ef90",
+  "admin_id": "612e4c8212ab3f4e10d9ef4a",
+  "admin_username": "admin",
+  "operation": "create",
+  "target_type": "restaurant",
+  "target_id": "612e4c8212ab3f4e10d9ef60",
+  "details": {
+    "name": "Burger Heaven"
+  },
+  "timestamp": "2025-04-28T10:30:15.123Z"
+}
+```
+
+## Error Responses
+
+All endpoints may return the following error responses:
+
+- `400 Bad Request` - Invalid request parameters
+- `401 Unauthorized` - Missing or invalid authentication token
+- `403 Forbidden` - Insufficient permissions
+- `404 Not Found` - Resource not found
+- `409 Conflict` - Resource conflict (e.g., duplicate username)
+- `500 Internal Server Error` - Server error
+
+Error response format:
+
+```json
+{
+  "detail": "Error message describing the issue"
+}
+```
+
 
 # Documentación otros
 

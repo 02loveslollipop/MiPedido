@@ -18,11 +18,16 @@ async def lifespan(app: FastAPI):
     db.db.close_db_connection()
     print("FastAPI application shutdown")
 
+try:
+    DEBUG = env.DEBUG
+except AttributeError:
+    DEBUG = False
+
 app = FastAPI(
     title="MiPedido API",
     description="API for MiPedido restaurant ordering service",
     version="1.0.0",
-    debug=True, #TODO: set to env.debug
+    debug=DEBUG,
     lifespan=lifespan
 )
 
@@ -39,4 +44,4 @@ app.add_middleware(
 app.include_router(router)
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True) # Set reload=True for development
+    uvicorn.run("app:app", host="0.0.0.0", port=8000)

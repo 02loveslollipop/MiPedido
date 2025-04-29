@@ -4,7 +4,7 @@ import sys
 from pymongo import MongoClient
 from bson import ObjectId
 import dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 
 # Load environment variables from .env file
@@ -105,11 +105,35 @@ PRODUCT_TYPES = {
 
 # Sample user data - admin users will control restaurants
 TEST_USERS = [
-    {"username": "admin", "password": "admin123", "is_admin": True},
+    {"username": "admin", "password": "admin123", "is_admin": False},
     {"username": "user1", "password": "pass1234", "is_admin": False},
     {"username": "user2", "password": "securepass", "is_admin": False},
-    {"username": "manager", "password": "test123", "is_admin": True},
+    {"username": "manager", "password": "test123", "is_admin": False},
     {"username": "customer", "password": "customer456", "is_admin": False}
+]
+
+# Sample admin users for admin authentication
+TEST_ADMINS = [
+    {"username": "superadmin", "password": "admin123"},
+    {"username": "support", "password": "support456"},
+    {"username": "moderator", "password": "mod789"}
+]
+
+# Sample admin operations for generating logs
+ADMIN_OPERATIONS = [
+    {"operation": "create", "target_type": "restaurant", "details": {"name": "New Restaurant"}},
+    {"operation": "update", "target_type": "restaurant", "details": {"name": "Updated Name", "updated_fields": ["name", "description"]}},
+    {"operation": "delete", "target_type": "restaurant", "details": {"name": "Deleted Restaurant"}},
+    {"operation": "create", "target_type": "product", "details": {"name": "New Product"}},
+    {"operation": "update", "target_type": "product", "details": {"name": "Updated Product", "updated_fields": ["name", "price"]}},
+    {"operation": "delete", "target_type": "product", "details": {"name": "Deleted Product"}},
+    {"operation": "create", "target_type": "user", "details": {"username": "newuser"}},
+    {"operation": "update", "target_type": "user", "details": {"username": "updateduser", "updated_fields": ["username"]}},
+    {"operation": "assign_restaurant", "target_type": "user", "details": {"username": "assigneduser", "restaurant_name": "Restaurant Name"}},
+    {"operation": "revoke_restaurant", "target_type": "user", "details": {"username": "revokeduser", "restaurant_name": "Restaurant Name"}},
+    {"operation": "create", "target_type": "admin", "details": {"username": "newadmin"}},
+    {"operation": "update", "target_type": "admin", "details": {"username": "updatedadmin", "updated_fields": ["username"]}},
+    {"operation": "delete", "target_type": "admin", "details": {"username": "deletedadmin"}}
 ]
 
 def seed_database():
@@ -125,6 +149,8 @@ def seed_database():
     db.orders.delete_many({})
     db.users.delete_many({})
     db.reviews.delete_many({})  # Clear existing reviews
+    db.admin.delete_many({})    # Clear existing admins
+    db.admin_log.delete_many({}) # Clear existing admin logs
     
     print("Creating restaurants...")
     restaurant_ids = create_restaurants(db)
@@ -144,6 +170,9 @@ def seed_database():
     print("Creating users...")
     create_users(db, restaurant_ids, burger_heaven_id)
     
+    print("Creating admin users...")
+    admin_ids = create_admin_users(db)
+    
     print("Creating products for each restaurant...")
     product_ids_by_restaurant = create_products(db, restaurant_ids)
     
@@ -153,8 +182,147 @@ def seed_database():
     print("Creating anonymous reviews for restaurants...")
     create_reviews(db, restaurant_ids)
     
+    print("Creating admin logs...")
+    create_admin_logs(db, admin_ids, restaurant_ids, product_ids_by_restaurant)
+    
     print("Database seeded successfully!")
     return client
+
+def create_admin_users(db):
+    """Create admin users for authentication"""
+    admin_ids = []
+    
+    for admin_data in TEST_ADMINS:
+        # Hash the password
+        hashed_password = hashlib.sha256(admin_data["password"].encode()).hexdigest()
+        
+        admin = {
+            "username": admin_data["username"],
+            "hashed_password": hashed_password
+        }
+        
+        # Check if admin already exists
+        existing_admin = db.admin.find_one({"username": admin_data["username"]})
+        if existing_admin:
+            print(f"Admin {admin_data['username']} already exists, skipping...")
+            admin_ids.append(str(existing_admin["_id"]))
+            continue
+        
+        # Insert the new admin
+        result = db.admin.insert_one(admin)
+        admin_id = str(result.inserted_id)
+        admin_ids.append(admin_id)
+        
+        print(f"Created admin: {admin['username']} (ID: {admin_id})")
+    
+    return admin_ids
+
+def create_admin_logs(db, admin_ids, restaurant_ids, product_ids_by_restaurant):
+    """Create sample admin logs"""
+    if not admin_ids:
+        print("No admin users found, skipping admin log creation")
+        return
+    
+    # Get all user IDs
+    user_cursor = db.users.find({}, {"_id": 1, "username": 1})
+    users = list(user_cursor)
+    
+    # Get product IDs
+    products = []
+    for restaurant_id, product_ids in product_ids_by_restaurant.items():
+        for product_id in product_ids:
+            product = db.products.find_one({"_id": ObjectId(product_id)})
+            if product:
+                products.append({
+                    "id": product_id,
+                    "name": product["name"],
+                    "restaurant_id": restaurant_id
+                })
+    
+    # Generate logs over the past 30 days
+    log_count = 0
+    for days_ago in range(30, -1, -1):  # From 30 days ago to today
+        # Generate 0-5 logs per day
+        daily_logs = random.randint(0, 5)
+        
+        log_date = datetime.now() - timedelta(days=days_ago)
+        
+        for _ in range(daily_logs):
+            # Select a random admin
+            admin_id = random.choice(admin_ids)
+            admin = db.admin.find_one({"_id": ObjectId(admin_id)})
+            
+            # Select a random operation
+            operation_data = random.choice(ADMIN_OPERATIONS)
+            operation = operation_data["operation"]
+            target_type = operation_data["target_type"]
+            base_details = operation_data["details"].copy()
+            
+            # Set appropriate target ID and add extra details
+            target_id = ""
+            
+            if target_type == "restaurant":
+                if operation == "create":
+                    target_id = random.choice(restaurant_ids)
+                    restaurant = db.restaurants.find_one({"_id": ObjectId(target_id)})
+                    if restaurant:
+                        base_details["name"] = restaurant["name"]
+                else:
+                    target_id = random.choice(restaurant_ids)
+                    restaurant = db.restaurants.find_one({"_id": ObjectId(target_id)})
+                    if restaurant:
+                        base_details["name"] = restaurant["name"]
+            
+            elif target_type == "product":
+                if products:
+                    product = random.choice(products)
+                    target_id = product["id"]
+                    base_details["name"] = product["name"]
+                    base_details["restaurant_id"] = product["restaurant_id"]
+            
+            elif target_type == "user":
+                if users:
+                    user = random.choice(users)
+                    target_id = str(user["_id"])
+                    base_details["username"] = user["username"]
+                    
+                    if operation in ["assign_restaurant", "revoke_restaurant"]:
+                        restaurant_id = random.choice(restaurant_ids)
+                        restaurant = db.restaurants.find_one({"_id": ObjectId(restaurant_id)})
+                        if restaurant:
+                            base_details["restaurant_id"] = restaurant_id
+                            base_details["restaurant_name"] = restaurant["name"]
+            
+            elif target_type == "admin":
+                target_admin_id = random.choice(admin_ids)
+                target_admin = db.admin.find_one({"_id": ObjectId(target_admin_id)})
+                if target_admin:
+                    target_id = target_admin_id
+                    base_details["username"] = target_admin["username"]
+            
+            # Create the log entry
+            log_entry = {
+                "admin_id": admin_id,
+                "admin_username": admin["username"],
+                "operation": operation,
+                "target_type": target_type,
+                "target_id": target_id,
+                "details": base_details,
+                "timestamp": log_date.replace(
+                    hour=random.randint(8, 17),
+                    minute=random.randint(0, 59),
+                    second=random.randint(0, 59)
+                )
+            }
+            
+            # Insert the log
+            result = db.admin_log.insert_one(log_entry)
+            log_count += 1
+            
+            if log_count % 10 == 0:
+                print(f"Created {log_count} admin logs...")
+    
+    print(f"Total admin logs created: {log_count}")
 
 def create_users(db, restaurant_ids, burger_heaven_id):
     """Create test users with restaurant controls"""
