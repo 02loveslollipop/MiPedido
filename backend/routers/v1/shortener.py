@@ -37,7 +37,7 @@ async def decode_short_code(short_code: str):
             )
         
         # Get the ObjectId from the timestamp and counter
-        object_id = ShortenerRepository.get_object_id(timestamp, counter)
+        object_id = await ShortenerRepository.get_object_id(timestamp, counter)
         
         if not object_id:
             raise HTTPException(
