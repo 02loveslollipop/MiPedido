@@ -27,9 +27,7 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
     List all users. Only accessible by admins.
     """
     try:
-        logging.info("Fetching all users...")  # For debugging purposes
         users = await UserRepository.get_users()
-        logging.info(f"Users fetched: {users}")  # For debugging purposes
         if not users:
             raise HTTPException(status_code=404, detail="No users found")
         
@@ -46,11 +44,8 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
         
         return user_dicts
     except HTTPException as e:
-        logging.info("HTTPException occurred while fetching users")  # For debugging purpose
-        logging.info(str(e))  # For debugging purpose
         raise e
     except Exception as e:
-        logging.info(f"Error fetching users: {str(e)}")  # For debugging purpose
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
         
@@ -68,20 +63,16 @@ async def admin_get_user(
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        logging.info(f"User details fetched: {user.username} with ID: {user.id}")
         # Format the user data
         user_data = {
             "id": user.id,
             "username": user.username,
             "controls": user.controls
         }
-        logging.info(f"User data formatted: {user_data}")
         return user_data
     except HTTPException:
-        logging.info(f"HTTPException occurred: {str(e)}")
         raise
     except Exception as e:
-        logging.info(f"Error fetching user details: {str(e)}")
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
