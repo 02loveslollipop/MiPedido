@@ -147,44 +147,6 @@ class _UserScreenState extends State<UserScreen> {
                                             // Edit user action (implement later)
                                           },
                                         ),
-                                        const SizedBox(width: 8),
-                                        IconButton(
-                                          icon: const Icon(FluentIcons.delete),
-                                          onPressed: () {
-                                            showDialog(
-                                              context: context,
-                                              builder: (context) {
-                                                return ContentDialog(
-                                                  title: const Text(
-                                                    'Confirmar eliminación',
-                                                  ),
-                                                  content: Text(
-                                                    '¿Estás seguro de que deseas eliminar el usuario ${user['username']}?',
-                                                  ),
-                                                  actions: [
-                                                    Button(
-                                                      child: const Text(
-                                                        'Cancelar',
-                                                      ),
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                      },
-                                                    ),
-                                                    FilledButton(
-                                                      child: const Text(
-                                                        'Eliminar',
-                                                      ),
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                        _deleteUser(user['id']);
-                                                      },
-                                                    ),
-                                                  ],
-                                                );
-                                              },
-                                            );
-                                          },
-                                        ),
                                       ],
                                     ),
                                   ),
