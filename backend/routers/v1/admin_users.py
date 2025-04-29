@@ -27,6 +27,7 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
     List all users. Only accessible by admins.
     """
     try:
+        print("Fetching all users...")  # For debugging purposes
         users = []
         cursor = await UserRepository.collection.find({})
         async for document in cursor:
@@ -37,8 +38,10 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
             }
             users.append(user)
         return users
-    except HTTPException:
-        raise
+    except HTTPException as e:
+        print("HTTPException occurred while fetching users")  # For debugging purpose
+        print(str(e))  # For debugging purpose
+        raise e
     except Exception as e:
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
