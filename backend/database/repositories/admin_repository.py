@@ -1,5 +1,5 @@
 from bson import ObjectId
-from database.db import db
+from database import db
 from models.admin import AdminBase, AdminInDB, Admin
 from typing import List, Optional
 import hashlib
@@ -99,7 +99,9 @@ class AdminRepository:
         Returns:
             AdminInDB if found, None otherwise
         """
+
         admin_doc = await cls.collection.find_one({"username": username})
+        
         if not admin_doc:
             return None
         
