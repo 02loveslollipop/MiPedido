@@ -82,7 +82,7 @@ class ShortenerRepository:
         return t_bin, c_bin
 
     @classmethod
-    async def get_object_id(cls, short_code: str, collection_name: str = "users") -> Optional[Dict[str, Any]]:
+    async def get_object_id(cls, short_code: str, collection_name: str = "users") -> Dict[str, str]:
         """
         Decode a base36 shortened code back to a MongoDB ObjectID.
         
@@ -123,7 +123,7 @@ class ShortenerRepository:
                 if int.from_bytes(doc["_id"].binary[:4], 'big') & 0x3FFFFF == timestamp:
                     return {"object_id": str(doc["_id"])}
             
-            return None
+            raise ValueError(f"No matching ObjectId found for the short code {short_code}")
             
         except Exception as e:
             raise e
