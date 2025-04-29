@@ -48,7 +48,7 @@ class UserRepository:
                 controls=document.get("controls", [])
             )
             users.append(user)
-            
+        print(f"Users: {users}")
         return users
 
     @classmethod

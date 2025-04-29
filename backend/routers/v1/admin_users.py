@@ -29,6 +29,7 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
     try:
         print("Fetching all users...")  # For debugging purposes
         users = await UserRepository.get_users()
+        print(f"Users fetched: {users}")  # For debugging purposes
         if not users:
             raise HTTPException(status_code=404, detail="No users found")
         return users
