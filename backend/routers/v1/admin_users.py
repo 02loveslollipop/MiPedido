@@ -32,7 +32,19 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
         logging.info(f"Users fetched: {users}")  # For debugging purposes
         if not users:
             raise HTTPException(status_code=404, detail="No users found")
-        return users
+        
+        # Convert UserInDB objects to dictionaries
+        user_dicts = []
+        for user in users:
+            user_dict = {
+                "id": user.id,
+                "username": user.username,
+                "controls": user.controls if hasattr(user, "controls") else []
+                # Don't include hashed_password for security
+            }
+            user_dicts.append(user_dict)
+        
+        return user_dicts
     except HTTPException as e:
         logging.info("HTTPException occurred while fetching users")  # For debugging purpose
         logging.info(str(e))  # For debugging purpose
