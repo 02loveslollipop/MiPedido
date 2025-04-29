@@ -33,6 +33,25 @@ class UserRepository:
         return user
     
     @classmethod
+    async def get_users(cls) -> List[UserInDB]:
+        """
+        Get all users
+        """
+        documents = await cls.collection.find().to_list(length=None)
+        users = []
+        
+        for document in documents:
+            user = UserInDB(
+                id=str(document["_id"]),
+                username=document["username"],
+                hashed_password=document["hashed_password"],
+                controls=document.get("controls", [])
+            )
+            users.append(user)
+            
+        return users
+
+    @classmethod
     async def get_user_by_id(cls, user_id: str) -> Optional[UserInDB]:
         """
         Get a user by ID

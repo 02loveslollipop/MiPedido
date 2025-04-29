@@ -28,15 +28,9 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
     """
     try:
         print("Fetching all users...")  # For debugging purposes
-        users = []
-        cursor = await UserRepository.collection.find({})
-        async for document in cursor:
-            user = {
-                "id": str(document["_id"]),
-                "username": document["username"],
-                "controls": document.get("controls", [])
-            }
-            users.append(user)
+        users = await UserRepository.get_users()
+        if not users:
+            raise HTTPException(status_code=404, detail="No users found")
         return users
     except HTTPException as e:
         print("HTTPException occurred while fetching users")  # For debugging purpose
