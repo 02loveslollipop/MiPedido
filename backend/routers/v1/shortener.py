@@ -26,18 +26,26 @@ async def decode_short_code(short_code: str):
     """
     try:
         # Parse the base36 encoded string and convert to binary values
-        try:
-            t_bin_decoded, c_bin_decoded = ShortenerRepository.from_str(short_code)
-            timestamp = int(t_bin_decoded, 2)
-            counter = int(c_bin_decoded, 2)
-        except Exception as e:
+        if not isinstance(short_code, str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid short code format: {str(e)}"
+                detail="short_code must be a string"
+            )
+        
+        if '-' not in short_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="short_code must be in the format 'timestamp-counter'"
             )
         
         # Get the ObjectId from the timestamp and counter
-        object_id = await ShortenerRepository.get_object_id(timestamp, counter)
+        try:
+            object_id = await ShortenerRepository.get_object_id(short_code)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error retrieving ObjectId: {str(e)}"
+            )
         
         if not object_id:
             raise HTTPException(

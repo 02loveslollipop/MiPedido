@@ -68,6 +68,8 @@ class ShortenerRepository:
         Converts the base36 string representation back to the binary representation 
         of the counter and timestamp
         """
+        if not isinstance(encoded, str):
+            raise TypeError('encoded must be a string')
         # Split the encoded string into timestamp and counter parts
         t_str, c_str = encoded.split('-')
         
