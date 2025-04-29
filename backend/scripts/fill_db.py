@@ -48,18 +48,17 @@ RESTAURANT_DESCRIPTIONS = {
     "Breakfast Club": "Start your day with our delicious breakfast options."
 }
 
-# Sample positions for restaurants (latitude, longitude)
 RESTAURANT_POSITIONS = {
-    "Burger Heaven": {"lat": 40.7128, "lng": -74.0060},
-    "Pizza Palace": {"lat": 40.7282, "lng": -73.9942},
-    "Taco Time": {"lat": 40.7489, "lng": -73.9680},
-    "Sushi Supreme": {"lat": 40.7831, "lng": -73.9712},
-    "Pasta Paradise": {"lat": 40.7214, "lng": -74.0052},
-    "Mediterranean Magic": {"lat": 40.7551, "lng": -73.9815},
-    "Veggie Delights": {"lat": 40.7437, "lng": -73.9873},
-    "Steak House": {"lat": 40.7589, "lng": -73.9851},
-    "Seafood Sensation": {"lat": 40.7061, "lng": -74.0119},
-    "Breakfast Club": {"lat": 40.7411, "lng": -74.0079}
+    "Burger Heaven": {"lat": 6.2430, "lng": -75.5890},
+    "Pizza Palace": {"lat": 6.2415, "lng": -75.5875},
+    "Taco Time": {"lat": 6.2440, "lng": -75.5865},
+    "Sushi Supreme": {"lat": 6.2405, "lng": -75.5880},
+    "Pasta Paradise": {"lat": 6.2425, "lng": -75.5905},
+    "Mediterranean Magic": {"lat": 6.2450, "lng": -75.5895},
+    "Veggie Delights": {"lat": 6.2410, "lng": -75.5860},
+    "Steak House": {"lat": 6.2435, "lng": -75.5870},
+    "Seafood Sensation": {"lat": 6.2460, "lng": -75.5885},
+    "Breakfast Club": {"lat": 6.2420, "lng": -75.5900}
 }
 
 FOOD_IMAGES = [
