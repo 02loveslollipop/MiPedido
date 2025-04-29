@@ -101,6 +101,7 @@ async def admin_create_user(
             password=user_auth.password
         )
         logging.info(f"User created: {new_user.username} with ID: {new_user.id}")
+        print(f"User created: {new_user.username} with ID: {new_user.id}")  # For debugging purposes
         # Log the operation
         await log_admin_operation(
             admin_id=current_admin.admin_id,
@@ -118,6 +119,8 @@ async def admin_create_user(
     except Exception as e:
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         logging.error(f"Error creating user: {error_detail}")
+        print(error_detail)  # For debugging purposes
+        print(error_detail)  # For debugging purposes
         raise HTTPException(status_code=500, detail=error_detail)
 
 @router.put("/{user_id}", status_code=200)
