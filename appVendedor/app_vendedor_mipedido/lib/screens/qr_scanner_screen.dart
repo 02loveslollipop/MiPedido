@@ -25,10 +25,15 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
   // Text controller for desktop platforms
   final TextEditingController _base36Controller = TextEditingController();
+  // Text controller for mobile code input dialog
+  final TextEditingController _mobileCodeController = TextEditingController();
 
   // Check if running on desktop platform (Windows, macOS, Linux)
   bool get isDesktop =>
-      kIsWeb || Platform.isWindows || Platform.isMacOS || Platform.isLinux; // Short circuit evaluation
+      kIsWeb ||
+      Platform.isWindows ||
+      Platform.isMacOS ||
+      Platform.isLinux; // Short circuit evaluation
 
   @override
   void initState() {
@@ -44,6 +49,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
     WidgetsBinding.instance.removeObserver(this);
     controller?.dispose();
     _base36Controller.dispose();
+    _mobileCodeController.dispose(); // Dispose mobile code controller
     super.dispose();
   }
 
@@ -197,11 +203,53 @@ class _QRScannerScreenState extends State<QRScannerScreen>
       debugPrint('Error processing QR code: $e');
     }
   }
-  void _processBase36Input() async {
-    final base36Input = _base36Controller.text.trim().toUpperCase();
-    if (base36Input.isEmpty || base36Input.length != 8) { // Basic validation
+
+  // Show dialog to enter code manually on mobile
+  void _showEnterCodeDialog() {
+    _mobileCodeController.clear(); // Clear previous input
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Ingresar Código'),
+            content: TextField(
+              controller: _mobileCodeController,
+              decoration: const InputDecoration(
+                hintText: 'Ingrese código de 8 caracteres',
+                helperText: 'Ejemplo: A1B2-YA3',
+              ),
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              maxLength: 8,
+              style: const TextStyle(fontSize: 20, letterSpacing: 2),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (_mobileCodeController.text.trim().isNotEmpty) {
+                    _processManualCodeInput(_mobileCodeController.text);
+                  }
+                },
+                child: const Text('Procesar'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Process manual code input from mobile platforms
+  void _processManualCodeInput(String code) async {
+    final shortCode = code.trim().toUpperCase(); // Ensure uppercase
+    if (shortCode.isEmpty || shortCode.length != 8) {
+      // Basic validation
       _showInvalidQRCodeMessage(
-        'Por favor, ingrese un código de 6 caracteres Base36 válido',
+        'Por favor, ingrese un código de 8 caracteres válido',
       );
       return;
     }
@@ -212,37 +260,53 @@ class _QRScannerScreenState extends State<QRScannerScreen>
 
     try {
       // Call the shortener endpoint to get the full ObjectId
-      final result = await _apiConnector.getFullOrderIdFromShortCode(base36Input);
+      final result = await _apiConnector.getFullOrderIdFromShortCode(shortCode);
+
+      if (!mounted) return; // Check mount status after async operation
 
       if (result['success']) {
         final String fullOrderId = result['object_id'];
-        log('Retrieved full Order ID: $fullOrderId for short code: $base36Input',
-            name: 'QRScannerScreen');
+        log(
+          'Retrieved full Order ID: $fullOrderId for short code: $shortCode',
+          name: 'QRScannerScreen',
+        );
         // Now process the full order ID
-        await _processQrCode(fullOrderId); // Pass the full ID
+        await _processQrCode(fullOrderId);
       } else {
         // Handle errors from the shortener endpoint (e.g., not found)
         _showInvalidQRCodeMessage(
           result['error'] ?? 'Código corto no encontrado o inválido.',
         );
-        // Reset loading state only on error, success navigates away
-        if (mounted) {
-          setState(() {
-            isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      _showInvalidQRCodeMessage(
-        'Error al buscar el código corto: ${e.toString()}',
-      );
-      if (mounted) {
         setState(() {
           isLoading = false;
         });
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      _showInvalidQRCodeMessage(
+        'Error al buscar el código corto: ${e.toString()}',
+      );
+      setState(() {
+        isLoading = false;
+      });
     }
-    // No need to set isLoading = false here if successful, as navigation occurs
+  }
+
+  // Process Base36 input for desktop platforms
+  void _processBase36Input() {
+    final base36Input = _base36Controller.text.trim();
+    if (base36Input.isEmpty) {
+      _showInvalidQRCodeMessage('Por favor, ingrese un código válido');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    // Just call the common handler
+    _processManualCodeInput(base36Input);
   }
 
   void _showOrderAlreadyFulfilledDialog(String orderId) {
@@ -313,6 +377,12 @@ class _QRScannerScreenState extends State<QRScannerScreen>
         actions: [
           // Show camera controls only on mobile platforms
           if (!isDesktop) ...[
+            // Button to enter code manually on mobile
+            IconButton(
+              icon: const Icon(Icons.keyboard),
+              onPressed: _showEnterCodeDialog,
+              tooltip: 'Ingresar código manualmente',
+            ),
             // Button to toggle flash
             IconButton(
               icon: const Icon(Icons.flash_on),
