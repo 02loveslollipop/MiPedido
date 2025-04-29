@@ -454,7 +454,6 @@ class ApiConnector {
   // List all users
   Future<Map<String, dynamic>> listUsers() async {
     final result = await get('/v1/admin/users/');
-    log(result.toString());
     if (result['success']) {
       return {'success': true, 'users': result['data']};
     }

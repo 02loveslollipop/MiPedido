@@ -51,31 +51,23 @@ async def admin_get_user(
     """
     try:
         user = await UserRepository.get_user_by_id(user_id)
+
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-            
+        logging.info(f"User details fetched: {user.username} with ID: {user.id}")
         # Format the user data
         user_data = {
             "id": user.id,
             "username": user.username,
             "controls": user.controls
         }
-        
-        # Get restaurant details for each controlled restaurant
-        restaurants = []
-        for restaurant_id in user.controls:
-            restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
-            if restaurant:
-                restaurants.append({
-                    "id": restaurant_id,
-                    "name": restaurant.name
-                })
-                
-        user_data["restaurants"] = restaurants
+        logging.info(f"User data formatted: {user_data}")
         return user_data
     except HTTPException:
+        logging.info(f"HTTPException occurred: {str(e)}")
         raise
     except Exception as e:
+        logging.info(f"Error fetching user details: {str(e)}")
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -117,8 +109,6 @@ async def admin_create_user(
     except Exception as e:
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         logging.error(f"Error creating user: {error_detail}")
-        print(error_detail)  # For debugging purposes
-        print(error_detail)  # For debugging purposes
         raise HTTPException(status_code=500, detail=error_detail)
 
 @router.put("/{user_id}", status_code=200)
