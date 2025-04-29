@@ -37,7 +37,6 @@ dependencies:
   flutter_acrylic: ^1.1.4
   system_theme: ^3.1.2
   provider: ^6.1.4
-  material: ^1.0.0
 
 
   # The following adds the Cupertino Icons font to your application.

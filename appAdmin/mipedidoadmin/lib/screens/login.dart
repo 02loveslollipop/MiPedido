@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
     
     windowManager.waitUntilReadyToShow().then((_) async {
       await windowManager.setMaximizable(false);
-      await windowManager.setResizable(false);
+      //await windowManager.setResizable(false);
       await windowManager.setMinimumSize(const Size(600, 600));
       await windowManager.setMaximumSize(const Size(600, 600));
       await windowManager.setSize(const Size(600, 600));

@@ -38,8 +38,8 @@ void main() async {
       await windowManager.setTitle(appTitle);
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
       await windowManager.setBackgroundColor(Colors.transparent);
-      //check if not in login screen
       await windowManager.setMaximizable(false);
+      await windowManager.setResizable(true);
       await windowManager.center();
       await windowManager.show();
       await windowManager.setSkipTaskbar(false);
@@ -80,15 +80,6 @@ class _MiPedidoAdminAppState extends State<MiPedidoAdminApp> {
 
   @override
   Widget build(BuildContext context) {
-
-    windowManager.waitUntilReadyToShow().then((_) async {
-      await windowManager.setMaximizable(true);
-      await windowManager.setResizable(true);
-      await windowManager.setMinimumSize(const Size(800, 600));
-      await windowManager.center();
-      await windowManager.show();
-      await windowManager.setSkipTaskbar(false);
-    });
 
     return ChangeNotifierProvider(
       create: (_) => AppTheme(themeMode, accentColor),
@@ -156,7 +147,7 @@ class _AppShellState extends State<AppShell> {
     PaneItem(
       icon: const Icon(FluentIcons.home),
       title: const Text('Inicio'),
-      body: const WelcomeScreen(),
+      body: WelcomeScreen(),
     ),
     PaneItemExpander(
       icon: const Icon(FluentIcons.people),
@@ -233,6 +224,7 @@ class _AppShellState extends State<AppShell> {
 
   @override
   void initState() {
+
     super.initState();
     _selectedIndex = widget.initialIndex;
   }
@@ -262,13 +254,6 @@ class _AppShellState extends State<AppShell> {
                         : FluentIcons.sunny,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(FluentIcons.contact),
-                onPressed: () {
-                  // Show user profile or account settings
-                },
               ),
               const SizedBox(width: 8),
               IconButton(
