@@ -1300,16 +1300,6 @@ Updates an existing admin's details.
 }
 ```
 
-### Delete Admin
-
-```
-DELETE /v1/admin/{admin_id}
-```
-
-Deletes an admin user. Admins cannot delete themselves.
-
-**Response:** HTTP 204 No Content
-
 ## Restaurant Management
 
 ### List All Restaurants
