@@ -13,7 +13,7 @@ ALGORITHM = "HS256"
 TOKEN_EXPIRE_MINUTES = 60 * 12  # 12 hours
 
 class AdminRepository:
-    collection = db.db.db["admins"]
+    collection = db.db.db["admin"]
     
     @classmethod
     async def get_admin_by_username(cls, username: str) -> Optional[AdminInDB]:

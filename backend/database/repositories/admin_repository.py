@@ -10,7 +10,7 @@ class AdminRepository:
     """Repository for admin user operations"""
     
     # Reference to the admins collection in the database
-    collection = db.db.db["admins"]
+    collection = db.db.db["admin"]
     
     @classmethod
     async def create_admin(cls, username: str, password: str) -> Admin:
