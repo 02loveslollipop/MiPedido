@@ -8,6 +8,8 @@ from typing import List, Dict
 from pydantic import BaseModel
 from bson import ObjectId
 
+import logging
+
 router = APIRouter(
     prefix="/admin/users",
     tags=["Admin Users"],
@@ -98,7 +100,7 @@ async def admin_create_user(
             username=user_auth.username,
             password=user_auth.password
         )
-        
+        logging.info(f"User created: {new_user.username} with ID: {new_user.id}")
         # Log the operation
         await log_admin_operation(
             admin_id=current_admin.admin_id,
@@ -108,12 +110,14 @@ async def admin_create_user(
             target_id=new_user.id,
             details={"username": new_user.username}
         )
+        logging.info(f"Admin {current_admin.username} created user {new_user.username} with ID: {new_user.id}")
         
         return new_user
     except HTTPException:
         raise
     except Exception as e:
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
+        logging.error(f"Error creating user: {error_detail}")
         raise HTTPException(status_code=500, detail=error_detail)
 
 @router.put("/{user_id}", status_code=200)
