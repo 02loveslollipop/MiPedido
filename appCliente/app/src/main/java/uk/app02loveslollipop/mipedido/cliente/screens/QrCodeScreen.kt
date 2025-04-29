@@ -21,14 +21,14 @@ import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils
 @Composable
 fun QrCodeScreen(
     restaurantId: String,
-    orderId: String,
+    orderId: String, // This is the full MongoDB ObjectId hex string
     userId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     onNavigateToProducts: (restaurantId: String, orderId: String, userId: String) -> Unit = { _, _, _ -> }
 ) {
-    // Use Base36 encoding for order ID display - converts to a 6-character alphanumeric code
-    val encodedOrderId = Base36Utils.encodeOrderId(orderId)
+    // Use the new short format encoding for Order ID display
+    val shortOrderId = Base36Utils.encodeObjectIdToShortFormat(orderId)
 
     Scaffold(
         topBar = {
@@ -38,13 +38,12 @@ fun QrCodeScreen(
             )
         }
     ) { paddingValues ->
-        // Add verticalScroll modifier to make content scrollable
+
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),  // Make the column scrollable
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
@@ -86,50 +85,17 @@ fun QrCodeScreen(
                         padding = 12,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
-                    // Order ID - using Base36 encoded version
+
+                    // Order ID - using the new short format
                     Text(
-                        text = "Orden: $encodedOrderId",
+                        text = "Orden: $shortOrderId",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Instructions Card - Adding instructions for better user understanding
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Instrucciones",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Text(
-                        text = "1. Comparte este código QR con tus amigos\n" +
-                               "2. Ellos pueden escanearlo usando la app\n" +
-                               "3. Cada persona puede agregar sus propios productos\n" +
-                               "4. Todos pueden ver y modificar el pedido en tiempo real",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(24.dp))
             
             // View Order Button
             Button(

@@ -17,14 +17,14 @@ import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils
 @Composable
 fun CheckoutQRScreen(
     restaurantId: String,
-    orderId: String,
+    orderId: String, // This is the full MongoDB ObjectId hex string
     userId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Use Base36 encoding for order ID display - converts to a 6-character alphanumeric code
-    val encodedOrderId = Base36Utils.encodeOrderId(orderId)
-    
+    // Use the new short format encoding for Order ID display
+    val shortOrderId = Base36Utils.encodeObjectIdToShortFormat(orderId)
+
     Scaffold(
         topBar = {
             NavBar(
@@ -80,16 +80,16 @@ fun CheckoutQRScreen(
                         padding = 12,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
-                    // Order ID - using Base36 encoded version
+
+                    // Order ID - using the new short format
                     Text(
-                        text = "Pedido: $encodedOrderId",
+                        text = "Pedido: $shortOrderId",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
             
             Card(
