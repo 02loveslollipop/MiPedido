@@ -104,7 +104,7 @@ PRODUCT_TYPES = {
 
 # Sample user data - admin users will control restaurants
 TEST_USERS = [
-    {"username": "admin", "password": "admin123", "is_admin": False},
+    {"username": "admin", "password": "admin123", "is_admin": True},
     {"username": "user1", "password": "pass1234", "is_admin": False},
     {"username": "user2", "password": "securepass", "is_admin": False},
     {"username": "manager", "password": "test123", "is_admin": False},
@@ -336,7 +336,7 @@ def create_users(db, restaurant_ids, burger_heaven_id):
     other_restaurants = [rid for rid in restaurant_ids if rid != burger_heaven_id]
     for restaurant_id in other_restaurants:
         # Randomly assign each restaurant to admin or manager (but not the main admin)
-        admin_user = random.choice([user for user in TEST_USERS if user["is_admin"] and user["username"] != "admin"])
+        admin_user = random.choice(TEST_USERS[1:])
         if admin_user["username"] not in admin_restaurant_assignments:
             admin_restaurant_assignments[admin_user["username"]] = []
         admin_restaurant_assignments[admin_user["username"]].append(restaurant_id)
