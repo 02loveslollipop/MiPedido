@@ -80,7 +80,8 @@ class ApiConnector {
         log('Login successful: $responseData');
         final accessToken = responseData['access_token'];
         final adminId = responseData['admin_id'];
-        final adminUsername = "admin"; //TODO: fix this to get the username from the response
+        final adminUsername =
+            "admin"; //TODO: fix this to get the username from the response
 
         // Save token and admin info
         await _saveAuthInfo(accessToken, adminId, adminUsername);
@@ -332,12 +333,22 @@ class ApiConnector {
       'name': name,
       'description': description,
       'img_url': imageUrl,
+      'rating': 0,
     };
 
     if (type != null) body['type'] = type;
     if (position != null) body['position'] = position;
 
-    return await post('/v1/admin/restaurants/', body: body);
+    log('Create restaurant body: $body');
+
+    Map<String, dynamic> response = await post(
+      '/v1/admin/restaurants/',
+      body: body,
+    );
+
+    log('Create restaurant response: $response');
+
+    return response;
   }
 
   // Update a restaurant
@@ -347,7 +358,7 @@ class ApiConnector {
     String? description,
     String? imageUrl,
     String? type,
-    Map<String, double>? position,
+    Map<String, double?>? position,
   }) async {
     Map<String, dynamic> body = {};
     if (name != null) body['name'] = name;
@@ -356,7 +367,12 @@ class ApiConnector {
     if (type != null) body['type'] = type;
     if (position != null) body['position'] = position;
 
-    return await put('/v1/admin/restaurants/$restaurantId', body: body);
+    Map<String, dynamic> response = await put('/v1/admin/restaurants/$restaurantId', body: body);
+
+    log('Update restaurant response: $response');
+    log ('Update restaurant body: $body');
+
+    return response;
   }
 
   // Delete a restaurant

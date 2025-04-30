@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
+import 'restaurant_list.dart';
 
 class RestaurantEditScreen extends StatefulWidget {
   const RestaurantEditScreen({super.key});
@@ -12,6 +13,9 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _imageUrlController = TextEditingController();
+  final _typeController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoadingRestaurants = true;
@@ -31,6 +35,9 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _imageUrlController.dispose();
+    _typeController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     super.dispose();
   }
 
@@ -59,6 +66,19 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
       _nameController.text = restaurant['name'] ?? '';
       _descriptionController.text = restaurant['description'] ?? '';
       _imageUrlController.text = restaurant['img_url'] ?? '';
+      _typeController.text = restaurant['type'] ?? '';
+
+      // Handle position data
+      if (restaurant['position'] != null) {
+        _latitudeController.text =
+            restaurant['position']['lat']?.toString() ?? '';
+        _longitudeController.text =
+            restaurant['position']['lng']?.toString() ?? '';
+      } else {
+        _latitudeController.text = '';
+        _longitudeController.text = '';
+      }
+
       _errorMessage = null;
     });
   }
@@ -74,12 +94,32 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
       _errorMessage = null;
     });
 
+    // Parse latitude and longitude from text controllers
+    double? latitude;
+    double? longitude;
+    try {
+      if (_latitudeController.text.isNotEmpty) {
+        latitude = double.parse(_latitudeController.text);
+      }
+      if (_longitudeController.text.isNotEmpty) {
+        longitude = double.parse(_longitudeController.text);
+      }
+    } catch (e) {
+      setState(() {
+        _isUpdating = false;
+        _errorMessage = 'Invalid latitude or longitude format';
+      });
+      return;
+    }
+
     final apiConnector = ApiConnector();
     final result = await apiConnector.updateRestaurant(
       _selectedRestaurant['id'],
       name: _nameController.text,
       description: _descriptionController.text,
       imageUrl: _imageUrlController.text,
+      type: _typeController.text,
+      position: {'lat': latitude, 'lng': longitude},
     );
 
     setState(() {
@@ -98,6 +138,13 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
           content: Text('Restaurante actualizado correctamente'),
           severity: InfoBarSeverity.success,
         ),
+      );
+
+      // Navigate to RestaurantListScreen after successful update
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        FluentPageRoute(builder: (context) => const RestaurantListScreen()),
       );
     } else {
       setState(() {
@@ -152,12 +199,15 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                             label: 'Seleccionar Restaurante',
                             child: ComboBox<dynamic>(
                               value: _selectedRestaurant,
-                              items: _restaurants.map((restaurant) {
-                                return ComboBoxItem<dynamic>(
-                                  value: restaurant,
-                                  child: Text(restaurant['name'] ?? 'Sin nombre'),
-                                );
-                              }).toList(),
+                              items:
+                                  _restaurants.map((restaurant) {
+                                    return ComboBoxItem<dynamic>(
+                                      value: restaurant,
+                                      child: Text(
+                                        restaurant['name'] ?? 'Sin nombre',
+                                      ),
+                                    );
+                                  }).toList(),
                               onChanged: (value) {
                                 if (value != null) {
                                   _selectRestaurant(value);
@@ -257,6 +307,61 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                                                       'https://',
                                                     )) {
                                                   return 'Por favor ingrese una URL válida (debe comenzar con http:// o https://)';
+                                                }
+                                                return null;
+                                              },
+                                              autovalidateMode:
+                                                  AutovalidateMode
+                                                      .onUserInteraction,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          InfoLabel(
+                                            label: 'Tipo de Restaurante',
+                                            child: TextFormBox(
+                                              controller: _typeController,
+                                              placeholder:
+                                                  'Ingresar tipo de restaurante',
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Por favor ingrese el tipo de restaurante';
+                                                }
+                                                return null;
+                                              },
+                                              autovalidateMode:
+                                                  AutovalidateMode
+                                                      .onUserInteraction,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          InfoLabel(
+                                            label: 'Latitud',
+                                            child: TextFormBox(
+                                              controller: _latitudeController,
+                                              placeholder: 'Ingresar latitud',
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Por favor ingrese la latitud';
+                                                }
+                                                return null;
+                                              },
+                                              autovalidateMode:
+                                                  AutovalidateMode
+                                                      .onUserInteraction,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          InfoLabel(
+                                            label: 'Longitud',
+                                            child: TextFormBox(
+                                              controller: _longitudeController,
+                                              placeholder: 'Ingresar longitud',
+                                              validator: (value) {
+                                                if (value == null ||
+                                                    value.isEmpty) {
+                                                  return 'Por favor ingrese la longitud';
                                                 }
                                                 return null;
                                               },

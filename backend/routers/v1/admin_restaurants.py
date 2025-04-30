@@ -8,6 +8,8 @@ from typing import List
 from pydantic import BaseModel
 from bson import ObjectId
 
+import logging
+
 router = APIRouter(
     prefix="/admin/restaurants",
     tags=["Admin Restaurants"],
@@ -131,6 +133,8 @@ async def admin_update_restaurant(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error updating restaurant: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 

@@ -38,6 +38,9 @@ class RestaurantRepository:
         # Create document for insertion
         db_restaurant = restaurant_dict.copy()
         db_restaurant["img_url"] = str(db_restaurant["img_url"])
+        db_restaurant["rating"] = 0 # Default rating
+        db_restaurant["type"] = db_restaurant.get("type", "restaurant")
+        db_restaurant["_review_count"] = 0
         
         # Handle position separately if it exists
         if db_restaurant.get("position"):

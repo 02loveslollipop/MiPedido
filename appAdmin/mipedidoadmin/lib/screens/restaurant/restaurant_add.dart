@@ -12,6 +12,9 @@ class _RestaurantAddScreenState extends State<RestaurantAddScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _imageUrlController = TextEditingController();
+  final _typeController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   String? _errorMessage;
@@ -21,6 +24,9 @@ class _RestaurantAddScreenState extends State<RestaurantAddScreen> {
     _nameController.dispose();
     _descriptionController.dispose();
     _imageUrlController.dispose();
+    _typeController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     super.dispose();
   }
 
@@ -35,10 +41,31 @@ class _RestaurantAddScreenState extends State<RestaurantAddScreen> {
     });
 
     final apiConnector = ApiConnector();
+
+    // Parse latitude and longitude from text controllers
+    double? latitude_null;
+    double? longitude_null;
+    double latitude;
+    double longitude;
+    try {
+      latitude_null = double.tryParse(_latitudeController.text);
+      longitude_null = double.tryParse(_longitudeController.text);
+      latitude = latitude_null ?? 0.0;
+      longitude = longitude_null ?? 0.0;
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Invalid latitude or longitude format';
+      });
+      return;
+    }
+
     final result = await apiConnector.createRestaurant(
       _nameController.text,
       _descriptionController.text,
       _imageUrlController.text,
+      type: _typeController.text,
+      position: {'lat': latitude, 'lng': longitude},
     );
 
     setState(() {
@@ -49,6 +76,9 @@ class _RestaurantAddScreenState extends State<RestaurantAddScreen> {
       _nameController.clear();
       _descriptionController.clear();
       _imageUrlController.clear();
+      _typeController.clear();
+      _latitudeController.clear();
+      _longitudeController.clear();
 
       if (!mounted) return;
       showSnackbar(
@@ -142,6 +172,51 @@ class _RestaurantAddScreenState extends State<RestaurantAddScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+                    InfoLabel(
+                      label: 'Tipo de Restaurante',
+                      child: TextFormBox(
+                        controller: _typeController,
+                        placeholder: 'Ingresar tipo de restaurante',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese el tipo de restaurante';
+                          }
+                          return null;
+                        },
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    InfoLabel(
+                      label: 'Latitud',
+                      child: TextFormBox(
+                        controller: _latitudeController,
+                        placeholder: 'Ingresar latitud',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese la latitud';
+                          }
+                          return null;
+                        },
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    InfoLabel(
+                      label: 'Longitud',
+                      child: TextFormBox(
+                        controller: _longitudeController,
+                        placeholder: 'Ingresar longitud',
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese la longitud';
+                          }
+                          return null;
+                        },
+                        autovalidateMode: AutovalidateMode.onUserInteraction,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     if (_imageUrlController.text.isNotEmpty) ...[
                       const Text('Vista previa de la imagen:'),
                       const SizedBox(height: 8),
@@ -185,6 +260,9 @@ class _RestaurantAddScreenState extends State<RestaurantAddScreen> {
                             _nameController.clear();
                             _descriptionController.clear();
                             _imageUrlController.clear();
+                            _typeController.clear();
+                            _latitudeController.clear();
+                            _longitudeController.clear();
                             setState(() {
                               _errorMessage = null;
                             });
