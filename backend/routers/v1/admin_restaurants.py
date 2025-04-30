@@ -62,6 +62,8 @@ async def admin_create_restaurant(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error creating restaurant: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
