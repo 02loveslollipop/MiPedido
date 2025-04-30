@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 import traceback
 import logging
 from typing import List, Dict
+from models.user import UserAuth
 from pydantic import BaseModel
 from models.user import User
 from database.repositories import UserRepository, RestaurantRepository
