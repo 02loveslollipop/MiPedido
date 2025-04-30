@@ -112,6 +112,8 @@ async def modify_user_order(order_id: str, user_id: str, item_update: OrderItemU
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
+        logging.error(f"Error modifying user order: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 

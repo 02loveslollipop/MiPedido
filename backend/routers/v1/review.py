@@ -3,6 +3,7 @@ from database.repositories import ReviewRepository, RestaurantRepository
 from models.review import Review
 from pydantic import BaseModel
 import traceback
+import logging
 
 router = APIRouter(
     prefix="/review",
@@ -50,5 +51,7 @@ async def create_review(review: ReviewCreate):
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error creating review: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

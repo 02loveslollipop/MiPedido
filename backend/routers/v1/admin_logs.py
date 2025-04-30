@@ -3,6 +3,7 @@ from models.admin_log import AdminLog, AdminLogFilter
 from database.repositories.admin_log_repository import AdminLogRepository
 from utils.admin_auth import get_current_admin, AdminTokenData
 import traceback
+import logging
 from typing import List, Dict
 from datetime import datetime
 
@@ -71,6 +72,8 @@ async def get_admin_logs(
             "limit": limit
         }
     except Exception as e:
+        logging.error(f"Error getting admin logs: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -98,5 +101,7 @@ async def get_admin_log(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error getting specific admin log: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

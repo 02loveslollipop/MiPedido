@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from models.user import User, UserAuth
+import traceback
+import logging
+from typing import List, Dict, Optional
+
+from pydantic import BaseModel
+from models.user import User, UserCreate, UserUpdatePassword
 from database.repositories import UserRepository, RestaurantRepository
 from utils.admin_auth import get_current_admin, AdminTokenData
-from utils.admin_logger import log_admin_operation  # Import the logging utility
-import traceback
-from typing import List, Dict
-from pydantic import BaseModel
+from utils.admin_logger import log_admin_operation
 from bson import ObjectId
-
-import logging
 
 router = APIRouter(
     prefix="/admin/users",
@@ -46,9 +46,12 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
     except HTTPException as e:
         raise e
     except Exception as e:
+        logging.error(f"Error in admin user operation: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
         
+
 
 @router.get("/{user_id}", response_model=Dict)
 async def admin_get_user(
@@ -73,6 +76,8 @@ async def admin_get_user(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error in admin user operation: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -112,6 +117,8 @@ async def admin_create_user(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error in admin user operation: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         logging.error(f"Error creating user: {error_detail}")
         raise HTTPException(status_code=500, detail=error_detail)
@@ -180,6 +187,8 @@ async def admin_update_user(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error in admin user operation: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -220,6 +229,8 @@ async def admin_delete_user(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error in admin user operation: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -283,6 +294,8 @@ async def admin_assign_restaurant(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error in admin user operation: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -347,5 +360,7 @@ async def admin_revoke_restaurant(
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error in admin user operation: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

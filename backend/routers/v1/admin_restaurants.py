@@ -2,13 +2,12 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from models.restaurant import Restaurant, RestaurantCreate, RestaurantBase
 from database.repositories import RestaurantRepository
 from utils.admin_auth import get_current_admin, AdminTokenData
-from utils.admin_logger import log_admin_operation  # Import the logging utility
+from utils.admin_logger import log_admin_operation
 import traceback
+import logging
 from typing import List
 from pydantic import BaseModel
 from bson import ObjectId
-
-import logging
 
 router = APIRouter(
     prefix="/admin/restaurants",
@@ -34,6 +33,8 @@ async def admin_list_restaurants(current_admin: AdminTokenData = Depends(get_cur
     except HTTPException:
         raise
     except Exception as e:
+        logging.error(f"Error listing restaurants: {str(e)}")
+        logging.error(traceback.format_exc())
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
