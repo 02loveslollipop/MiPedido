@@ -14,6 +14,9 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   final _descriptionController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final _priceController = TextEditingController();
+  final List<TextEditingController> _ingredientControllers = [
+    TextEditingController(),
+  ];
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoadingRestaurants = true;
@@ -37,6 +40,12 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _descriptionController.dispose();
     _imageUrlController.dispose();
     _priceController.dispose();
+
+    // Dispose all ingredient controllers
+    for (var controller in _ingredientControllers) {
+      controller.dispose();
+    }
+
     super.dispose();
   }
 
@@ -92,13 +101,72 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     _loadProducts(restaurant['id']);
   }
 
+  // Add a new empty ingredient field
+  void _addIngredientField() {
+    setState(() {
+      _ingredientControllers.add(TextEditingController());
+    });
+  }
+
+  // Delete an ingredient field
+  void _deleteIngredientField(int index) {
+    setState(() {
+      if (_ingredientControllers.length > 1) {
+        // If we have more than one field, remove the controller
+        _ingredientControllers[index].dispose();
+        _ingredientControllers.removeAt(index);
+      } else {
+        // If it's the only field, just clear it
+        _ingredientControllers[index].clear();
+      }
+    });
+  }
+
+  // Get all non-empty ingredients
+  List<String> _getIngredients() {
+    return _ingredientControllers
+        .map((controller) => controller.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+  }
+
   void _selectProduct(dynamic product) {
+    // Clear existing ingredient controllers except the first one
+    for (int i = 1; i < _ingredientControllers.length; i++) {
+      _ingredientControllers[i].dispose();
+    }
+    _ingredientControllers.clear();
+
+    // Set basic product details
     setState(() {
       _selectedProduct = product;
       _nameController.text = product['name'] ?? '';
       _descriptionController.text = product['description'] ?? '';
       _imageUrlController.text = product['img_url'] ?? '';
       _priceController.text = product['price']?.toString() ?? '';
+
+      // Load ingredients
+      final ingredients = product['ingredients'] as List<dynamic>? ?? [];
+
+      if (ingredients.isNotEmpty) {
+        // Create controllers for each ingredient
+        for (int i = 0; i < ingredients.length; i++) {
+          if (i == 0) {
+            // Use the first controller
+            _ingredientControllers.add(
+              TextEditingController(text: ingredients[i].toString()),
+            );
+          } else {
+            _ingredientControllers.add(
+              TextEditingController(text: ingredients[i].toString()),
+            );
+          }
+        }
+      } else {
+        // Just add one empty controller
+        _ingredientControllers.add(TextEditingController());
+      }
+
       _errorMessage = null;
     });
   }
@@ -130,6 +198,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       description: _descriptionController.text,
       price: double.parse(_priceController.text),
       imageUrl: _imageUrlController.text,
+      ingredients: _getIngredients(),
     );
 
     setState(() {
@@ -156,10 +225,10 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     }
 
     if (!mounted) return;
-      Navigator.push(
-        context,
-        FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
-      );
+    Navigator.push(
+      context,
+      FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
+    );
   }
 
   void showSnackbar(BuildContext context, InfoBar infoBar) {
@@ -409,6 +478,70 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                                                       autovalidateMode:
                                                           AutovalidateMode
                                                               .onUserInteraction,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 16),
+                                                  // Ingredients section
+                                                  InfoLabel(
+                                                    label: 'Ingredientes',
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        for (
+                                                          int i = 0;
+                                                          i <
+                                                              _ingredientControllers
+                                                                  .length;
+                                                          i++
+                                                        )
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets.only(
+                                                                  bottom: 8.0,
+                                                                ),
+                                                            child: Row(
+                                                              children: [
+                                                                Expanded(
+                                                                  child: TextFormBox(
+                                                                    controller:
+                                                                        _ingredientControllers[i],
+                                                                    placeholder:
+                                                                        'Ingrediente ${i + 1}',
+                                                                    onChanged: (
+                                                                      value,
+                                                                    ) {
+                                                                      // If this is the last textbox and it has text,
+                                                                      // add a new empty textbox
+                                                                      if (i ==
+                                                                              _ingredientControllers.length -
+                                                                                  1 &&
+                                                                          value
+                                                                              .isNotEmpty) {
+                                                                        _addIngredientField();
+                                                                      }
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 8,
+                                                                ),
+                                                                IconButton(
+                                                                  icon: const Icon(
+                                                                    FluentIcons
+                                                                        .delete,
+                                                                  ),
+                                                                  onPressed:
+                                                                      () =>
+                                                                          _deleteIngredientField(
+                                                                            i,
+                                                                          ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                      ],
                                                     ),
                                                   ),
                                                   const SizedBox(height: 16),

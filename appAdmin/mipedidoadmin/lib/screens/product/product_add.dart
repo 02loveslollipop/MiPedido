@@ -14,6 +14,9 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
   final _descriptionController = TextEditingController();
   final _imageUrlController = TextEditingController();
   final _priceController = TextEditingController();
+  final List<TextEditingController> _ingredientControllers = [
+    TextEditingController(),
+  ];
   final _formKey = GlobalKey<FormState>();
 
   bool _isLoadingRestaurants = true;
@@ -21,7 +24,6 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
   List<dynamic> _restaurants = [];
   String? _errorMessage;
   dynamic _selectedRestaurant;
-  final List<String> _ingredients = []; // Could be implemented if needed
 
   @override
   void initState() {
@@ -35,6 +37,12 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
     _descriptionController.dispose();
     _imageUrlController.dispose();
     _priceController.dispose();
+
+    // Dispose all ingredient controllers
+    for (var controller in _ingredientControllers) {
+      controller.dispose();
+    }
+
     super.dispose();
   }
 
@@ -60,6 +68,35 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
     });
   }
 
+  // Add a new empty ingredient field
+  void _addIngredientField() {
+    setState(() {
+      _ingredientControllers.add(TextEditingController());
+    });
+  }
+
+  // Delete an ingredient field
+  void _deleteIngredientField(int index) {
+    setState(() {
+      if (_ingredientControllers.length > 1) {
+        // If we have more than one field, remove the controller
+        _ingredientControllers[index].dispose();
+        _ingredientControllers.removeAt(index);
+      } else {
+        // If it's the only field, just clear it
+        _ingredientControllers[index].clear();
+      }
+    });
+  }
+
+  // Get all non-empty ingredients
+  List<String> _getIngredients() {
+    return _ingredientControllers
+        .map((controller) => controller.text.trim())
+        .where((text) => text.isNotEmpty)
+        .toList();
+  }
+
   Future<void> _addProduct() async {
     if (_formKey.currentState?.validate() != true ||
         _selectedRestaurant == null) {
@@ -78,7 +115,7 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
       description: _descriptionController.text,
       price: double.parse(_priceController.text),
       imageUrl: _imageUrlController.text,
-      ingredients: _ingredients, // Empty list for now, could be implemented later
+      ingredients: _getIngredients(),
     );
 
     setState(() {
@@ -107,11 +144,10 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
     }
 
     if (!mounted) return;
-      Navigator.push(
-        context,
-        FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
-      );
-
+    Navigator.push(
+      context,
+      FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
+    );
   }
 
   void showSnackbar(BuildContext context, InfoBar infoBar) {
@@ -256,6 +292,57 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                                 },
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            // Ingredients section
+                            InfoLabel(
+                              label: 'Ingredientes',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (
+                                    int i = 0;
+                                    i < _ingredientControllers.length;
+                                    i++
+                                  )
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 8.0,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextFormBox(
+                                              controller:
+                                                  _ingredientControllers[i],
+                                              placeholder:
+                                                  'Ingrediente ${i + 1}',
+                                              onChanged: (value) {
+                                                // If this is the last textbox and it has text,
+                                                // add a new empty textbox
+                                                if (i ==
+                                                        _ingredientControllers
+                                                                .length -
+                                                            1 &&
+                                                    value.isNotEmpty) {
+                                                  _addIngredientField();
+                                                }
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          IconButton(
+                                            icon: const Icon(
+                                              FluentIcons.delete,
+                                            ),
+                                            onPressed:
+                                                () => _deleteIngredientField(i),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
                             ),
                             const SizedBox(height: 16),

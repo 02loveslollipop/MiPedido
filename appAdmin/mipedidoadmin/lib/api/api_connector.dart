@@ -101,21 +101,9 @@ class ApiConnector {
   // Admin logout
   Future<bool> logout() async {
     try {
-      final token = await accessToken;
-      if (token == null) return true;
-
-      final response = await _client.post(
-        Uri.parse('$_baseUrl/v1/admin/logout'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
       await clearAuthInfo();
-      return response.statusCode == 200;
+      return true;
     } catch (e) {
-      await clearAuthInfo();
       return false;
     }
   }
