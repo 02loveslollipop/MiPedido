@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:window_manager/window_manager.dart';
+import 'api/api_connector.dart';
 import 'screens/login.dart';
 import 'screens/welcome.dart';
 import 'screens/user/user_info.dart';
@@ -68,19 +69,32 @@ class _MiPedidoAdminAppState extends State<MiPedidoAdminApp> {
   }
 
   Future<void> _checkIfLoggedIn() async {
-    // You can check if the admin is already logged in
-    // For example, by checking if there's a valid token in shared preferences
-    // or making an API call to validate an existing token
+    // Check if there's a valid token in shared preferences
+    final apiConnector = ApiConnector();
+    final bool isAuthenticated = await apiConnector.isLoggedIn();
 
-    // For now, let's just assume the user is not logged in
-    setState(() {
+    // If the user has a token, let's verify it with the server to make sure it's still valid
+    if (isAuthenticated) {
+      try {
+        final result = await apiConnector.getCurrentAdmin();
+        isLoggedIn = result['success'] == true;
+      } catch (e) {
+        // If there's an error (like expired token), consider the user not logged in
+        isLoggedIn = false;
+        // Clear any invalid tokens
+        await apiConnector.clearAuthInfo();
+      }
+    } else {
       isLoggedIn = false;
+    }
+
+    setState(() {
+      // Update UI based on authentication status
     });
   }
 
   @override
   Widget build(BuildContext context) {
-
     return ChangeNotifierProvider(
       create: (_) => AppTheme(themeMode, accentColor),
       builder: (context, _) {
@@ -209,7 +223,6 @@ class _AppShellState extends State<AppShell> {
 
   @override
   void initState() {
-
     super.initState();
     _selectedIndex = widget.initialIndex;
   }
@@ -243,8 +256,34 @@ class _AppShellState extends State<AppShell> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(FluentIcons.sign_out),
-                onPressed: () {
-                  // Log out functionality
+                onPressed: () async {
+                  // Show loading indicator
+                  showDialog(
+                    context: context,
+                    builder:
+                        (context) => ContentDialog(
+                          title: const Text('Cerrando sesión'),
+                          content: const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ProgressRing(),
+                                SizedBox(height: 16),
+                                Text('Cerrando sesión...'),
+                              ],
+                            ),
+                          ),
+                        ),
+                  );
+
+                  // Log out by clearing the token
+                  final apiConnector = ApiConnector();
+                  await apiConnector.logout();
+
+                  if (!mounted) return;
+
+                  // Close the dialog and navigate to login
+                  Navigator.of(context).pop();
                   Navigator.of(context).pushReplacementNamed('/login');
                 },
               ),

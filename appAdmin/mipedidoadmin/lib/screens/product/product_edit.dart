@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
+import '../../main.dart';
 
 class ProductEditScreen extends StatefulWidget {
   const ProductEditScreen({super.key});
@@ -153,6 +154,12 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         _errorMessage = result['error'] ?? 'Error al actualizar producto';
       });
     }
+
+    if (!mounted) return;
+      Navigator.push(
+        context,
+        FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
+      );
   }
 
   void showSnackbar(BuildContext context, InfoBar infoBar) {

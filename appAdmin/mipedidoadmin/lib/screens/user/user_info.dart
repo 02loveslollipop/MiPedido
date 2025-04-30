@@ -34,6 +34,16 @@ class _UserScreenState extends State<UserScreen> {
       _isLoading = false;
       if (result['success']) {
         _users = result['users'];
+        //for each user, the field 'controls' is a list of restaurant IDs take the first one and set it as 'controls' using map
+        _users = _users.map((user) {
+          if (user['controls'] is List && user['controls'].isNotEmpty) {
+            user['controls'] = user['controls'][0];
+          } else {
+            user['controls'] = 'Sin asignar';
+          }
+          return user;
+        }).toList();
+        
       } else {
         _errorMessage = result['error'] ?? 'Failed to load users';
       }
@@ -134,7 +144,7 @@ class _UserScreenState extends State<UserScreen> {
                                   material.DataCell(Text(user['username'] ?? 'N/A')),
                                   material.DataCell(
                                     Text(
-                                      user['restaurant_id'] ?? 'No asignado',
+                                      user['controls'] ?? 'Sin asignar',
                                     ),
                                   ),
                                   material.DataCell(

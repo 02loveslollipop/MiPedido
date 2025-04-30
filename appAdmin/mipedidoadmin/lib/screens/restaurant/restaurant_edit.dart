@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
 import 'restaurant_list.dart';
+import '../../main.dart';
 
 class RestaurantEditScreen extends StatefulWidget {
   const RestaurantEditScreen({super.key});
@@ -144,7 +145,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
       if (!mounted) return;
       Navigator.push(
         context,
-        FluentPageRoute(builder: (context) => const RestaurantListScreen()),
+        FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
       );
     } else {
       setState(() {

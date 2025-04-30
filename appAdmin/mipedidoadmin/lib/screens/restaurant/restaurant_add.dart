@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
+import '../../main.dart';
 
 class RestaurantAddScreen extends StatefulWidget {
   const RestaurantAddScreen({super.key});
@@ -94,6 +95,12 @@ class _RestaurantAddScreenState extends State<RestaurantAddScreen> {
         _errorMessage = result['error'] ?? 'Error al crear restaurante';
       });
     }
+
+    if (!mounted) return;
+      Navigator.push(
+        context,
+        FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
+      );
   }
 
   void showSnackbar(BuildContext context, InfoBar infoBar) {

@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
+import '../../main.dart';
 
 class AssignUserScreen extends StatefulWidget {
   const AssignUserScreen({super.key});
@@ -112,6 +113,13 @@ class _AssignUserScreenState extends State<AssignUserScreen> {
         _errorMessage = result['error'] ?? 'Error al asignar restaurante';
       });
     }
+
+    if (!mounted) return;
+      Navigator.push(
+        context,
+        FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
+      );
+
   }
 
   void showSnackbar(BuildContext context, InfoBar infoBar) {

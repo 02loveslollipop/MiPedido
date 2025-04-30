@@ -1,5 +1,6 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
+import '../../main.dart';
 
 class ProductAddScreen extends StatefulWidget {
   const ProductAddScreen({super.key});
@@ -104,6 +105,13 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
         _errorMessage = result['error'] ?? 'Error al crear producto';
       });
     }
+
+    if (!mounted) return;
+      Navigator.push(
+        context,
+        FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
+      );
+
   }
 
   void showSnackbar(BuildContext context, InfoBar infoBar) {
