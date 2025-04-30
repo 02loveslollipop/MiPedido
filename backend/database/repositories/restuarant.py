@@ -34,10 +34,10 @@ class RestaurantRepository:
     @classmethod
     async def create_restaurant(cls, restaurant: RestaurantCreate) -> Restaurant:
         
-        if isinstance(restaurant, dict):
-            restaurant_dict = restaurant
-        else:
+        if not isinstance(restaurant, dict):
             restaurant_dict = restaurant.model_dump()
+        else:
+            restaurant_dict = restaurant
         
         # Create document for insertion
         db_restaurant = restaurant_dict.copy()
@@ -48,7 +48,7 @@ class RestaurantRepository:
         
         # Handle position separately if it exists
         if db_restaurant.get("position"):
-            db_restaurant["position"] = db_restaurant["position"].model_dump()
+            db_restaurant["position"] = db_restaurant["position"]
         
         # Insert into database
         result = await cls.collection.insert_one(db_restaurant)
