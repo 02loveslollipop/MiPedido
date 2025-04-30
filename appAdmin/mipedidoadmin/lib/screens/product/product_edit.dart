@@ -181,8 +181,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                   severity: InfoBarSeverity.error,
                   isLong: true,
                   action: FilledButton(
-                    child: const Text('Reintentar'),
                     onPressed: _loadRestaurants,
+                    child: const Text('Reintentar'),
                   ),
                 ),
               )

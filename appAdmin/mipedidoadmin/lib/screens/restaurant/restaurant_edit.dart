@@ -139,39 +139,39 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
               ? const Center(
                 child: Text('No hay restaurantes disponibles para editar'),
               )
-              : Row(
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Sidebar with restaurant list
-                  SizedBox(
-                    width: 250,
-                    child: NavigationView(
-                      pane: NavigationPane(
-                        header: const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text(
-                            'Seleccionar Restaurante',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 300,
+                          child: InfoLabel(
+                            label: 'Seleccionar Restaurante',
+                            child: ComboBox<dynamic>(
+                              value: _selectedRestaurant,
+                              items: _restaurants.map((restaurant) {
+                                return ComboBoxItem<dynamic>(
+                                  value: restaurant,
+                                  child: Text(restaurant['name'] ?? 'Sin nombre'),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  _selectRestaurant(value);
+                                }
+                              },
+                            ),
                           ),
                         ),
-                        size: const NavigationPaneSize(
-                          openWidth: 250,
-                          openMinWidth: 250,
-                          openMaxWidth: 250,
+                        const Spacer(),
+                        Button(
+                          child: const Text('Refrescar'),
+                          onPressed: _loadRestaurants,
                         ),
-                        displayMode: PaneDisplayMode.open,
-                        selected: -1,
-                        items:
-                            _restaurants.map<PaneItem>((restaurant) {
-                              return PaneItem(
-                                icon: Icon(FluentIcons.filter),
-                                title: Text(restaurant['name'] ?? 'Sin nombre'),
-                                body: const SizedBox.shrink(),
-                                onTap: () {
-                                  _selectRestaurant(restaurant);
-                                },
-                              );
-                            }).toList(),
-                      ),
+                      ],
                     ),
                   ),
                   // Main content area with restaurant edit form
