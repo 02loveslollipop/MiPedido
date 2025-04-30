@@ -48,3 +48,11 @@ class Product(ProductBase):
             img_url=db_product.img_url,
             ingredients=db_product.ingredients
         )
+        
+class ProductUpdate(BaseModel):
+    """Schema for updating product details"""
+    name: str | None = None
+    description: str | None = None
+    price: float | None = None
+    img_url: HttpUrl | None = None
+    ingredients: List[str] | None = None
