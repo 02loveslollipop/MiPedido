@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MiPedidoApp() {
     val navController = rememberNavController()
-    
+
     NavHost(
         navController = navController,
         startDestination = "restaurants",
@@ -51,11 +51,11 @@ fun MiPedidoApp() {
                 }
             )
         }
-        
+
         // Products Screen
         composable(
             route = "products/{restaurantId}/{orderId}/{userId}",
-            arguments = listOf(
+            arguments = kotlin.collections.listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
@@ -74,11 +74,11 @@ fun MiPedidoApp() {
                 }
             )
         }
-        
+
         // QR Code Screen
         composable(
             route = "qr/{restaurantId}/{orderId}/{userId}",
-            arguments = listOf(
+            arguments = kotlin.collections.listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
@@ -97,7 +97,7 @@ fun MiPedidoApp() {
                 }
             )
         }
-        
+
         // QR Scanner Screen
         composable("qr-scanner") {
             QrScannerScreen(
@@ -109,11 +109,11 @@ fun MiPedidoApp() {
                 }
             )
         }
-        
+
         // Cart Screen
         composable(
             route = "cart/{restaurantId}/{orderId}/{userId}",
-            arguments = listOf(
+            arguments = kotlin.collections.listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
@@ -129,14 +129,14 @@ fun MiPedidoApp() {
                 onNavigateBack = { navController.popBackStack() },
                 onCheckout = { resId, oId, uId ->
                     navController.navigate("checkout-qr/$resId/$oId/$uId")
-                }
+                },
             )
         }
-        
+
         // Checkout QR Screen
         composable(
             route = "checkout-qr/{restaurantId}/{orderId}/{userId}",
-            arguments = listOf(
+            arguments = kotlin.collections.listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
