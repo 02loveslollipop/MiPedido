@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Person
@@ -50,6 +52,23 @@ fun RestaurantsScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var userLocation by remember { mutableStateOf<Position?>(null) }
     var showLocationDialog by remember { mutableStateOf(false) }
+    
+    // Add state for restaurant type filtering
+    var selectedType by remember { mutableStateOf<String?>(null) }
+    
+    // Extract unique restaurant types
+    val restaurantTypes = remember(restaurants) {
+        restaurants.map { it.type }.distinct().sorted()
+    }
+    
+    // Filter restaurants based on selected type
+    val filteredRestaurants = remember(restaurants, selectedType) {
+        if (selectedType == null) {
+            restaurants
+        } else {
+            restaurants.filter { it.type == selectedType }
+        }
+    }
     
     // Location permission state
     val locationPermissionState = rememberPermissionState(
@@ -256,21 +275,78 @@ fun RestaurantsScreen(
                         .align(Alignment.Center)
                 )
             } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 300.dp),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(restaurants) { restaurant ->
-                        RestaurantCard(
-                            restaurant = restaurant,
-                            onClick = {
-                                selectedRestaurant = restaurant
-                                showOrderTypeDialog = true
-                            },
-                            userLocation = userLocation
-                        )
+                Column {
+                    // Restaurant type filter section
+                    if (restaurantTypes.isNotEmpty()) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            ) {
+                                Text(
+                                    text = "Filtrar por tipo:",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                                
+                                LazyRow(
+                                    contentPadding = PaddingValues(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    // "All" filter option
+                                    item {
+                                        FilterChip(
+                                            selected = selectedType == null,
+                                            onClick = { selectedType = null },
+                                            label = { Text("Todos") },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        )
+                                    }
+                                    
+                                    // Restaurant type filters
+                                    items(restaurantTypes) { type ->
+                                        FilterChip(
+                                            selected = selectedType == type,
+                                            onClick = { selectedType = type },
+                                            label = { Text(type) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Restaurant grid
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 300.dp),
+                        contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(filteredRestaurants) { restaurant ->
+                            RestaurantCard(
+                                restaurant = restaurant,
+                                onClick = {
+                                    selectedRestaurant = restaurant
+                                    showOrderTypeDialog = true
+                                },
+                                userLocation = userLocation
+                            )
+                        }
                     }
                 }
             }
