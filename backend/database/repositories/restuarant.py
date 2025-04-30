@@ -33,7 +33,11 @@ class RestaurantRepository:
 
     @classmethod
     async def create_restaurant(cls, restaurant: RestaurantCreate) -> Restaurant:
-        restaurant_dict = restaurant.model_dump()
+        
+        if not isinstance(restaurant, dict):
+            restaurant_dict = restaurant.model_dump()
+        else:
+            restaurant_dict = restaurant
         
         # Create document for insertion
         db_restaurant = restaurant_dict.copy()
