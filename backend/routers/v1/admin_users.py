@@ -1,10 +1,9 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Depends
 import traceback
 import logging
-from typing import List, Dict, Optional
-
+from typing import List, Dict
 from pydantic import BaseModel
-from models.user import User, UserCreate, UserUpdatePassword
+from models.user import User
 from database.repositories import UserRepository, RestaurantRepository
 from utils.admin_auth import get_current_admin, AdminTokenData
 from utils.admin_logger import log_admin_operation

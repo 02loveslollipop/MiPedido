@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query
 from models.admin_log import AdminLog, AdminLogFilter
 from database.repositories.admin_log_repository import AdminLogRepository
 from utils.admin_auth import get_current_admin, AdminTokenData

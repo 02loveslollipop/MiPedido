@@ -1,10 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from typing import List, Dict, Optional
+from fastapi import APIRouter, HTTPException, Depends
+from typing import List, Dict
 import traceback
 import logging
 from bson import ObjectId
-
-from pydantic import BaseModel
 from models.product import ProductCreate, Product, ProductUpdate
 from database.repositories import ProductRepository, RestaurantRepository
 from utils.admin_auth import get_current_admin, AdminTokenData

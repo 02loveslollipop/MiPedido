@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from models.restaurant import Restaurant, RestaurantCreate, RestaurantBase
+from fastapi import APIRouter, HTTPException, Depends
+from models.restaurant import Restaurant, RestaurantCreate
 from database.repositories import RestaurantRepository
 from utils.admin_auth import get_current_admin, AdminTokenData
 from utils.admin_logger import log_admin_operation
