@@ -167,14 +167,6 @@ class _RestaurantListScreenState extends State<RestaurantListScreen> {
                                         Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.end,
-                                          children: [
-                                            Button(
-                                              child: const Text('Editar'),
-                                              onPressed: () {
-                                                // Navigate to edit screen (implement later)
-                                              },
-                                            ),
-                                          ],
                                         ),
                                       ],
                                     ),

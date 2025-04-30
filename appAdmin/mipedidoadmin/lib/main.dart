@@ -155,11 +155,6 @@ class _AppShellState extends State<AppShell> {
       body: const UserScreen(),
       items: [
         PaneItem(
-          icon: const Icon(FluentIcons.people),
-          title: const Text('Lista de Usuarios'),
-          body: const UserScreen(),
-        ),
-        PaneItem(
           icon: const Icon(FluentIcons.add_friend),
           title: const Text('Agregar Usuario'),
           body: const AddUserScreen(),
@@ -182,11 +177,6 @@ class _AppShellState extends State<AppShell> {
       body: const RestaurantListScreen(),
       items: [
         PaneItem(
-          icon: const Icon(FluentIcons.clipboard_list),
-          title: const Text('Lista de Restaurantes'),
-          body: const RestaurantListScreen(),
-        ),
-        PaneItem(
           icon: const Icon(FluentIcons.add),
           title: const Text('Agregar Restaurante'),
           body: const RestaurantAddScreen(),
@@ -203,11 +193,6 @@ class _AppShellState extends State<AppShell> {
       title: const Text('Productos'),
       body: const ProductAddScreen(),
       items: [
-        PaneItem(
-          icon: const Icon(FluentIcons.add),
-          title: const Text('Agregar Producto'),
-          body: const ProductAddScreen(),
-        ),
         PaneItem(
           icon: const Icon(FluentIcons.edit),
           title: const Text('Editar Productos'),
