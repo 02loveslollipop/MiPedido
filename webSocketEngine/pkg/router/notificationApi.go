@@ -41,11 +41,10 @@ func sendNotificationHandler(c *gin.Context) {
 // sendOrderNotificationHandler handles order-specific notifications
 func sendOrderNotificationHandler(c *gin.Context) {
 	var request struct {
-		OrderID     string      `json:"order_id" binding:"required"`
-		Status      string      `json:"status" binding:"required"`
-		CustomerID  string      `json:"customer_id" binding:"required"`
-		VendorID    string      `json:"vendor_id" binding:"required"`
-		OrderDetail interface{} `json:"order_detail"`
+		OrderID      string      `json:"order_id" binding:"required"`
+		Status       string      `json:"status" binding:"required"`
+		RestaurantID string      `json:"restaurant_id" binding:"required"`
+		OrderDetail  interface{} `json:"order_detail"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -78,18 +77,17 @@ func sendOrderNotificationHandler(c *gin.Context) {
 
 	// Create the payload
 	payload := map[string]interface{}{
-		"order_id": request.OrderID,
-		"status":   request.Status,
-		"detail":   request.OrderDetail,
+		"order_id":      request.OrderID,
+		"status":        request.Status,
+		"restaurant_id": request.RestaurantID,
+		"detail":        request.OrderDetail,
 	}
 
-	// Send notification to both customer and vendor
-	targetIDs := []string{request.CustomerID, request.VendorID}
-	utils.TriggerEvent(eventType, "orders", targetIDs, payload)
+	// Send notification for the order ID directly
+	utils.TriggerEvent(eventType, "orders", []string{request.OrderID}, payload)
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":     "order notification sent",
-		"order_id":   request.OrderID,
-		"recipients": targetIDs,
+		"status":   "order notification sent",
+		"order_id": request.OrderID,
 	})
 }

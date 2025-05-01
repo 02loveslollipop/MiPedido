@@ -21,12 +21,12 @@ var (
 
 // Client represents a single WebSocket connection
 type Client struct {
-	ID       string
-	UserType string // "customer", "vendor", etc.
-	Topic    string // What kind of notifications this client wants
-	Conn     *websocket.Conn
-	Send     chan []byte
-	mu       sync.Mutex
+	ID      string // Connection identifier
+	Topic   string // What kind of notifications this client wants
+	OrderID string // ID of the order this client is watching
+	Conn    *websocket.Conn
+	Send    chan []byte
+	mu      sync.Mutex
 }
 
 // ClientHub maintains the set of active clients and broadcasts messages to clients
@@ -62,16 +62,31 @@ func (h *ClientHub) Run() {
 		select {
 		case client := <-h.Register:
 			h.mu.Lock()
+
+			// If this client is watching an order, unregister any existing clients for the same order
+			if client.OrderID != "" {
+				for existingClient := range h.Clients {
+					if existingClient.OrderID == client.OrderID {
+						// Remove existing client watching this order
+						delete(h.Clients, existingClient)
+						close(existingClient.Send)
+						log.Printf("Disconnected previous client %s for order %s", existingClient.ID, existingClient.OrderID)
+					}
+				}
+			}
+
+			// Register the new client
 			h.Clients[client] = true
+			log.Printf("Client connected: %s, Order: %s, Topic: %s", client.ID, client.OrderID, client.Topic)
+
 			h.mu.Unlock()
-			log.Printf("Client connected: %s, Topic: %s", client.ID, client.Topic)
 
 		case client := <-h.Unregister:
 			h.mu.Lock()
 			if _, ok := h.Clients[client]; ok {
 				delete(h.Clients, client)
 				close(client.Send)
-				log.Printf("Client disconnected: %s", client.ID)
+				log.Printf("Client disconnected: %s, Order: %s", client.ID, client.OrderID)
 			}
 			h.mu.Unlock()
 		}
@@ -79,13 +94,13 @@ func (h *ClientHub) Run() {
 }
 
 // NewClient creates a new client instance
-func NewClient(conn *websocket.Conn, id string, userType string, topic string) *Client {
+func NewClient(conn *websocket.Conn, connectionID string, topic string) *Client {
 	return &Client{
-		ID:       id,
-		UserType: userType,
-		Topic:    topic,
-		Conn:     conn,
-		Send:     make(chan []byte, 256),
+		ID:      connectionID,
+		Topic:   topic,
+		OrderID: "",
+		Conn:    conn,
+		Send:    make(chan []byte, 256),
 	}
 }
 
@@ -208,6 +223,84 @@ func BroadcastToTopic(topic string, msgType string, payload interface{}) {
 		}
 	}
 	Hub.mu.Unlock()
+}
+
+// BroadcastToOrder sends a message to the single client subscribed to this order ID
+func BroadcastToOrder(orderID string, msgType string, payload interface{}) {
+	message := Message{
+		Type:    msgType,
+		Topic:   "orders", // Orders is the standard topic for order notifications
+		Payload: payload,
+	}
+
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling message: %v", err)
+		return
+	}
+
+	Hub.mu.Lock()
+	defer Hub.mu.Unlock()
+
+	// Find the single client for this order
+	for client := range Hub.Clients {
+		if client.OrderID == orderID {
+			select {
+			case client.Send <- data:
+				log.Printf("Sent notification to user %s for order %s", client.ID, orderID)
+			default:
+				close(client.Send)
+				delete(Hub.Clients, client)
+				log.Printf("Failed to send notification, removed client %s", client.ID)
+			}
+			return // Exit after finding the first client, since we only expect one per order
+		}
+	}
+
+	log.Printf("No active clients found for order %s", orderID)
+}
+
+// CloseOrderConnection finds and closes a client connection for a specific order ID
+func CloseOrderConnection(orderID string) {
+	Hub.mu.Lock()
+	defer Hub.mu.Unlock()
+
+	for client := range Hub.Clients {
+		if client.OrderID == orderID {
+			// Send a closing message to the client
+			closePayload := map[string]interface{}{
+				"message":   "Order has been finalized. Connection will now close.",
+				"order_id":  orderID,
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+
+			// Try to send a closing message
+			message := Message{
+				Type:    "order_completed",
+				Topic:   "orders",
+				Payload: closePayload,
+			}
+
+			data, err := json.Marshal(message)
+			if err == nil {
+				// Try to send the closing message, but don't block if it fails
+				select {
+				case client.Send <- data:
+					log.Printf("Sent closing message to client %s for order %s", client.ID, orderID)
+				default:
+					log.Printf("Failed to send closing message to client %s for order %s", client.ID, orderID)
+				}
+			}
+
+			// Close the client connection
+			close(client.Send)
+			delete(Hub.Clients, client)
+			log.Printf("Closed connection for client %s with order %s after notification", client.ID, orderID)
+			return // Only one client per order, so we can return after finding it
+		}
+	}
+
+	log.Printf("No active clients found for order %s to close", orderID)
 }
 
 // WebSocketClosedError is an error type for closed websocket connections

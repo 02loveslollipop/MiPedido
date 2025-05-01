@@ -7,17 +7,35 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
+	"websocketengine.mipedido/pkg/database"
 	"websocketengine.mipedido/pkg/router"
+	"websocketengine.mipedido/pkg/services"
 	"websocketengine.mipedido/pkg/utils"
 )
 
 func main() {
+	// Initialize the MongoDB connection
+	log.Println("Connecting to MongoDB...")
+	if err := database.ConnectMongoDB(); err != nil {
+		log.Fatalf("Failed to connect to MongoDB: %v", err)
+	}
+	defer database.DisconnectMongoDB()
+
+	// Initialize the order watcher service
+	orderWatcher := services.GetOrderWatcher()
+	if orderWatcher == nil {
+		log.Fatalf("Failed to initialize order watcher service")
+	}
+
 	// Initialize the notification manager
 	notifier := utils.GetNotifier()
 	defer notifier.Shutdown()
 
 	// Create a new Gin router
 	r := gin.Default()
+
+	// Add our custom middleware for logging non-2xx responses
+	r.Use(utils.LogNon2xxResponses())
 
 	// Add CORS middleware
 	r.Use(func(c *gin.Context) {
@@ -46,6 +64,9 @@ func main() {
 
 	// Register notification API routes
 	router.RegisterNotificationAPI(r)
+
+	// Register static file routes
+	router.RegisterStaticRoutes(r)
 
 	// Get the port from environment variable or use default
 	port := os.Getenv("PORT")

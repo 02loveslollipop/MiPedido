@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebSocket Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input, button {
+      padding: 8px;
+      margin-right: 10px;
+    }
+    pre {
+      background-color: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 5px;
+      padding: 8px;
+      border-radius: 4px;
+    }
+    .message.received {
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
+    }
+    .status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .connected {
+      color: green;
+    }
+    .disconnected {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>MiPedido WebSocket Test Client</h1>
+  
+  <div class="form-group">
+    <label for="hostname">Server Hostname:</label>
+    <input type="text" id="hostname" placeholder="localhost" />
+    <small style="display: block; color: #666; margin-top: 2px;">Leave empty to use current hostname</small>
+  </div>
+  
+  <div class="form-group">
+    <label for="orderId">Order ID:</label>
+    <input type="text" id="orderId" value="68105141fb5fb08039605db8" />
+  </div>
+
+  <div class="form-group">
+    <button id="connectBtn">Connect WebSocket</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+  </div>
+
+  <div class="status disconnected" id="status">Not Connected</div>
+
+  <h2>Messages</h2>
+  <div id="messages"></div>
+
+  <script>
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const statusEl = document.getElementById('status');
+    const messagesEl = document.getElementById('messages');
+    const orderIdInput = document.getElementById('orderId');
+    const hostnameInput = document.getElementById('hostname');
+    
+    let socket = null;
+    
+    connectBtn.addEventListener('click', () => {
+      const orderId = orderIdInput.value.trim();
+      const customHostname = hostnameInput.value.trim();
+      const hostname = customHostname || window.location.hostname || 'localhost';
+      
+      if (!orderId) {
+        alert('Please enter an Order ID');
+        return;
+      }
+      
+      // Create WebSocket connection
+      const url = `ws://${hostname}:8080/ws/orderNotification?order_id=${orderId}&topic=orders`;
+      console.log(`Connecting to: ${url}`);
+      
+      socket = new WebSocket(url);
+      
+      // Connection opened
+      socket.addEventListener('open', (event) => {
+        updateStatus(true, 'Connected to WebSocket server');
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+      });
+      
+      // Listen for messages
+      socket.addEventListener('message', (event) => {
+        console.log('Message from server:', event.data);
+        addMessage(event.data);
+      });
+      
+      // Listen for errors
+      socket.addEventListener('error', (event) => {
+        console.error('WebSocket error:', event);
+        updateStatus(false, 'WebSocket error');
+      });
+      
+      // Connection closed
+      socket.addEventListener('close', (event) => {
+        if (event.wasClean) {
+          updateStatus(false, `Connection closed cleanly, code=${event.code}, reason=${event.reason}`);
+        } else {
+          updateStatus(false, 'Connection died');
+        }
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+      });
+    });
+    
+    disconnectBtn.addEventListener('click', () => {
+      if (socket) {
+        socket.close();
+        socket = null;
+        updateStatus(false, 'Disconnected');
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+      }
+    });
+    
+    function updateStatus(connected, message) {
+      statusEl.textContent = message;
+      statusEl.classList.remove(connected ? 'disconnected' : 'connected');
+      statusEl.classList.add(connected ? 'connected' : 'disconnected');
+    }
+    
+    function addMessage(data) {
+      const messageEl = document.createElement('div');
+      messageEl.classList.add('message', 'received');
+      
+      try {
+        // Try to parse as JSON
+        const json = JSON.parse(data);
+        messageEl.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: <pre>${JSON.stringify(json, null, 2)}</pre>`;
+      } catch (e) {
+        // Fallback to plain text
+        messageEl.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${data}`;
+      }
+      
+      messagesEl.prepend(messageEl);
+    }
+  </script>
+</body>
+</html>

@@ -6,6 +6,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"websocketengine.mipedido/pkg/models"
+	"websocketengine.mipedido/pkg/services"
 	"websocketengine.mipedido/pkg/utils"
 )
 
@@ -22,15 +27,46 @@ func Routes(route *gin.Engine) {
 }
 
 func orderNotificationHandler(c *gin.Context) {
-	// Get query parameters
-	userID := c.Query("user_id")
-	if userID == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing user_id parameter"})
+	// Get order_id parameter
+	orderID := c.Query("order_id")
+	if orderID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing order_id parameter"})
 		return
 	}
 
-	userType := c.DefaultQuery("user_type", "customer")
 	topic := c.DefaultQuery("topic", "orders")
+
+	// Check if order has already been notified
+	orderWatcher := services.GetOrderWatcher()
+	orderObjID, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid order ID format"})
+		return
+	}
+
+	// Find the order in MongoDB
+	var order models.Order
+	err = orderWatcher.GetCollection().FindOne(c, bson.M{"_id": orderObjID}).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch order: " + err.Error()})
+		}
+		return
+	}
+
+	// Check if the order has already been notified
+	notifiedAtTime := order.NotifiedAt.Time()
+	zeroDate := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+	if notifiedAtTime.After(zeroDate) { // Check if the order has been notified
+		c.JSON(http.StatusConflict, gin.H{
+			"error":      "Order has already been notified",
+			"notifiedAt": notifiedAtTime,
+		})
+		
+		return
+	}
 
 	// Get the Upgrader instance
 	upgrader := utils.GetInstance()
@@ -43,21 +79,30 @@ func orderNotificationHandler(c *gin.Context) {
 		return
 	}
 
-	// Create a new client
-	client := utils.NewClient(conn, userID, userType, topic)
+	// Create a unique connection ID
+	connectionID := "conn_" + primitive.NewObjectID().Hex()
 
-	// Register the client
+	// Create a new client with only the connection ID and order ID
+	client := utils.NewClient(conn, connectionID, topic)
+
+	// Associate client with the specific order ID
+	client.OrderID = orderID
+
+	// Register the client with the hub
 	utils.Hub.Register <- client
+
+	// Register the order for watching in the OrderChangeWatcher
+	services.GetOrderWatcher().AddOrderToWatch(orderID)
 
 	// Start client goroutines
 	go client.WritePump()
 	go client.ReadPump()
 
 	// Send a welcome message to the client
-	welcomePayload := map[string]string{
-		"message": "Welcome to the MiPedido order notification service",
-		"user_id": userID,
-		"time":    time.Now().Format(time.RFC3339),
+	welcomePayload := map[string]interface{}{
+		"message":  "Websocket connection established",
+		"order_id": orderID,
+		"time":     time.Now().Format(time.RFC3339),
 	}
 
 	err = utils.SendToClient(client, "welcome", welcomePayload)

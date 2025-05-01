@@ -79,8 +79,13 @@ func (nm *NotificationManager) Shutdown() {
 func (nm *NotificationManager) processEvent(event NotificationEvent) {
 	log.Printf("Processing notification event: %s for topic: %s", event.Type, event.Topic)
 
-	if len(event.TargetIDs) > 0 {
-		// Send to specific users
+	if event.Topic == "orders" && len(event.TargetIDs) > 0 {
+		// For orders topic with specific target IDs, treat them as order IDs
+		for _, orderID := range event.TargetIDs {
+			BroadcastToOrder(orderID, string(event.Type), event.Payload)
+		}
+	} else if len(event.TargetIDs) > 0 {
+		// For other topics, send to specific users
 		nm.sendToUsers(event)
 	} else {
 		// Broadcast to all clients subscribed to the topic
