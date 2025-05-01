@@ -1670,61 +1670,158 @@ Updates a user's details.
 }
 ```
 
-### Delete User
+## Blob Storage
 
+The Blob Storage API provides endpoints for uploading and deleting files such as images and PDFs.
+
+### Upload File to Blob Storage
+
+**URL**: `/v1/blob/upload`
+
+**Method**: `POST`
+
+**Auth required**: `Yes`
+
+**Auth type**: `JWT Bearer Token`
+
+**Content-Type**: `multipart/form-data`
+
+**Description**: Uploads a file to blob storage. Currently supports JPEG, PNG, and PDF files with a maximum size of 5MB.
+
+#### Input: Form Data
 ```
-DELETE /v1/admin/users/{user_id}
+file: File  // The file to upload
 ```
 
-Deletes a user.
-
-**Response:** HTTP 204 No Content
-
-### Assign Restaurant to User
-
+#### Input: Header
 ```
-PUT /v1/admin/users/{user_id}/assign-restaurant
+Authorization: Bearer {access_token}
 ```
 
-Assigns control of a restaurant to a user.
+#### Output:
 
-**Request:**
+- File uploaded successfully.
+
+**HTTP** 201: Created
 
 ```json
 {
-  "restaurant_id": "612e4c8212ab3f4e10d9ef60"
+  "name": String,  // Original filename
+  "url": String    // Accessible URL of the uploaded file
 }
 ```
 
-**Response:**
+- Invalid file type.
+
+**HTTP** 400: Bad Request
 
 ```json
 {
-  "message": "Restaurant assigned successfully"
+  "detail": "Invalid file type. Only JPEG, PNG, and PDF files are allowed."
 }
 ```
 
-### Revoke Restaurant from User
+- File size too large.
 
-```
-PUT /v1/admin/users/{user_id}/revoke-restaurant
-```
-
-Revokes a user's control of a restaurant.
-
-**Request:**
+**HTTP** 400: Bad Request
 
 ```json
 {
-  "restaurant_id": "612e4c8212ab3f4e10d9ef60"
+  "detail": "File size exceeds the limit of 5MB."
 }
 ```
 
-**Response:**
+- Invalid authentication.
+
+**HTTP** 401: Unauthorized
 
 ```json
 {
-  "message": "Restaurant access revoked successfully"
+  "detail": "Not authenticated"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+  "detail": String
+}
+```
+
+### Delete File from Blob Storage
+
+**URL**: `/v1/blob/delete/`
+
+**Method**: `DELETE`
+
+**Auth required**: `Yes`
+
+**Auth type**: `JWT Bearer Token`
+
+**Description**: Deletes a file from blob storage based on its URL.
+
+#### Input: Query Parameter
+```
+blob_url: String  // The full URL of the file to delete
+```
+
+#### Input: Header
+```
+Authorization: Bearer {access_token}
+```
+
+#### Output:
+
+- File deleted successfully.
+
+**HTTP** 200: OK
+
+```json
+{
+  "message": "Blob deleted successfully"
+}
+```
+
+- Missing blob URL.
+
+**HTTP** 400: Bad Request
+
+```json
+{
+  "detail": "Blob URL is required"
+}
+```
+
+- Invalid blob URL format.
+
+**HTTP** 400: Bad Request
+
+```json
+{
+  "detail": "Invalid blob URL format"
+}
+```
+
+- Invalid authentication.
+
+**HTTP** 401: Unauthorized
+
+```json
+{
+  "detail": "Not authenticated"
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+  "detail": String
 }
 ```
 
@@ -1819,7 +1916,6 @@ Error response format:
 }
 ```
 
-
 # Documentación otros
 
 ## Reduced OrderID
@@ -1841,5 +1937,175 @@ The order ID is reduced to a shorter, more user-friendly format using Base36 enc
 3. **Return**: If found, the server returns the corresponding full 24-character hexadecimal `object_id` (the original Order ID).
 
 This `/v1/shortener` endpoint simplifies retrieving the full ID from the short code without needing client-side decoding logic.
+
+## WebSocket API
+
+The WebSocket API provides real-time notifications for order status changes, particularly when orders are fulfilled.
+
+### Order Notification WebSocket
+
+**URL**: `ws://<host>:8080/ws/orderNotification`
+
+**Method**: `WebSocket`
+
+**Auth required**: `No`
+
+**Description**: Establishes a WebSocket connection to receive real-time notifications for a specific order. The WebSocket remains open until the order is marked as fulfilled, at which point the server will send a notification and close the connection.
+
+#### Connection Parameters (Query String):
+
+```
+order_id: String  // Required - The MongoDB ObjectID of the order to monitor
+topic: String     // Optional - The topic to subscribe to (default: "orders")
+```
+
+#### Response Messages:
+
+Messages sent from the server are JSON objects with the following structure:
+
+```json
+{
+  "type": String,     // Message type (e.g., "welcome", "order_completed")
+  "topic": String,    // The topic (usually "orders")
+  "payload": Object   // Message content, varies by message type
+}
+```
+
+**Message Types:**
+
+1. **`welcome` message**:
+   - Sent immediately after connection is established
+   - Payload format:
+
+```json
+{
+  "message": "Websocket connection established",
+  "order_id": String,
+  "time": String      // ISO DateTime format
+}
+```
+
+2. **`order_completed` message**:
+   - Sent when the order status changes to "fulfilled"
+   - After this message, the connection will be closed by the server
+   - Payload format:
+
+```json
+{
+  "order_id": String,
+  "restaurant_id": String,
+  "status": "fulfilled",
+  "timestamp": String,    // ISO DateTime format
+  "message": "Your order has been completed"
+}
+```
+
+#### Error Responses:
+
+- **Invalid order format**:
+
+**HTTP** 400: Bad Request
+```json
+{
+  "error": "Invalid order ID format"
+}
+```
+
+- **Missing order ID**:
+
+**HTTP** 400: Bad Request
+```json
+{
+  "error": "Missing order_id parameter"
+}
+```
+
+- **Order not found**:
+
+**HTTP** 404: Not Found
+```json
+{
+  "error": "Order not found"
+}
+```
+
+- **Order already notified**:
+
+**HTTP** 409: Conflict
+```json
+{
+  "error": "Order has already been notified",
+  "notifiedAt": String  // ISO DateTime when the order was notified
+}
+```
+
+### Notification API (For admin/backend use)
+
+These endpoints allow other services to trigger notifications through the WebSocket system.
+
+#### Send General Notification
+
+**URL**: `/api/notify`
+
+**Method**: `POST`
+
+**Auth required**: `No` (Internal API, should be secured in production)
+
+**Content-Type**: `application/json`
+
+**Description**: Sends a notification to clients subscribed to a specific topic.
+
+**Request Body**:
+```json
+{
+  "type": String,        // Notification type
+  "topic": String,       // Topic to broadcast to
+  "target_ids": [        // Optional array of user IDs to target
+    String
+  ],
+  "payload": Object      // Any JSON payload to send to clients
+}
+```
+
+**Response**:
+```json
+{
+  "status": "notification sent"
+}
+```
+
+#### Send Order Notification
+
+**URL**: `/api/notify/order`
+
+**Method**: `POST`
+
+**Auth required**: `No` (Internal API, should be secured in production)
+
+**Content-Type**: `application/json`
+
+**Description**: Sends a notification specifically for an order.
+
+**Request Body**:
+```json
+{
+  "order_id": String,        // Order ID to notify
+  "status": String,          // Order status (e.g., "completed", "delivered")
+  "restaurant_id": String,   // Restaurant ID
+  "order_detail": Object     // Optional order details
+}
+```
+
+**Response**:
+```json
+{
+  "status": "order notification sent",
+  "order_id": String
+}
+```
+
+### Test Client
+
+A test client for WebSocket connections is available at `http://<host>:8080/test`. This web page allows you to test WebSocket connections and observe real-time notifications.
 
 

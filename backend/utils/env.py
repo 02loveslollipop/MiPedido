@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     
+    blob_read_write_token: str | None = os.getenv("BLOB_READ_WRITE_TOKEN", "default_blob_token")
+    gin_mode: str | None = os.getenv("GIN_MODE", "release")
+    
     class Config:
         env_file = ".env"
 

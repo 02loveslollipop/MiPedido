@@ -9,6 +9,8 @@ sqlalchemy
 databases
 asyncpg
 pyjwt
+python-multipart
+vercel_blob
 # Testing dependencies
 pytest
 pytest-asyncio

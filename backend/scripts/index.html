@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blob Storage Upload Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    .container { max-width: 400px; margin: auto; }
+    label { display: block; margin-bottom: 0.5em; }
+    input[type="file"], input[type="text"] { margin-bottom: 1em; width: 100%; }
+    button { padding: 0.5em 1em; }
+    #result { margin-top: 1em; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Test Blob Storage Upload</h2>
+    <form id="uploadForm">
+      <label for="host">API Host (e.g. http://localhost:8000):</label>
+      <input type="text" id="host" name="host" placeholder="http://localhost:8000" required>
+
+      <label for="token">Bearer Token:</label>
+      <input type="text" id="token" name="token" placeholder="Paste your Bearer token here" required>
+
+      <label for="file">Select file (JPEG, PNG, PDF, max 5MB):</label>
+      <input type="file" id="file" name="file" required>
+
+      <button type="submit">Upload</button>
+    </form>
+    <div id="result"></div>
+  </div>
+  <script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('file');
+      const tokenInput = document.getElementById('token');
+      const hostInput = document.getElementById('host');
+      if (!fileInput.files.length || !tokenInput.value.trim() || !hostInput.value.trim()) return;
+
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      let apiUrl = hostInput.value.trim();
+      if (apiUrl.endsWith('/')) apiUrl = apiUrl.slice(0, -1);
+      apiUrl += '/blob/upload';
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${tokenInput.value.trim()}`
+          }
+        });
+        const resultDiv = document.getElementById('result');
+        if (response.ok) {
+          const data = await response.json();
+          resultDiv.textContent = 'Success:\n' + JSON.stringify(data, null, 2);
+        } else {
+          const error = await response.json();
+          resultDiv.textContent = 'Error:\n' + JSON.stringify(error, null, 2);
+        }
+      } catch (err) {
+        document.getElementById('result').textContent = 'Request failed: ' + err;
+      }
+    });
+  </script>
+</body>
+</html>

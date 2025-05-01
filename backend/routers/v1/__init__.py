@@ -16,6 +16,7 @@ from .admin_products import router as admin_product_router
 from .admin_users import router as admin_user_router
 from .admin import router as admin_router
 from .admin_logs import router as admin_log_router
+from .blob_storage import router as blob_storage_router
 
 # Include all routers
 api_router.include_router(restaurant_router)
@@ -29,3 +30,4 @@ api_router.include_router(admin_product_router)
 api_router.include_router(admin_user_router)
 api_router.include_router(admin_router)
 api_router.include_router(admin_log_router)
+api_router.include_router(blob_storage_router)

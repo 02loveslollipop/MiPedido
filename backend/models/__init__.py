@@ -25,3 +25,5 @@ from .review import Review
 from .shortener import ShortCodeResponse
 
 from .admin import AdminBase, AdminAuth, AdminInDB, Admin, AdminToken
+
+from .blob_storage import BlobStorageResponse
