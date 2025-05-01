@@ -261,16 +261,11 @@ def create_admin_logs(db, admin_ids, restaurant_ids, product_ids_by_restaurant):
             target_id = ""
             
             if target_type == "restaurant":
-                if operation == "create":
-                    target_id = random.choice(restaurant_ids)
-                    restaurant = db.restaurants.find_one({"_id": ObjectId(target_id)})
-                    if restaurant:
-                        base_details["name"] = restaurant["name"]
-                else:
-                    target_id = random.choice(restaurant_ids)
-                    restaurant = db.restaurants.find_one({"_id": ObjectId(target_id)})
-                    if restaurant:
-                        base_details["name"] = restaurant["name"]
+                target_id = random.choice(restaurant_ids)
+                restaurant = db.restaurants.find_one({"_id": ObjectId(target_id)})
+                if restaurant:
+                    base_details["name"] = restaurant["name"]
+
             
             elif target_type == "product":
                 if products:

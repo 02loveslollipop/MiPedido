@@ -46,10 +46,6 @@ class RestaurantRepository:
         db_restaurant["type"] = db_restaurant.get("type", "restaurant")
         db_restaurant["_review_count"] = 0
         
-        # Handle position separately if it exists
-        if db_restaurant.get("position"):
-            db_restaurant["position"] = db_restaurant["position"]
-        
         # Insert into database
         result = await cls.collection.insert_one(db_restaurant)
         
