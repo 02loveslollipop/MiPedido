@@ -1,0 +1,7 @@
+FROM golang:1.24.2-alpine
+WORKDIR /
+COPY . .
+RUN go mod download
+RUN go build -o websocketengine cmd/main/main.go
+EXPOSE 8080
+CMD ["./websocketengine"]
