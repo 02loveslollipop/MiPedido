@@ -55,24 +55,12 @@ func sendOrderNotificationHandler(c *gin.Context) {
 	// Map the status to an event type
 	var eventType utils.EventType
 	switch request.Status {
-	case "created":
-		eventType = utils.OrderCreated
-	case "updated":
-		eventType = utils.OrderUpdated
-	case "accepted":
-		eventType = utils.OrderAccepted
-	case "rejected":
-		eventType = utils.OrderRejected
-	case "in_process":
-		eventType = utils.OrderInProcess
-	case "ready":
-		eventType = utils.OrderReady
+	case "completed":
+		eventType = utils.OrderCompleted
 	case "delivered":
 		eventType = utils.OrderDelivered
-	case "cancelled":
-		eventType = utils.OrderCancelled
 	default:
-		eventType = utils.OrderUpdated
+		eventType = utils.GenericEvent
 	}
 
 	// Create the payload

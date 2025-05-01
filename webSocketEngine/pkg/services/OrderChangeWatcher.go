@@ -168,9 +168,9 @@ func (w *OrderChangeWatcher) processChanges() {
 			log.Printf("Order %s has been fulfilled", orderIDHex)
 
 			// Check if the order has already been notified
-            notifiedAtTime := order.NotifiedAt.Time()
-            zeroDate := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
-            if notifiedAtTime.After(zeroDate) { // Check if the order has been notified
+			notifiedAtTime := order.NotifiedAt.Time()
+			zeroDate := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+			if notifiedAtTime.After(zeroDate) { // Check if the order has been notified
 				log.Printf("Order %s has already been notified at %v", orderIDHex, notifiedAtTime)
 				continue
 			}
@@ -179,14 +179,14 @@ func (w *OrderChangeWatcher) processChanges() {
 			payload := map[string]interface{}{
 				"order_id":      orderIDHex,
 				"restaurant_id": order.RestaurantID,
-				"status":        "finalized",
+				"status":        "fulfilled",
 				"timestamp":     time.Now().Format(time.RFC3339),
-				"message":       "Your order has been finalized",
+				"message":       "Your order has been completed",
 			}
 
 			// Send notification for the order ID directly
-			utils.TriggerEvent(utils.OrderDelivered, "orders", []string{orderIDHex}, payload)
-			log.Printf("Sent finalization notification for order %s", orderIDHex)
+			utils.TriggerEvent(utils.OrderCompleted, "orders", []string{orderIDHex}, payload)
+			log.Printf("Sent completion notification for order %s", orderIDHex)
 
 			// Update the MongoDB document to add notifiedAt timestamp
 			now := time.Now()
@@ -215,6 +215,7 @@ func (w *OrderChangeWatcher) processChanges() {
 		w.orderCache[orderIDHex] = order
 	}
 
+	// Handle any errors in the change stream
 	if err := w.changeStream.Err(); err != nil {
 		log.Printf("Change stream error: %v", err)
 	}

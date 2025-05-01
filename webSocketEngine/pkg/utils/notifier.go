@@ -10,15 +10,12 @@ type EventType string
 
 // Define various event types
 const (
-	OrderCreated     EventType = "order_created"
-	OrderUpdated     EventType = "order_updated"
-	OrderAccepted    EventType = "order_accepted"
-	OrderRejected    EventType = "order_rejected"
-	OrderInProcess   EventType = "order_in_process"
-	OrderReady       EventType = "order_ready"
-	OrderDelivered   EventType = "order_delivered"
-	OrderCancelled   EventType = "order_cancelled"
-	PaymentConfirmed EventType = "payment_confirmed"
+	// Generic events
+	GenericEvent EventType = "generic_event"
+
+	// Order events - simplified to only include completed and delivered
+	OrderCompleted EventType = "order_completed"
+	OrderDelivered EventType = "order_delivered"
 )
 
 // NotificationEvent represents an event that will trigger notifications
@@ -64,7 +61,7 @@ func (nm *NotificationManager) Start() {
 		case event := <-nm.Events:
 			nm.processEvent(event)
 		case <-nm.Stop:
-			log.Println("Stopping notification manager")
+			log.Println("Notification manager stopped")
 			return
 		}
 	}
@@ -72,6 +69,7 @@ func (nm *NotificationManager) Start() {
 
 // Stop the notification manager
 func (nm *NotificationManager) Shutdown() {
+	log.Println("Shutting down notification manager")
 	close(nm.Stop)
 }
 
