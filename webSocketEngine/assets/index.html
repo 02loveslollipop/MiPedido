@@ -95,7 +95,7 @@
       }
       
       // Create WebSocket connection
-      const url = `ws://${hostname}:8080/ws/orderNotification?order_id=${orderId}&topic=orders`;
+      const url = `ws://${hostname}/ws/orderNotification?order_id=${orderId}&topic=orders`;
       console.log(`Connecting to: ${url}`);
       
       socket = new WebSocket(url);
