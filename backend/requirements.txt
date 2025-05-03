@@ -11,6 +11,7 @@ asyncpg
 pyjwt
 python-multipart
 vercel_blob
+cryptography
 # Testing dependencies
 pytest
 pytest-asyncio

@@ -14,8 +14,18 @@ oauth2_admin_scheme = OAuth2PasswordBearer(tokenUrl="/v1/admin/login", scheme_na
 
 # Admin-specific secret key and algorithm settings
 # Using a different secret key for admin tokens to separate the auth systems
-ADMIN_SECRET_KEY = os.getenv("ADMIN_SECRET_KEY", "admin_secret_key_here")
-ALGORITHM = "HS256"
+ADMIN_PUBLIC_KEY = os.getenv("ADMIN_PUBLIC_KEY", None)
+ADMIN_PRIVATE_KEY = os.getenv("ADMIN_PRIVATE_KEY", None)
+ALGORITHM = "RS256"
+
+print(f"type(ADMIN_PUBLIC_KEY) {type(ADMIN_PUBLIC_KEY)}")
+print(f"type(ADMIN_PRIVATE_KEY) {type(ADMIN_PRIVATE_KEY)}")
+
+if ADMIN_PRIVATE_KEY and "\\n" in ADMIN_PRIVATE_KEY:
+    ADMIN_PRIVATE_KEY = ADMIN_PRIVATE_KEY.replace("\\n", "\n")
+    
+if ADMIN_PUBLIC_KEY and "\\n" in ADMIN_PUBLIC_KEY:
+    ADMIN_PUBLIC_KEY = ADMIN_PUBLIC_KEY.replace("\\n", "\n")
 
 class AdminTokenData(BaseModel):
     """Data extracted from JWT token for admin users"""
@@ -30,11 +40,16 @@ class AdminTokenRequest(BaseModel):
 
 def decode_admin_jwt_token(token: str) -> Dict[str, Any]:
     """
-    Decode and validate an admin JWT token
+    Decode and validate an admin JWT token using RS256
     Returns the token payload if valid
     """
     try:
-        payload = jwt.decode(token, ADMIN_SECRET_KEY, algorithms=[ALGORITHM])
+        if ADMIN_PUBLIC_KEY is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Admin public key not configured for RS256."
+            )
+        payload = jwt.decode(token, ADMIN_PUBLIC_KEY, algorithms=[ALGORITHM])
         return payload
     except jwt.PyJWTError as e:
         raise HTTPException(
@@ -123,7 +138,7 @@ def create_admin_access_token(
     expires_delta: Optional[timedelta] = None
 ) -> str:
     """
-    Create a new JWT token for admin authentication
+    Create a new JWT token for admin authentication using RS256
     """
     to_encode = data.copy()
     
@@ -136,6 +151,9 @@ def create_admin_access_token(
         
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     
+    if ADMIN_PRIVATE_KEY is None:
+        raise Exception("Admin private key not configured for RS256.")
+    
     # Create and return the token
-    encoded_jwt = jwt.encode(to_encode, ADMIN_SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, ADMIN_PRIVATE_KEY, algorithm=ALGORITHM)
     return encoded_jwt

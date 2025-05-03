@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     blob_read_write_token: str | None = os.getenv("BLOB_READ_WRITE_TOKEN", "default_blob_token")
     gin_mode: str | None = os.getenv("GIN_MODE", "release")
     
+    # JWT admin settings
+    admin_public_key: str | None = os.getenv("ADMIN_PUBLIC_KEY", None)
+    admin_private_key: str | None = os.getenv("ADMIN_PRIVATE_KEY", None)
+    
     class Config:
         env_file = ".env"
 
