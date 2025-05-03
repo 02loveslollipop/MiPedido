@@ -18,9 +18,6 @@ ADMIN_PUBLIC_KEY = os.getenv("ADMIN_PUBLIC_KEY", None)
 ADMIN_PRIVATE_KEY = os.getenv("ADMIN_PRIVATE_KEY", None)
 ALGORITHM = "RS256"
 
-print(f"type(ADMIN_PUBLIC_KEY) {type(ADMIN_PUBLIC_KEY)}")
-print(f"type(ADMIN_PRIVATE_KEY) {type(ADMIN_PRIVATE_KEY)}")
-
 if ADMIN_PRIVATE_KEY and "\\n" in ADMIN_PRIVATE_KEY:
     ADMIN_PRIVATE_KEY = ADMIN_PRIVATE_KEY.replace("\\n", "\n")
     
