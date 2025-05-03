@@ -46,7 +46,7 @@ import java.io.IOException
 @Composable
 fun QrScannerScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToProductsScreen: (restaurantId: String, orderId: String, userId: String) -> Unit,
+    onNavigateToProductsScreen: (restaurantId: String, orderId: String, userId: String, isCreator: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -149,7 +149,8 @@ fun QrScannerScreen(
                             onNavigateToProductsScreen(
                                 response.restaurantId,
                                 qrContent, // orderId
-                                response.userId // userId from join response
+                                response.userId, // userId from join response
+                                false //Creator for joined order
                             )
                         }
                     },

@@ -2107,5 +2107,3 @@ These endpoints allow other services to trigger notifications through the WebSoc
 ### Test Client
 
 A test client for WebSocket connections is available at `http://<host>:8080/test`. This web page allows you to test WebSocket connections and observe real-time notifications.
-
-

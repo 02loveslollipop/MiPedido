@@ -4,11 +4,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import uk.app02loveslollipop.mipedido.cliente.api.WebSocketConnector
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.QrCodeGenerator
 import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils
@@ -20,10 +23,41 @@ fun CheckoutQRScreen(
     orderId: String, // This is the full MongoDB ObjectId hex string
     userId: String,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    navController: NavController? = null // Optional for navigation
 ) {
     // Use the new short format encoding for Order ID display
     val shortOrderId = Base36Utils.encodeObjectIdToShortFormat(orderId)
+    val context = LocalContext.current
+    var orderCompleted by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val wsConnector = remember { WebSocketConnector.getInstance() }
+
+    DisposableEffect(orderId) {
+        val listener = object : WebSocketConnector.WebSocketListener {
+            override fun onWelcome(orderId: String, time: String) {}
+            override fun onOrderCompleted(orderId: String, restaurantId: String, timestamp: String) {
+                orderCompleted = true
+            }
+            override fun onError(message: String) {
+                errorMessage = message
+            }
+            override fun onClosed(reason: String) {}
+            override fun onConnectionFailure(message: String) {
+                errorMessage = message
+            }
+        }
+        wsConnector.setListener(listener)
+        wsConnector.connect(orderId)
+        onDispose {
+            wsConnector.disconnect("Leaving CheckoutQRScreen")
+        }
+    }
+
+    if (orderCompleted) {
+        navController?.navigate("order-accepted/$restaurantId/$orderId/$userId")
+        return
+    }
 
     Scaffold(
         topBar = {

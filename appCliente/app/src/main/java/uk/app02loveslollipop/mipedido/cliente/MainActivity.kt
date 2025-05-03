@@ -40,8 +40,8 @@ fun MiPedidoApp() {
         // Restaurants Screen
         composable("restaurants") {
             RestaurantsScreen(
-                onNavigateToProductsScreen = { restaurantId, orderId, userId ->
-                    navController.navigate("products/$restaurantId/$orderId/$userId")
+                onNavigateToProductsScreen = { restaurantId, orderId, userId, isCreator ->
+                    navController.navigate("products/$restaurantId/$orderId/$userId/$isCreator")
                 },
                 onNavigateToQrScreen = { restaurantId, orderId, userId ->
                     navController.navigate("qr/$restaurantId/$orderId/$userId")
@@ -54,23 +54,26 @@ fun MiPedidoApp() {
 
         // Products Screen
         composable(
-            route = "products/{restaurantId}/{orderId}/{userId}",
+            route = "products/{restaurantId}/{orderId}/{userId}/{isCreator}",
             arguments = kotlin.collections.listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
-                navArgument("userId") { type = NavType.StringType }
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("isCreator") { type = NavType.BoolType }
             )
         ) { backStackEntry ->
             val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
             val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            val isCreator = backStackEntry.arguments?.getBoolean("isCreator") ?: false
             ProductsScreen(
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
+                isCreator = isCreator,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToCart = { resId, oId, uId ->
-                    navController.navigate("cart/$resId/$oId/$uId")
+                onNavigateToCart = { resId, oId, uId, isCreator ->
+                    navController.navigate("cart/$resId/$oId/$uId/$isCreator")
                 }
             )
         }
@@ -92,8 +95,8 @@ fun MiPedidoApp() {
                 orderId = orderId,
                 userId = userId,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToProducts = { resId, oId, uId ->
-                    navController.navigate("products/$resId/$oId/$uId")
+                onNavigateToProducts = { resId, oId, uId, isCreator ->
+                    navController.navigate("products/$resId/$oId/$uId/$isCreator")
                 }
             )
         }
@@ -102,34 +105,39 @@ fun MiPedidoApp() {
         composable("qr-scanner") {
             QrScannerScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToProductsScreen = { restaurantId, orderId, userId ->
-                    // Pop the scanner screen and navigate to products screen
+                onNavigateToProductsScreen = { restaurantId, orderId, userId, isCreator ->
                     navController.popBackStack()
-                    navController.navigate("products/$restaurantId/$orderId/$userId")
+                    navController.navigate("products/$restaurantId/$orderId/$userId/$isCreator")
                 }
             )
         }
 
         // Cart Screen
         composable(
-            route = "cart/{restaurantId}/{orderId}/{userId}",
+            route = "cart/{restaurantId}/{orderId}/{userId}/{isCreator}",
             arguments = kotlin.collections.listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
-                navArgument("userId") { type = NavType.StringType }
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("isCreator") { type = NavType.BoolType }
             )
         ) { backStackEntry ->
             val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
             val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
             val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            val isCreator = backStackEntry.arguments?.getBoolean("isCreator") ?: false
             CartScreen(
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
+                isCreator = isCreator,
                 onNavigateBack = { navController.popBackStack() },
-                onCheckout = { resId, oId, uId ->
+                onNavigateToCheckoutQR = { resId, oId, uId ->
                     navController.navigate("checkout-qr/$resId/$oId/$uId")
                 },
+                onNavigateToCheckoutSlave = { resId, oId, uId, total ->
+                    navController.navigate("checkout-slave/$oId/$uId/$total")
+                }
             )
         }
 
@@ -149,7 +157,71 @@ fun MiPedidoApp() {
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                navController = navController
+            )
+        }
+
+        // Order Accepted Screen
+        composable(
+            route = "order-accepted/{restaurantId}/{orderId}/{userId}",
+            arguments = kotlin.collections.listOf(
+                navArgument("restaurantId") { type = NavType.StringType },
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            OrderAcceptedScreen(
+                restaurantId = restaurantId,
+                orderId = orderId,
+                userId = userId,
+                navController = navController
+            )
+        }
+
+        // Review Screen
+        composable(
+            route = "review/{restaurantId}/{orderId}/{userId}",
+            arguments = kotlin.collections.listOf(
+                navArgument("restaurantId") { type = NavType.StringType },
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            ReviewScreen(
+                restaurantId = restaurantId,
+                orderId = orderId,
+                userId = userId,
+                navController = navController
+            )
+        }
+
+        // Checkout Slave Screen
+        composable(
+            route = "checkout-slave/{orderId}/{userId}/{totalPrice}",
+            arguments = kotlin.collections.listOf(
+                navArgument("orderId") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.StringType },
+                navArgument("totalPrice") { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
+            val totalPrice = backStackEntry.arguments?.getFloat("totalPrice")?.toDouble() ?: 0.0
+            CheckoutSlaveScreen(
+                orderId = orderId,
+                userId = userId,
+                totalPrice = totalPrice,
+                onFinish = {
+                    // Pop back to restaurants screen
+                    navController.popBackStack("restaurants", false)
+                }
             )
         }
     }

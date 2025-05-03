@@ -34,8 +34,10 @@ fun CartScreen(
     restaurantId: String,
     orderId: String,
     userId: String,
+    isCreator: Boolean,
     onNavigateBack: () -> Unit,
-    onCheckout: (restaurantId: String, orderId: String, userId: String) -> Unit,
+    onNavigateToCheckoutQR: (String, String, String) -> Unit,
+    onNavigateToCheckoutSlave: (String, String, String, Double) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -114,6 +116,17 @@ fun CartScreen(
         }
     }
     
+    // Function to handle checkout based on user role
+    fun handleCheckout() {
+        if (isCreator) {
+            // Navigate to QR screen if user is the creator
+            onNavigateToCheckoutQR(restaurantId, orderId, userId)
+        } else {
+            // Navigate to slave screen if user joined the order
+            onNavigateToCheckoutSlave(restaurantId, orderId, userId, totalPrice)
+        }
+    }
+
     // Load cart items on first composition
     LaunchedEffect(key1 = orderId, key2 = userId) {
         loadCartItems()
@@ -283,9 +296,9 @@ fun CartScreen(
                             // Add space before the button
                             Spacer(modifier = Modifier.height(24.dp))
                             
-                            // Add the checkout button inside the card
+                            // Update checkout button to use handleCheckout
                             Button(
-                                onClick = { onCheckout(restaurantId, orderId, userId) },
+                                onClick = { handleCheckout() },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -297,7 +310,7 @@ fun CartScreen(
                                     contentDescription = null,
                                     modifier = Modifier.padding(end = 8.dp)
                                 )
-                                Text("Pedir")
+                                Text(if (isCreator) "Finalizar Pedido" else "Agregar a Pedido")
                             }
                         }
                     }

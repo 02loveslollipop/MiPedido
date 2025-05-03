@@ -31,8 +31,9 @@ fun ProductsScreen(
     restaurantId: String,
     orderId: String,
     userId: String,
+    isCreator: Boolean,
     onNavigateBack: () -> Unit,
-    onNavigateToCart: (String, String, String) -> Unit = { _, _, _ -> },
+    onNavigateToCart: (String, String, String, Boolean) -> Unit = { _, _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -182,7 +183,7 @@ fun ProductsScreen(
                         ) {
                             IconButton(
                                 onClick = { 
-                                    onNavigateToCart(restaurantId, orderId, userId)
+                                    onNavigateToCart(restaurantId, orderId, userId, isCreator)
                                 }
                             ) {
                                 Icon(

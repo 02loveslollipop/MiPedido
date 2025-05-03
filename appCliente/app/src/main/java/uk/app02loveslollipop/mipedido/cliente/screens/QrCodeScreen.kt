@@ -25,7 +25,7 @@ fun QrCodeScreen(
     userId: String,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
-    onNavigateToProducts: (restaurantId: String, orderId: String, userId: String) -> Unit = { _, _, _ -> }
+    onNavigateToProducts: (restaurantId: String, orderId: String, userId: String, isCreator: Boolean) -> Unit = { _, _, _, _ -> }
 ) {
     // Use the new short format encoding for Order ID display
     val shortOrderId = Base36Utils.encodeObjectIdToShortFormat(orderId)
@@ -100,7 +100,7 @@ fun QrCodeScreen(
             // View Order Button
             Button(
                 onClick = { 
-                    onNavigateToProducts(restaurantId, orderId, userId)
+                    onNavigateToProducts(restaurantId, orderId, userId, true) // true because we're the creator
                 },
                 modifier = Modifier
                     .fillMaxWidth()

@@ -38,7 +38,7 @@ import android.provider.Settings
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun RestaurantsScreen(
-    onNavigateToProductsScreen: (restaurantId: String, orderId: String, userId: String) -> Unit,
+    onNavigateToProductsScreen: (restaurantId: String, orderId: String, userId: String, isCreator: Boolean) -> Unit,
     onNavigateToQrScreen: (restaurantId: String, orderId: String, userId: String) -> Unit,
     onNavigateToQrScanner: () -> Unit,
     modifier: Modifier = Modifier
@@ -186,7 +186,12 @@ fun RestaurantsScreen(
                 result.fold(
                     onSuccess = { response ->
                         // Navigate to Products screen with restaurant ID, order ID and user ID
-                        onNavigateToProductsScreen(restaurantId, response.orderId, response.userId)
+                        onNavigateToProductsScreen(
+                            restaurantId, 
+                            response.orderId, 
+                            response.userId,
+                            true // Creator for normal orders
+                        )
                     },
                     onFailure = { throwable ->
                         error = throwable.message ?: "No se pudo crear la orden"
