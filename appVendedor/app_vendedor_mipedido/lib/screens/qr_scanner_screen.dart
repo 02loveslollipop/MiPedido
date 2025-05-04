@@ -451,7 +451,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
                     controller: _base36Controller,
                     decoration: InputDecoration(
                       labelText: 'Código del Pedido',
-                      hintText: 'Ejemplo: A1B2-YA3',
+                      hintText: 'Ejemplo: A1B2-AYA3',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
