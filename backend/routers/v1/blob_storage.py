@@ -17,8 +17,8 @@ async def upload_blob_storage(file: Annotated[UploadFile, File()], current_admin
     
     try:
         #check contetent type
-        #if file.content_type not in ["image/jpeg", "image/png", "application/pdf", "application/octet-stream"]:
-            #raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file type. Only JPEG, PNG, and PDF files are allowed.")
+        if file.content_type not in ["image/jpeg", "image/png", "application/pdf", "application/octet-stream"]:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file type. Only JPEG, PNG, and PDF files are allowed.")
         
         # Check file size (5MB limit)
         if file.size > 5 * 1024 * 1024:
