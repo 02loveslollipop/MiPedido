@@ -217,11 +217,11 @@ class _QRScannerScreenState extends State<QRScannerScreen>
               controller: _mobileCodeController,
               decoration: const InputDecoration(
                 hintText: 'Ingrese código de 8 caracteres',
-                helperText: 'Ejemplo: A1B2-YA3',
+                helperText: 'Ejemplo: A1B2-AYA3',
               ),
               autofocus: true,
               textCapitalization: TextCapitalization.characters,
-              maxLength: 8,
+              maxLength: 9,
               style: const TextStyle(fontSize: 20, letterSpacing: 2),
             ),
             actions: [
@@ -246,7 +246,7 @@ class _QRScannerScreenState extends State<QRScannerScreen>
   // Process manual code input from mobile platforms
   void _processManualCodeInput(String code) async {
     final shortCode = code.trim().toUpperCase(); // Ensure uppercase
-    if (shortCode.isEmpty || shortCode.length != 8) {
+    if (shortCode.isEmpty || shortCode.length != 9) {
       // Basic validation
       _showInvalidQRCodeMessage(
         'Por favor, ingrese un código de 8 caracteres válido',
