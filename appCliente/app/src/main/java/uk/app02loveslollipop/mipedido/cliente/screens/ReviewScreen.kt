@@ -31,7 +31,7 @@ fun ReviewScreen(
     // Using the shared back confirmation hook
     val (handleBackPress, BackConfirmationDialogContent) = useBackConfirmation(
         message = "Si sales sin enviar una reseña, no podrás calificar este pedido más adelante.",
-        onConfirmNavigation = navigateToRestaurants
+        onConfirmNavigation = { navigateToRestaurants() }
     )
 
     Scaffold(

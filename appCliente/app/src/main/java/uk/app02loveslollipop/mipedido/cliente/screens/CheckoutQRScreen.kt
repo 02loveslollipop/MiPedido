@@ -42,7 +42,7 @@ fun CheckoutQRScreen(
     // Using the shared back confirmation hook
     val (handleBackPress, BackConfirmationDialogContent) = useBackConfirmation(
         message = "Si sales de esta pestaña perderás tu pedido y tendrás que empezar el proceso nuevamente",
-        onConfirmNavigation = navigateToRestaurants
+        onConfirmNavigation = { navigateToRestaurants() }
     )
 
     DisposableEffect(orderId) {
@@ -75,7 +75,7 @@ fun CheckoutQRScreen(
         topBar = {
             NavBar(
                 title = "Finalizar Pedido",
-                onBackPressed = handleBackPress
+                onBackPressed = { handleBackPress() }
             )
         }
     ) { paddingValues ->

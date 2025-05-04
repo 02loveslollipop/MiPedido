@@ -17,14 +17,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +68,11 @@ fun QrScannerScreen(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showErrorDialog by remember { mutableStateOf(false) }
+    var isScanningPausedByCodeInput by remember { mutableStateOf(false) }
+    
+    // Added to manage manual code entry dialog
+    var showManualCodeDialog by remember { mutableStateOf(false) }
+    var manualCodeInput by remember { mutableStateOf("") }
 
     // Once we have a QR code, we stop scanning
     var isScanningPaused by remember { mutableStateOf(false) }
@@ -126,7 +129,18 @@ fun QrScannerScreen(
 
     // Function to process QR code and join order
     fun processQrCode(qrContent: String) {
-        if (isLoading || isScanningPaused) return
+
+        Log.d("QrScannerScreen", "Processing QR code: $qrContent")
+
+        if (isScanningPaused && !isScanningPausedByCodeInput) {
+            Log.d("QrScannerScreen", "QR code processing is paused")
+            return
+        }
+
+        if (isLoading && !isScanningPausedByCodeInput) {
+            Log.d("QrScannerScreen", "QR code processing is in progress")
+            return
+        }
 
         isScanningPaused = true
         isLoading = true
@@ -162,8 +176,51 @@ fun QrScannerScreen(
                 handleError(e)
             } finally {
                 isLoading = false
+                if (isScanningPausedByCodeInput) {
+                    isScanningPausedByCodeInput = false
+                }
                 // We don't reset isScanningPaused here to prevent multiple QR code readings
                 // It gets reset if the user dismisses an error dialog
+            }
+        }
+    }
+    
+    // Added function to process manual short code entry
+    fun processShortCode(shortCode: String) {
+        if (shortCode.trim().isEmpty() || shortCode.length != 9) {
+            errorMessage = "Por favor ingresa un código válido (exactamente 8 caracteres sin contar guiones)"
+            showErrorDialog = true
+            return
+        }
+        
+        if (isLoading) return
+        isLoading = true
+        isScanningPausedByCodeInput = true
+
+        
+        coroutineScope.launch {
+            try {
+                Log.d("QrScannerScreen", "Resolving short code: $shortCode")
+                
+                // First resolve the short code to get the full order ID
+                val shortCodeResult = apiConnector.getFullOrderIdFromShortCode(shortCode)
+                shortCodeResult.fold(
+                    onSuccess = { response ->
+                        Log.d("QrScannerScreen", "Short code resolved to order ID: ${response.objectId}")
+                        // Now process with the full order ID
+                        Log.d("QrScannerScreen", "Attempting to join order with ID: ${response.objectId}")
+                        processQrCode(response.objectId)
+                    },
+                    onFailure = { throwable ->
+                        Log.e("QrScannerScreen", "Error resolving short code: ${throwable.message}")
+                        handleError(throwable)
+                        isLoading = false
+                    }
+                )
+            } catch (e: Exception) {
+                Log.e("QrScannerScreen", "Exception in processShortCode: ${e.message}")
+                handleError(e)
+                isLoading = false
             }
         }
     }
@@ -230,7 +287,19 @@ fun QrScannerScreen(
         topBar = {
             NavBar(
                 title = "Escanear código QR",
-                onBackPressed = onNavigateBack
+                onBackPressed = onNavigateBack,
+                actions = {
+                    // Add manual code entry button
+                    IconButton(onClick = { 
+                        showManualCodeDialog = true 
+                        isScanningPaused = true
+                    }) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = "Ingresar código manualmente"
+                        )
+                    }
+                }
             )
         }
     ) { paddingValues ->
@@ -325,7 +394,7 @@ fun QrScannerScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "Procesando código QR...",
+                                    text = "Procesando código...",
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -354,7 +423,7 @@ fun QrScannerScreen(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "Coloca el código QR dentro del recuadro",
+                                    text = "Coloca el código QR dentro del recuadro o usa el botón de teclado para ingresar el código manualmente",
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = onSurfaceVariantColor
@@ -397,6 +466,52 @@ fun QrScannerScreen(
                         Text("Conceder permiso")
                     }
                 }
+            }
+            
+            // Manual code entry dialog
+            if (showManualCodeDialog) {
+                AlertDialog(
+                    onDismissRequest = {
+                        showManualCodeDialog = false
+                        isScanningPaused = false // Resume scanning
+                        manualCodeInput = ""
+                    },
+                    title = { Text("Ingresar Código") },
+                    text = {
+                        Column {
+                            Text("Ingrese el código de 8 caracteres del pedido")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = manualCodeInput,
+                                onValueChange = { manualCodeInput = it.uppercase() },
+                                singleLine = true,
+                                label = { Text("Código") },
+                                placeholder = { Text("Ej: A1B2-7YA3") }
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showManualCodeDialog = false
+                                processShortCode(manualCodeInput.trim())
+                            }
+                        ) {
+                            Text("Procesar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showManualCodeDialog = false
+                                isScanningPaused = false // Resume scanning
+                                manualCodeInput = ""
+                            }
+                        ) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
             
             // Error dialog
