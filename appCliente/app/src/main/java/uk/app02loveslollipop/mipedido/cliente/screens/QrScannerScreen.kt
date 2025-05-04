@@ -187,8 +187,8 @@ fun QrScannerScreen(
     
     // Added function to process manual short code entry
     fun processShortCode(shortCode: String) {
-        if (shortCode.trim().isEmpty() || shortCode.length < 6) {
-            errorMessage = "Por favor ingresa un código válido (mínimo 6 caracteres)"
+        if (shortCode.trim().isEmpty() || shortCode.length != 8) {
+            errorMessage = "Por favor ingresa un código válido (exactamente 8 caracteres)"
             showErrorDialog = true
             return
         }
