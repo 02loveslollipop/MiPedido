@@ -1,5 +1,6 @@
 package uk.app02loveslollipop.mipedido.cliente.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -8,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -17,9 +19,54 @@ fun OrderAcceptedScreen(
     userId: String,
     navController: NavController? = null
 ) {
+    // State for showing back navigation confirmation dialog
+    var showExitConfirmation by remember { mutableStateOf(false) }
+    
+    // Function to navigate back to restaurants screen
+    val navigateToRestaurants = {
+        navController?.popBackStack("restaurants", false)
+    }
+    
+    // Exit Confirmation Dialog
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("¿Estás seguro que deseas salir?") },
+            text = { 
+                Text("Se te enviará una notificación en aproximadamente 30 minutos para revisar este pedido. Si no quieres esperar, permanece en esta página y presiona el botón de revisión cuando desees calificar el pedido.") 
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitConfirmation = false
+                        navigateToRestaurants()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Salir")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showExitConfirmation = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Volver")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Pedido aceptado") })
+            NavBar(
+                title = "Pedido aceptado",
+                onBackPressed = { showExitConfirmation = true }
+            )
         }
     ) { paddingValues ->
         Column(
@@ -59,4 +106,7 @@ fun OrderAcceptedScreen(
             }
         }
     }
+    
+    // Handle system back button press
+    BackHandler(onBack = { showExitConfirmation = true })
 }

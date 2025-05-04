@@ -1,5 +1,6 @@
 package uk.app02loveslollipop.mipedido.cliente.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,9 +23,51 @@ fun ReviewScreen(
     navController: NavController? = null
 ) {
     var rating by remember { mutableStateOf(0) }
+    var showExitConfirmation by remember { mutableStateOf(false) }
+
+    val navigateToRestaurants = {
+        navController?.popBackStack("restaurants", false)
+    }
+
+    if (showExitConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showExitConfirmation = false },
+            title = { Text("¿Estás seguro que deseas salir?") },
+            text = {
+                Text("Si sales sin enviar una review, no podrás calificar este pedido más adelante.")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showExitConfirmation = false
+                        navigateToRestaurants()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Salir")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showExitConfirmation = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Volver")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Califica tu pedido") })
+            NavBar(
+                title = "Califica tu pedido",
+                onBackPressed = { showExitConfirmation = true }
+            )
         }
     ) { paddingValues ->
         Column(
@@ -58,7 +102,7 @@ fun ReviewScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = {
-                    navController?.popBackStack()
+                    navigateToRestaurants()
                 },
                 enabled = rating > 0,
                 modifier = Modifier.fillMaxWidth()
@@ -67,4 +111,6 @@ fun ReviewScreen(
             }
         }
     }
+
+    BackHandler(onBack = { showExitConfirmation = true })
 }
