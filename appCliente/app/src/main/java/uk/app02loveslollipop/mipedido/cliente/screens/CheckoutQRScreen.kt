@@ -1,6 +1,5 @@
 package uk.app02loveslollipop.mipedido.cliente.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -15,6 +14,7 @@ import androidx.navigation.NavController
 import uk.app02loveslollipop.mipedido.cliente.api.WebSocketConnector
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.QrCodeGenerator
+import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
 import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,13 +34,16 @@ fun CheckoutQRScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val wsConnector = remember { WebSocketConnector.getInstance() }
     
-    // State for showing confirmation dialog
-    var showExitConfirmation by remember { mutableStateOf(false) }
-    
     // Function to navigate back to restaurants screen
     val navigateToRestaurants = {
         navController?.popBackStack("restaurants", false)
     }
+    
+    // Using the shared back confirmation hook
+    val (handleBackPress, BackConfirmationDialogContent) = useBackConfirmation(
+        message = "Si sales de esta pestaña perderás tu pedido y tendrás que empezar el proceso nuevamente",
+        onConfirmNavigation = navigateToRestaurants
+    )
 
     DisposableEffect(orderId) {
         val listener = object : WebSocketConnector.WebSocketListener {
@@ -68,45 +71,11 @@ fun CheckoutQRScreen(
         return
     }
 
-    // Exit Confirmation Dialog
-    if (showExitConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showExitConfirmation = false },
-            title = { Text("¿Estás seguro que deseas salir?") },
-            text = { 
-                Text("Si sales de esta pestaña perderás tu pedido y tendrás que empezar el proceso nuevamente") 
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showExitConfirmation = false
-                        navigateToRestaurants()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("Salir")
-                }
-            },
-            dismissButton = {
-                Button(
-                    onClick = { showExitConfirmation = false },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("Volver")
-                }
-            }
-        )
-    }
-
     Scaffold(
         topBar = {
             NavBar(
                 title = "Finalizar Pedido",
-                onBackPressed = { showExitConfirmation = true }
+                onBackPressed = handleBackPress
             )
         }
     ) { paddingValues ->
@@ -212,6 +181,6 @@ fun CheckoutQRScreen(
         }
     }
     
-    // Handle back button presses with confirmation
-    BackHandler(onBack = { showExitConfirmation = true })
+    // Include the confirmation dialog
+    BackConfirmationDialogContent()
 }
