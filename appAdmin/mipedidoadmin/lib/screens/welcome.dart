@@ -12,23 +12,7 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    if(!kIsWeb && isFirstTime) {
-      windowManager.waitUntilReadyToShow().then((_) async {
-        await windowManager.setMaximizable(true);
-        await windowManager.setResizable(true);
-        await windowManager.setMinimumSize(const Size(800, 600));
-        await windowManager.setMaximumSize(const Size(10000, 10000));
-        await windowManager.setSize(const Size(800, 600));
-        await windowManager.center();
-        await windowManager.show();
-        await windowManager.setSkipTaskbar(false);
-        Size result = await windowManager.getSize();
-        log('Window size: $result');
-        bool isResizable = await windowManager.isResizable();
-        log('Window is resizable: $isResizable');
-        isFirstTime = false;
-      });
-    }
+    
 
     return ScaffoldPage(
       header: const PageHeader(

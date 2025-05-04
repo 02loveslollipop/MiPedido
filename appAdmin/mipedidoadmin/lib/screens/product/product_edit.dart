@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
 import '../../main.dart';
+import '../../components/image_upload_field.dart';
 
 class ProductEditScreen extends StatefulWidget {
   const ProductEditScreen({super.key});
@@ -27,6 +28,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
   String? _errorMessage;
   dynamic _selectedRestaurant;
   dynamic _selectedProduct;
+  String? _previousImageUrl;
 
   @override
   void initState() {
@@ -58,6 +60,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     final apiConnector = ApiConnector();
     final result = await apiConnector.listRestaurants();
 
+    if (!mounted) return;
     setState(() {
       _isLoadingRestaurants = false;
       if (result['success']) {
@@ -82,6 +85,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     final apiConnector = ApiConnector();
     final result = await apiConnector.listProductsByRestaurant(restaurantId);
 
+    if (!mounted) return;
     setState(() {
       _isLoadingProducts = false;
       if (result['success']) {
@@ -143,6 +147,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       _nameController.text = product['name'] ?? '';
       _descriptionController.text = product['description'] ?? '';
       _imageUrlController.text = product['img_url'] ?? '';
+      _previousImageUrl = product['img_url'] ?? '';
       _priceController.text = product['price']?.toString() ?? '';
 
       // Load ingredients
@@ -192,6 +197,15 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
     });
 
     final apiConnector = ApiConnector();
+
+    // If the image URL changed and the previous one is a blob, delete it
+    if (_previousImageUrl != null &&
+        _previousImageUrl!.isNotEmpty &&
+        _previousImageUrl != _imageUrlController.text &&
+        _previousImageUrl!.contains('/blob/')) {
+      await apiConnector.deleteFileFromBlobStorage(_previousImageUrl!);
+    }
+
     final result = await apiConnector.updateProduct(
       productId: _selectedProduct['id'],
       name: _nameController.text,
@@ -201,6 +215,7 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
       ingredients: _getIngredients(),
     );
 
+    if (!mounted) return;
     setState(() {
       _isUpdatingProduct = false;
     });
@@ -453,31 +468,17 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                                                   ),
                                                   const SizedBox(height: 16),
                                                   InfoLabel(
-                                                    label: 'URL de la Imagen',
-                                                    child: TextFormBox(
-                                                      controller:
-                                                          _imageUrlController,
-                                                      placeholder:
-                                                          'Ingresar URL de la imagen',
-                                                      validator: (value) {
-                                                        if (value == null ||
-                                                            value.isEmpty) {
-                                                          return 'Por favor ingrese una URL para la imagen';
-                                                        }
-                                                        // Simple URL validation
-                                                        if (!value.startsWith(
-                                                              'http://',
-                                                            ) &&
-                                                            !value.startsWith(
-                                                              'https://',
-                                                            )) {
-                                                          return 'Por favor ingrese una URL válida (debe comenzar con http:// o https://)';
-                                                        }
-                                                        return null;
+                                                    label: 'Imagen',
+                                                    child: ImageUploadField(
+                                                      initialUrl:
+                                                          _imageUrlController
+                                                              .text,
+                                                      onImageUploaded: (url) {
+                                                        setState(() {
+                                                          _imageUrlController
+                                                              .text = url;
+                                                        });
                                                       },
-                                                      autovalidateMode:
-                                                          AutovalidateMode
-                                                              .onUserInteraction,
                                                     ),
                                                   ),
                                                   const SizedBox(height: 16),
@@ -545,51 +546,6 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(height: 16),
-                                                  if (_imageUrlController
-                                                      .text
-                                                      .isNotEmpty) ...[
-                                                    const Text(
-                                                      'Vista previa de la imagen:',
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Container(
-                                                      height: 200,
-                                                      width: double.infinity,
-                                                      decoration: BoxDecoration(
-                                                        border: Border.all(
-                                                          color:
-                                                              Colors.grey[130],
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              4,
-                                                            ),
-                                                      ),
-                                                      child: ClipRRect(
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              4,
-                                                            ),
-                                                        child: Image.network(
-                                                          _imageUrlController
-                                                              .text,
-                                                          fit: BoxFit.cover,
-                                                          errorBuilder: (
-                                                            context,
-                                                            error,
-                                                            stackTrace,
-                                                          ) {
-                                                            return const Center(
-                                                              child: Text(
-                                                                'Error al cargar la imagen',
-                                                              ),
-                                                            );
-                                                          },
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 16),
-                                                  ],
                                                   if (_errorMessage !=
                                                       null) ...[
                                                     InfoBar(

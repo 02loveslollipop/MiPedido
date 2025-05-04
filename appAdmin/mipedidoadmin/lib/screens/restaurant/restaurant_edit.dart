@@ -2,6 +2,8 @@ import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
 import 'restaurant_list.dart';
 import '../../main.dart';
+import '../../components/image_upload_field.dart';
+import '../../components/position_pick_component.dart';
 
 class RestaurantEditScreen extends StatefulWidget {
   const RestaurantEditScreen({super.key});
@@ -24,6 +26,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
   List<dynamic> _restaurants = [];
   String? _errorMessage;
   dynamic _selectedRestaurant;
+  String? _previousImageUrl;
 
   @override
   void initState() {
@@ -51,6 +54,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
     final apiConnector = ApiConnector();
     final result = await apiConnector.listRestaurants();
 
+    if (!mounted) return;
     setState(() {
       _isLoadingRestaurants = false;
       if (result['success']) {
@@ -62,11 +66,13 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
   }
 
   void _selectRestaurant(dynamic restaurant) {
+    if (!mounted) return;
     setState(() {
       _selectedRestaurant = restaurant;
       _nameController.text = restaurant['name'] ?? '';
       _descriptionController.text = restaurant['description'] ?? '';
       _imageUrlController.text = restaurant['img_url'] ?? '';
+      _previousImageUrl = restaurant['img_url'] ?? '';
       _typeController.text = restaurant['type'] ?? '';
 
       // Handle position data
@@ -106,6 +112,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
         longitude = double.parse(_longitudeController.text);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _isUpdating = false;
         _errorMessage = 'Invalid latitude or longitude format';
@@ -114,6 +121,15 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
     }
 
     final apiConnector = ApiConnector();
+
+    // If the image URL changed and the previous one is a blob, delete it
+    if (_previousImageUrl != null &&
+        _previousImageUrl!.isNotEmpty &&
+        _previousImageUrl != _imageUrlController.text &&
+        _previousImageUrl!.contains('/blob/')) {
+      await apiConnector.deleteFileFromBlobStorage(_previousImageUrl!);
+    }
+
     final result = await apiConnector.updateRestaurant(
       _selectedRestaurant['id'],
       name: _nameController.text,
@@ -123,6 +139,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
       position: {'lat': latitude, 'lng': longitude},
     );
 
+    if (!mounted) return;
     setState(() {
       _isUpdating = false;
     });
@@ -148,6 +165,7 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
         FluentPageRoute(builder: (context) => const MiPedidoAdminApp()),
       );
     } else {
+      if (!mounted) return;
       setState(() {
         _errorMessage = result['error'] ?? 'Error al actualizar el restaurante';
       });
@@ -178,8 +196,8 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                   severity: InfoBarSeverity.error,
                   isLong: true,
                   action: FilledButton(
-                    child: const Text('Reintentar'),
                     onPressed: _loadRestaurants,
+                    child: const Text('Reintentar'),
                   ),
                 ),
               )
@@ -219,8 +237,8 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                         ),
                         const Spacer(),
                         Button(
-                          child: const Text('Refrescar'),
                           onPressed: _loadRestaurants,
+                          child: const Text('Refrescar'),
                         ),
                       ],
                     ),
@@ -290,30 +308,16 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                                           ),
                                           const SizedBox(height: 16),
                                           InfoLabel(
-                                            label: 'URL de la Imagen',
-                                            child: TextFormBox(
-                                              controller: _imageUrlController,
-                                              placeholder:
-                                                  'Ingresar URL de la imagen',
-                                              validator: (value) {
-                                                if (value == null ||
-                                                    value.isEmpty) {
-                                                  return 'Por favor ingrese una URL para la imagen';
-                                                }
-                                                // Simple URL validation
-                                                if (!value.startsWith(
-                                                      'http://',
-                                                    ) &&
-                                                    !value.startsWith(
-                                                      'https://',
-                                                    )) {
-                                                  return 'Por favor ingrese una URL válida (debe comenzar con http:// o https://)';
-                                                }
-                                                return null;
+                                            label: 'Imagen',
+                                            child: ImageUploadField(
+                                              initialUrl:
+                                                  _imageUrlController.text,
+                                              onImageUploaded: (url) {
+                                                setState(() {
+                                                  _imageUrlController.text =
+                                                      url;
+                                                });
                                               },
-                                              autovalidateMode:
-                                                  AutovalidateMode
-                                                      .onUserInteraction,
                                             ),
                                           ),
                                           const SizedBox(height: 16),
@@ -337,80 +341,48 @@ class _RestaurantEditScreenState extends State<RestaurantEditScreen> {
                                           ),
                                           const SizedBox(height: 16),
                                           InfoLabel(
-                                            label: 'Latitud',
-                                            child: TextFormBox(
-                                              controller: _latitudeController,
-                                              placeholder: 'Ingresar latitud',
-                                              validator: (value) {
-                                                if (value == null ||
-                                                    value.isEmpty) {
-                                                  return 'Por favor ingrese la latitud';
-                                                }
-                                                return null;
+                                            label: 'Ubicación en el mapa',
+                                            child: PositionPickComponent(
+                                              onPositionSelected: (lat, lon) {
+                                                setState(() {
+                                                  _latitudeController.text =
+                                                      lat.toString();
+                                                  _longitudeController.text =
+                                                      lon.toString();
+                                                });
                                               },
-                                              autovalidateMode:
-                                                  AutovalidateMode
-                                                      .onUserInteraction,
                                             ),
                                           ),
                                           const SizedBox(height: 16),
-                                          InfoLabel(
-                                            label: 'Longitud',
-                                            child: TextFormBox(
-                                              controller: _longitudeController,
-                                              placeholder: 'Ingresar longitud',
-                                              validator: (value) {
-                                                if (value == null ||
-                                                    value.isEmpty) {
-                                                  return 'Por favor ingrese la longitud';
-                                                }
-                                                return null;
-                                              },
-                                              autovalidateMode:
-                                                  AutovalidateMode
-                                                      .onUserInteraction,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 16),
-                                          if (_imageUrlController
-                                              .text
-                                              .isNotEmpty) ...[
-                                            const Text(
-                                              'Vista previa de la imagen:',
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Container(
-                                              height: 200,
-                                              width: double.infinity,
-                                              decoration: BoxDecoration(
-                                                border: Border.all(
-                                                  color: Colors.grey[130],
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                                child: Image.network(
-                                                  _imageUrlController.text,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) {
-                                                    return const Center(
-                                                      child: Text(
-                                                        'Error al cargar la imagen',
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-                                          ],
+                                          // InfoLabel(
+                                          //   label: 'Latitud',
+                                          //   child: TextFormBox(
+                                          //     controller: _latitudeController,
+                                          //     placeholder: 'Ingresar latitud',
+                                          //     validator: (value) {
+                                          //       if (value == null || value.isEmpty) {
+                                          //         return 'Por favor ingrese la latitud';
+                                          //       }
+                                          //       return null;
+                                          //     },
+                                          //     autovalidateMode: AutovalidateMode.onUserInteraction,
+                                          //   ),
+                                          // ),
+                                          // const SizedBox(height: 16),
+                                          // InfoLabel(
+                                          //   label: 'Longitud',
+                                          //   child: TextFormBox(
+                                          //     controller: _longitudeController,
+                                          //     placeholder: 'Ingresar longitud',
+                                          //     validator: (value) {
+                                          //       if (value == null || value.isEmpty) {
+                                          //         return 'Por favor ingrese la longitud';
+                                          //       }
+                                          //       return null;
+                                          //     },
+                                          //     autovalidateMode: AutovalidateMode.onUserInteraction,
+                                          //   ),
+                                          // ),
                                           if (_errorMessage != null) ...[
                                             InfoBar(
                                               title: const Text('Error'),

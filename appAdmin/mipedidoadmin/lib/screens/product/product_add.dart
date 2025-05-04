@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import '../../api/api_connector.dart';
 import '../../main.dart';
+import '../../components/image_upload_field.dart';
 
 class ProductAddScreen extends StatefulWidget {
   const ProductAddScreen({super.key});
@@ -275,23 +276,14 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                             ),
                             const SizedBox(height: 16),
                             InfoLabel(
-                              label: 'URL de la Imagen',
-                              child: TextFormBox(
-                                controller: _imageUrlController,
-                                placeholder: 'Ingresar URL de la imagen',
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Por favor ingrese una URL para la imagen';
-                                  }
-                                  // Simple URL validation
-                                  if (!value.startsWith('http://') &&
-                                      !value.startsWith('https://')) {
-                                    return 'Por favor ingrese una URL válida (debe comenzar con http:// o https://)';
-                                  }
-                                  return null;
+                              label: 'Imagen',
+                              child: ImageUploadField(
+                                initialUrl: _imageUrlController.text,
+                                onImageUploaded: (url) {
+                                  setState(() {
+                                    _imageUrlController.text = url;
+                                  });
                                 },
-                                autovalidateMode:
-                                    AutovalidateMode.onUserInteraction,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -346,33 +338,6 @@ class _ProductAddScreenState extends State<ProductAddScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            if (_imageUrlController.text.isNotEmpty) ...[
-                              const Text('Vista previa de la imagen:'),
-                              const SizedBox(height: 8),
-                              Container(
-                                height: 200,
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[130]),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: Image.network(
-                                    _imageUrlController.text,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return const Center(
-                                        child: Text(
-                                          'Error al cargar la imagen',
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
                             if (_errorMessage != null) ...[
                               InfoBar(
                                 title: const Text('Error'),

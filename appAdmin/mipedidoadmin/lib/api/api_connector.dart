@@ -12,7 +12,8 @@ class ApiConnector {
 
   // Base API URL
   final String _baseUrl =
-      'https://valkyrie.02loveslollipop.uk'; // Change to your actual API URL
+      //'http://127.0.0.1:8000'; // Change to your actual API URL
+      'https://valkyrie.02loveslollipop.uk'; // Production URL
 
   // Token storage keys
   final String _accessTokenKey = 'admin_access_token';
@@ -604,5 +605,59 @@ class ApiConnector {
   // Get order details
   Future<Map<String, dynamic>> getOrderDetails(String orderId) async {
     return await get('/v1/admin/orders/$orderId');
+  }
+
+  // ========= BLOB STORAGE ENDPOINTS =========
+
+  // Upload a file to blob storage
+  Future<Map<String, dynamic>> uploadFileToBlobStorage(String filePath) async {
+    try {
+      final token = await accessToken;
+      if (token == null) {
+        return {'success': false, 'error': 'Not authenticated'};
+      }
+      final uri = Uri.parse('$_baseUrl/v1/blob/upload');
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      log('Upload response: ${response.statusCode} - ${response.body}');
+      if (response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        final data = json.decode(response.body);
+        return {'success': false, 'error': data['detail'] ?? 'Upload failed'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: ${e.toString()}'};
+    }
+  }
+
+  // Delete a file from blob storage
+  Future<Map<String, dynamic>> deleteFileFromBlobStorage(String blobUrl) async {
+    try {
+      final token = await accessToken;
+      if (token == null) {
+        return {'success': false, 'error': 'Not authenticated'};
+      }
+      final uri = Uri.parse('$_baseUrl/v1/blob/delete/?blob_url=${Uri.encodeComponent(blobUrl)}');
+      final response = await _client.delete(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {'success': true, 'data': data};
+      } else {
+        final data = json.decode(response.body);
+        return {'success': false, 'error': data['detail'] ?? 'Delete failed'};
+      }
+    } catch (e) {
+      return {'success': false, 'error': 'Network error: ${e.toString()}'};
+    }
   }
 }

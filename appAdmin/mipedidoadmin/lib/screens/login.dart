@@ -2,6 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import '../api/api_connector.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter/foundation.dart';
+import '../main.dart';
 
 bool get isDesktop {
   if (kIsWeb) return false;
@@ -25,7 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  
+
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   String? _errorMessage;
@@ -35,6 +36,18 @@ class _LoginScreenState extends State<LoginScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+    if (!kIsWeb) {
+    windowManager.waitUntilReadyToShow().then((_) async {
+        await windowManager.setMaximizable(true);
+        await windowManager.setResizable(true);
+        await windowManager.setMinimumSize(const Size(800, 600));
+        await windowManager.setMaximumSize(const Size(10000, 10000));
+        await windowManager.setSize(const Size(800, 600));
+        await windowManager.center();
+        await windowManager.show();
+        await windowManager.setSkipTaskbar(false);
+      });
+    }
   }
 
   Future<void> _login() async {
@@ -59,23 +72,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result['success']) {
       if (!mounted) return;
-      
-      if (widget.onLoginSuccess != null) {
-        widget.onLoginSuccess!(context);
-      } else {
-        Navigator.of(context).pushReplacementNamed('/dashboard');
-      }
+
+      Navigator.of(context).pushReplacement(
+        FluentPageRoute(builder: (context) => const AppShell()),
+      );
     } else {
       setState(() {
         _errorMessage = result['error'] ?? 'Error de autenticación';
       });
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
-
-    
     windowManager.waitUntilReadyToShow().then((_) async {
       await windowManager.setMaximizable(false);
       //await windowManager.setResizable(false);

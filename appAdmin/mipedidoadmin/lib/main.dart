@@ -39,12 +39,26 @@ void main() async {
       await windowManager.setTitle(appTitle);
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
       await windowManager.setBackgroundColor(Colors.transparent);
-      await windowManager.setMaximizable(false);
+      await windowManager.setSkipTaskbar(false);
+      await windowManager.setMaximizable(true);
       await windowManager.setResizable(true);
+      await windowManager.setMinimumSize(const Size(800, 600));
+      await windowManager.setMaximumSize(const Size(10000, 10000));
+      await windowManager.setSize(const Size(800, 600));
       await windowManager.center();
       await windowManager.show();
-      await windowManager.setSkipTaskbar(false);
     });
+  }
+
+  AppTheme appTheme = AppTheme(ThemeMode.system, Colors.blue);
+  appTheme.setMode(ThemeMode.system);
+
+  if (isDesktop) {
+    await Window.setEffect(
+      effect: WindowEffect.acrylic,
+      color: Colors.transparent,
+      dark: appTheme.mode == ThemeMode.dark,
+    );
   }
 
   runApp(const MiPedidoAdminApp());
@@ -229,8 +243,9 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    
     final appTheme = context.watch<AppTheme>();
-
+    
     return NavigationView(
       appBar: NavigationAppBar(
         title: const Text(appTitle),
