@@ -87,6 +87,10 @@ dependencies {
     
     implementation("androidx.compose.material:material:1.6.0")
     
+    // OSMDroid for maps
+    implementation("org.osmdroid:osmdroid-android:6.1.16")
+    implementation("org.osmdroid:osmdroid-mapsforge:6.1.16")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

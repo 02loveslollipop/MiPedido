@@ -11,10 +11,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
+import uk.app02loveslollipop.mipedido.cliente.api.ApiConnector
 import uk.app02loveslollipop.mipedido.cliente.api.WebSocketConnector
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.QrCodeGenerator
+import uk.app02loveslollipop.mipedido.cliente.components.RestaurantMapView
 import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
+import uk.app02loveslollipop.mipedido.cliente.models.Restaurant
 import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,6 +37,12 @@ fun CheckoutQRScreen(
     var orderCompleted by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val wsConnector = remember { WebSocketConnector.getInstance() }
+    val apiConnector = remember { ApiConnector.getInstance() }
+    val coroutineScope = rememberCoroutineScope()
+    
+    // State for restaurant data
+    var restaurant by remember { mutableStateOf<Restaurant?>(null) }
+    var isLoadingRestaurant by remember { mutableStateOf(true) }
     
     // Function to navigate back to restaurants screen
     val navigateToRestaurants = {
@@ -44,6 +54,27 @@ fun CheckoutQRScreen(
         message = "Si sales de esta pestaña perderás tu pedido y tendrás que empezar el proceso nuevamente",
         onConfirmNavigation = { navigateToRestaurants() }
     )
+    
+    // Load restaurant data
+    LaunchedEffect(restaurantId) {
+        coroutineScope.launch {
+            try {
+                val result = apiConnector.getRestaurants()
+                result.fold(
+                    onSuccess = { restaurants ->
+                        // Find the restaurant with matching ID
+                        restaurant = restaurants.find { it.id == restaurantId }
+                    },
+                    onFailure = { error ->
+                        // Log the error for debugging purposes
+                        Log.e("CheckoutQRScreen", "Failed to fetch restaurant data: ${error.message}", error)
+                    }
+                )
+            } finally {
+                isLoadingRestaurant = false
+            }
+        }
+    }
 
     DisposableEffect(orderId) {
         val listener = object : WebSocketConnector.WebSocketListener {
@@ -136,7 +167,7 @@ fun CheckoutQRScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -165,6 +196,37 @@ fun CheckoutQRScreen(
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         textAlign = TextAlign.Start
                     )
+                }
+            }
+            
+            // Restaurant location map (if restaurant data is available)
+            if (!isLoadingRestaurant && restaurant != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+
+                        // Map view component
+                        RestaurantMapView(restaurant = restaurant!!)
+
+                        // Map caption
+                        Text(
+                            text = "Toca el mapa para abrir Google Maps",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                        )
+                    }
                 }
             }
             
