@@ -137,7 +137,7 @@ fun QrScannerScreen(
             return
         }
 
-        if (isLoading) {
+        if (isLoading && !isScanningPausedByCodeInput) {
             Log.d("QrScannerScreen", "QR code processing is in progress")
             return
         }
@@ -194,7 +194,7 @@ fun QrScannerScreen(
         }
         
         if (isLoading) return
-        isLoading = false
+        isLoading = true
         isScanningPausedByCodeInput = true
 
         
@@ -208,7 +208,6 @@ fun QrScannerScreen(
                     onSuccess = { response ->
                         Log.d("QrScannerScreen", "Short code resolved to order ID: ${response.objectId}")
                         // Now process with the full order ID
-                        isLoading = false // So processQrCode executes
                         Log.d("QrScannerScreen", "Attempting to join order with ID: ${response.objectId}")
                         processQrCode(response.objectId)
                     },
