@@ -1,7 +1,6 @@
 package uk.app02loveslollipop.mipedido.cliente.utils
 
 import java.math.BigInteger
-import kotlin.math.pow
 
 /**
  * Utility class for Base36 encoding operations
@@ -66,23 +65,23 @@ object Base36Utils {
     /**
      * Encodes a MongoDB ObjectId string into a shortened Base36 string format "T-C".
      * Where T is the Base36 of the truncated timestamp and C is the Base36 of the truncated counter.
+     * Each part is padded with leading zeros to ensure a minimum of 4 characters.
      *
      * @param objectIdHex The MongoDB ObjectID string (24 hex characters).
-     * @return The shortened Base36 encoded string (e.g., "ABC-123"), or the original ID if encoding fails.
+     * @return The shortened Base36 encoded string (e.g., "ABC0-123D"), or the original ID if encoding fails.
      */
     fun encodeObjectIdToShortFormat(objectIdHex: String): String {
         val parts = encodeObjectIdParts(objectIdHex)
         return if (parts != null) {
             val (timestampTruncated, counterTruncated) = parts
-            val timestampBase36 = intToBase36(timestampTruncated)
-            val counterBase36 = intToBase36(counterTruncated)
+            val timestampBase36 = intToBase36(timestampTruncated).padStart(4, '0')
+            val counterBase36 = intToBase36(counterTruncated).padStart(4, '0')
             "$timestampBase36-$counterBase36"
         } else {
             // Fallback or error handling: return original or a placeholder
             objectIdHex // Or consider throwing an exception or returning a specific error string
         }
     }
-
 
     /**
      * Converts a hexadecimal MongoDB ObjectID to a Base36 string representation (LEGACY - uses full ID).

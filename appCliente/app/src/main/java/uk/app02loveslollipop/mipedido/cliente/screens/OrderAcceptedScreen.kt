@@ -27,7 +27,7 @@ fun OrderAcceptedScreen(
     // Using the shared back confirmation hook
     val (handleBackPress, BackConfirmationDialogContent) = useBackConfirmation(
         message = "Se te enviará una notificación en aproximadamente 30 minutos para revisar este pedido. Si no quieres esperar, permanece en esta página y presiona el botón de revisión cuando desees calificar el pedido.",
-        onConfirmNavigation = navigateToRestaurants
+        onConfirmNavigation = { navigateToRestaurants() }
     )
 
     Scaffold(

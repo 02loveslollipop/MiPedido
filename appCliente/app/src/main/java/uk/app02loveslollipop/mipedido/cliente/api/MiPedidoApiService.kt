@@ -46,4 +46,10 @@ interface MiPedidoApiService {
         @Path("userId") userId: String,
         @Body modificationRequest: OrderModificationRequest
     ): Response<Map<String, String>>
+    
+    // Shortener endpoint
+    @GET("shortener/{shortCode}")
+    suspend fun resolveShortCode(
+        @Path("shortCode") shortCode: String
+    ): Response<ShortCodeResponse>
 }

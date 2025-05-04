@@ -193,4 +193,13 @@ class ApiConnector private constructor() {
             apiService.modifyOrderForUser(orderId, userId, modificationRequest) 
         }
     }
+    
+    /**
+     * Get full order ID from a short code
+     * @param shortCode The 8-character short code to resolve
+     * @return Result containing the full order ID or an error
+     */
+    suspend fun getFullOrderIdFromShortCode(shortCode: String): Result<ShortCodeResponse> {
+        return apiCall { apiService.resolveShortCode(shortCode) }
+    }
 }
