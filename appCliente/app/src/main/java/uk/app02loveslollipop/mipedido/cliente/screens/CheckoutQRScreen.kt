@@ -65,8 +65,9 @@ fun CheckoutQRScreen(
                         // Find the restaurant with matching ID
                         restaurant = restaurants.find { it.id == restaurantId }
                     },
-                    onFailure = {
-                        // Handle error, but don't show it to the user since the map is optional
+                    onFailure = { error ->
+                        // Log the error for debugging purposes
+                        Log.e("CheckoutQRScreen", "Failed to fetch restaurant data: ${error.message}", error)
                     }
                 )
             } finally {
