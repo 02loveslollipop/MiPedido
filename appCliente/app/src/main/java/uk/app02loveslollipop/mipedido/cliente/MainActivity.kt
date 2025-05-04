@@ -8,13 +8,32 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import uk.app02loveslollipop.mipedido.cliente.screens.*
 import uk.app02loveslollipop.mipedido.cliente.ui.theme.MiPedidoTheme
+
+// Navigation utility to prevent multiple rapid back button presses
+object NavigationUtils {
+    private var isNavigating = false
+
+    suspend fun safeNavigateBack(navController: NavController, onComplete: (() -> Unit)? = null) {
+        if (!isNavigating) {
+            isNavigating = true
+            navController.popBackStack()
+            // Add a small delay to prevent multiple rapid navigations
+            delay(300)
+            isNavigating = false
+            onComplete?.invoke()
+        }
+    }
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,6 +50,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MiPedidoApp() {
     val navController = rememberNavController()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Safe back navigation handler
+    val safeNavigateBack: () -> Unit = {
+        coroutineScope.launch {
+            NavigationUtils.safeNavigateBack(navController)
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -71,7 +98,7 @@ fun MiPedidoApp() {
                 orderId = orderId,
                 userId = userId,
                 isCreator = isCreator,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safeNavigateBack,
                 onNavigateToCart = { resId, oId, uId, isCreator ->
                     navController.navigate("cart/$resId/$oId/$uId/$isCreator")
                 }
@@ -94,7 +121,7 @@ fun MiPedidoApp() {
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safeNavigateBack,
                 onNavigateToProducts = { resId, oId, uId, isCreator ->
                     navController.navigate("products/$resId/$oId/$uId/$isCreator")
                 }
@@ -104,7 +131,7 @@ fun MiPedidoApp() {
         // QR Scanner Screen
         composable("qr-scanner") {
             QrScannerScreen(
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safeNavigateBack,
                 onNavigateToProductsScreen = { restaurantId, orderId, userId, isCreator ->
                     navController.popBackStack()
                     navController.navigate("products/$restaurantId/$orderId/$userId/$isCreator")
@@ -131,7 +158,7 @@ fun MiPedidoApp() {
                 orderId = orderId,
                 userId = userId,
                 isCreator = isCreator,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safeNavigateBack,
                 onNavigateToCheckoutQR = { resId, oId, uId ->
                     navController.navigate("checkout-qr/$resId/$oId/$uId")
                 },
@@ -157,7 +184,7 @@ fun MiPedidoApp() {
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safeNavigateBack,
                 navController = navController
             )
         }
