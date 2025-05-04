@@ -14,6 +14,7 @@ import androidx.navigation.NavController
 import uk.app02loveslollipop.mipedido.cliente.api.WebSocketConnector
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.QrCodeGenerator
+import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
 import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,6 +33,17 @@ fun CheckoutQRScreen(
     var orderCompleted by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val wsConnector = remember { WebSocketConnector.getInstance() }
+    
+    // Function to navigate back to restaurants screen
+    val navigateToRestaurants = {
+        navController?.popBackStack("restaurants", false)
+    }
+    
+    // Using the shared back confirmation hook
+    val (handleBackPress, BackConfirmationDialogContent) = useBackConfirmation(
+        message = "Si sales de esta pestaña perderás tu pedido y tendrás que empezar el proceso nuevamente",
+        onConfirmNavigation = navigateToRestaurants
+    )
 
     DisposableEffect(orderId) {
         val listener = object : WebSocketConnector.WebSocketListener {
@@ -63,7 +75,7 @@ fun CheckoutQRScreen(
         topBar = {
             NavBar(
                 title = "Finalizar Pedido",
-                onBackPressed = onNavigateBack
+                onBackPressed = handleBackPress
             )
         }
     ) { paddingValues ->
@@ -168,4 +180,7 @@ fun CheckoutQRScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+    
+    // Include the confirmation dialog
+    BackConfirmationDialogContent()
 }

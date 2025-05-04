@@ -1,5 +1,6 @@
 package uk.app02loveslollipop.mipedido.cliente.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -9,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -24,8 +26,12 @@ fun CheckoutSlaveScreen(
     val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
 
     Scaffold(
-        // Optional: Add a simple top bar if needed
-        // topBar = { TopAppBar(title = { Text("Pedido Agregado") }) }
+        topBar = {
+            NavBar(
+                title = "Pedido Agregado",
+                onBackPressed = { onFinish() } // Navigate back to home screen
+            )
+        }
     ) { paddingValues ->
         Column(
             modifier = modifier
@@ -86,4 +92,7 @@ fun CheckoutSlaveScreen(
             }
         }
     }
+    
+    // Handle system back button to also return to home screen
+    BackHandler(onBack = { onFinish() })
 }

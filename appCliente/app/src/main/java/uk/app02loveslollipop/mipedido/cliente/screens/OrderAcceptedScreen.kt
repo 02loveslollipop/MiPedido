@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
+import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -17,9 +19,23 @@ fun OrderAcceptedScreen(
     userId: String,
     navController: NavController? = null
 ) {
+    // Function to navigate back to restaurants screen
+    val navigateToRestaurants = {
+        navController?.popBackStack("restaurants", false)
+    }
+    
+    // Using the shared back confirmation hook
+    val (handleBackPress, BackConfirmationDialogContent) = useBackConfirmation(
+        message = "Se te enviará una notificación en aproximadamente 30 minutos para revisar este pedido. Si no quieres esperar, permanece en esta página y presiona el botón de revisión cuando desees calificar el pedido.",
+        onConfirmNavigation = navigateToRestaurants
+    )
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Pedido aceptado") })
+            NavBar(
+                title = "Pedido aceptado",
+                onBackPressed = handleBackPress
+            )
         }
     ) { paddingValues ->
         Column(
@@ -59,4 +75,7 @@ fun OrderAcceptedScreen(
             }
         }
     }
+    
+    // Include the confirmation dialog
+    BackConfirmationDialogContent()
 }

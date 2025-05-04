@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import uk.app02loveslollipop.mipedido.cliente.components.NavBar
+import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,9 +23,23 @@ fun ReviewScreen(
     navController: NavController? = null
 ) {
     var rating by remember { mutableStateOf(0) }
+
+    val navigateToRestaurants = {
+        navController?.popBackStack("restaurants", false)
+    }
+    
+    // Using the shared back confirmation hook
+    val (handleBackPress, BackConfirmationDialogContent) = useBackConfirmation(
+        message = "Si sales sin enviar una reseña, no podrás calificar este pedido más adelante.",
+        onConfirmNavigation = navigateToRestaurants
+    )
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Califica tu pedido") })
+            NavBar(
+                title = "Califica tu pedido",
+                onBackPressed = handleBackPress
+            )
         }
     ) { paddingValues ->
         Column(
@@ -58,7 +74,7 @@ fun ReviewScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = {
-                    navController?.popBackStack()
+                    navigateToRestaurants()
                 },
                 enabled = rating > 0,
                 modifier = Modifier.fillMaxWidth()
@@ -67,4 +83,7 @@ fun ReviewScreen(
             }
         }
     }
+    
+    // Include the confirmation dialog
+    BackConfirmationDialogContent()
 }

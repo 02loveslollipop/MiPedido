@@ -33,6 +33,16 @@ object NavigationUtils {
             onComplete?.invoke()
         }
     }
+
+    // Function to handle back navigation with confirmation
+    fun safeNavigateBackWithConfirmation(
+        showConfirmation: MutableState<Boolean>,
+        confirmationAction: () -> Unit
+    ): () -> Unit = {
+        if (!isNavigating) {
+            showConfirmation.value = true
+        }
+    }
 }
 
 class MainActivity : ComponentActivity() {
