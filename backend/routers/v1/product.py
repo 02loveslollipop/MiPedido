@@ -5,6 +5,7 @@ import traceback
 from typing import List, Dict
 from utils.auth import get_current_user, TokenData, get_token_from_body, TokenRequest
 import logging
+from cache.redis.cache import get_cached_product_list, invalidate_product_cache, invalidate_product_list_cache
 
 router = APIRouter(
     prefix="/products",
@@ -102,6 +103,15 @@ async def get_product_details(restaurant_id: str, product_id: str):
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
+@router.get("/cache/{restaurant_id}", response_model=List[Dict])
+async def get_cached_products(restaurant_id: str):
+    cached = await get_cached_product_list(restaurant_id)
+    if cached is not None:
+        return cached
+    # Fallback to DB if cache miss
+    products = await ProductRepository.list_all_products_by_restaurant(restaurant_id)
+    return products
+
 @router.delete("/{restaurant_id}/{product_id}", response_model=OrderStatusResponse)
 async def disable_product(
     restaurant_id: str, 
@@ -145,6 +155,10 @@ async def disable_product(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=result["message"]
                 )
+        
+        # Invalidate product cache
+        await invalidate_product_cache(product_id)
+        await invalidate_product_list_cache(restaurant_id)
         
         # Return success response
         return OrderStatusResponse(status="Disabled")
@@ -198,6 +212,10 @@ async def enable_product(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=result["message"]
                 )
+        
+        # Invalidate product cache
+        await invalidate_product_cache(product_id)
+        await invalidate_product_list_cache(restaurant_id)
         
         # Return success response
         return OrderStatusResponse(status="Enabled")

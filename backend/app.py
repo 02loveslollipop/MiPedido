@@ -6,6 +6,9 @@ from contextlib import asynccontextmanager
 from database import db
 from routers import router
 from utils import env
+from cache.redis.cache import refresh_all_cache
+from database.repositories.restuarant import RestaurantRepository
+from database.repositories.product import ProductRepository
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,6 +16,17 @@ async def lifespan(app: FastAPI):
     if db.db is None:
         db.db = db.Database()
     print("FastAPI application started")
+
+    # Refresh Redis cache on startup
+    async def fetch_restaurants():
+        # Returns list of dicts for cache
+        return [r.model_dump() for r in await RestaurantRepository.list_restaurants()]
+
+    async def fetch_products_by_restaurant(restaurant_id: str):
+        return await ProductRepository.list_all_products_by_restaurant(restaurant_id)
+
+    await refresh_all_cache(fetch_restaurants, fetch_products_by_restaurant)
+
     yield
     # Shutdown: Close database connection
     db.db.close_db_connection()
