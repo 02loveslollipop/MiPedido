@@ -5,7 +5,27 @@
 
 version: 2
 updates:
-  - package-ecosystem: "" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: "pip" # See documentation for possible values
+    directory: "/backend/" # Location of package manifests
     schedule:
-      interval: "weekly"
+      interval: "daily"
+  - package-ecosystem: "pub" # See documentation for possible values
+    directory: "/appAdmin/mipedidoadmin/" # Location of package manifests
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "pub" # See documentation for possible values
+    directory: "/appVendedor/app_vendedor_mipedido/" # Location of package manifests
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/ratingCronJob/" # Location of package manifests
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/webSocketEngine/" # Location of package manifests
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "gradle" # See documentation for possible values
+    directory: "/appCliente/app/" # Location of package manifests
+    schedule:
+      interval: "daily"
