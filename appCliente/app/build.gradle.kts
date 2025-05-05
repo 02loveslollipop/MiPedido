@@ -89,7 +89,7 @@ dependencies {
     
     // OSMDroid for maps
     implementation("org.osmdroid:osmdroid-android:6.1.16")
-    implementation("org.osmdroid:osmdroid-mapsforge:6.1.16")
+    implementation("org.osmdroid:osmdroid-mapsforge:6.1.20")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
