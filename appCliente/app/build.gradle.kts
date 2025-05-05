@@ -51,7 +51,7 @@ dependencies {
     implementation(libs.androidx.material3)
 
     // Experimental permissions for location
-    implementation ("com.google.accompanist:accompanist-permissions:0.32.0")
+    implementation ("com.google.accompanist:accompanist-permissions:0.37.3")
 
     // Retrofit for API calls
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
