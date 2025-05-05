@@ -3,7 +3,7 @@ module review_cron_job.mipedido
 go 1.23.2
 
 require (
-	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/text v0.24.0 // indirect; indirec
 )
 
