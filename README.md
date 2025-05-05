@@ -2,7 +2,7 @@
   <img src="icon/Icon.svg" alt="Cuanto pal 3 Logo" width="120"/>
   <h1>Mi pedido</h1>
   <p>
-    <a href="https://github.com/02loveslollipop/CuantoPal3/actions/workflows/python-selenium-ci-workflow.yaml">
+    <a>
         <img src="https://sonarcloud.io/api/project_badges/measure?project=02loveslollipop_MiPedido&metric=alert_status" alt="SonarCloud Quality Gate Status">
         <img src="https://sonarcloud.io/api/project_badges/measure?project=02loveslollipop_MiPedido&metric=ncloc" alt="SonarCloud Lines of Code">
         <img src="https://sonarcloud.io/api/project_badges/measure?project=02loveslollipop_MiPedido&metric=vulnerabilities" alt="SonarCloud Vulnerabilities">
