@@ -3,6 +3,7 @@ from models.restaurant import Restaurant, RestaurantCreate
 from database.repositories import RestaurantRepository
 from utils.admin_auth import get_current_admin, AdminTokenData
 from utils.admin_logger import log_admin_operation
+from cache.redis.cache import cache_restaurant
 import traceback
 import logging
 from typing import List
@@ -48,6 +49,9 @@ async def admin_create_restaurant(
     """
     try:
         created_restaurant = await RestaurantRepository.create_restaurant(restaurant)
+        
+        # Update cache
+        await cache_restaurant(created_restaurant.id, created_restaurant.model_dump())
         
         # Log the operation
         await log_admin_operation(
@@ -123,6 +127,9 @@ async def admin_update_restaurant(
         
         # Get the updated restaurant
         updated_restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
+        
+        # Update cache
+        await cache_restaurant(restaurant_id, updated_restaurant.model_dump())
         
         # Log the operation
         await log_admin_operation(

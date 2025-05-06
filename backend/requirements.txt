@@ -12,7 +12,9 @@ pyjwt
 python-multipart
 vercel_blob
 cryptography
+redis
 # Testing dependencies
 pytest
 pytest-asyncio
 httpx
+

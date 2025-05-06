@@ -1,17 +1,28 @@
-import aioredis
+import redis.asyncio as redis_asyncio
 import os
 import json
 from typing import Any, Optional, List
+from cache.redis.search import index_restaurant
 
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_DB = str(os.getenv("REDIS_DB", 0))
+REDIS_DECODE_RESPONSES = os.getenv("REDIS_DECODE_RESPONSES", "True") == "True"
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 
 # Singleton Redis connection
-redis: Optional[aioredis.Redis] = None
+redis: Optional[redis_asyncio.Redis] = None
 
-async def get_redis() -> aioredis.Redis:
+async def get_redis() -> redis_asyncio.Redis:
     global redis
     if redis is None:
-        redis = await aioredis.from_url(REDIS_URL, decode_responses=True)
+        redis = redis_asyncio.Redis(
+            host=REDIS_HOST,
+            port=REDIS_PORT,
+            db=REDIS_DB,
+            decode_responses=REDIS_DECODE_RESPONSES,
+            password=REDIS_PASSWORD,
+        )
     return redis
 
 # Restaurant cache functions
@@ -32,6 +43,7 @@ async def invalidate_restaurant_cache(restaurant_id: str):
 
 async def cache_restaurant_list(restaurants: List[dict], ttl: int = 3600):
     r = await get_redis()
+    print(json.dumps(restaurants)) #TODO: remove this line
     await r.set("restaurants:all", json.dumps(restaurants), ex=ttl)
 
 async def get_cached_restaurant_list() -> Optional[List[dict]]:
@@ -75,14 +87,3 @@ async def get_cached_product_list(restaurant_id: str) -> Optional[List[dict]]:
 async def invalidate_product_list_cache(restaurant_id: str):
     r = await get_redis()
     await r.delete(f"products:restaurant:{restaurant_id}")
-
-# Refresh all cache (to be called on startup or periodically)
-async def refresh_all_cache(fetch_restaurants, fetch_products_by_restaurant):
-    restaurants = await fetch_restaurants()
-    await cache_restaurant_list(restaurants)
-    for rest in restaurants:
-        await cache_restaurant(rest['id'], rest)
-        products = await fetch_products_by_restaurant(rest['id'])
-        await cache_product_list(rest['id'], products)
-        for prod in products:
-            await cache_product(prod['id'], prod)

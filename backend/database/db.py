@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -23,12 +24,12 @@ class Database:
     def connect_to_db(self) -> None:
         self.client = AsyncIOMotorClient(self.settings.mongodb_url)
         self.db = self.client[self.settings.database_name]
-        print(f"Connected to MongoDB database: {self.settings.database_name}")
+        logging.info(f"Connected to MongoDB database: {self.settings.database_name}")
         
     def close_db_connection(self) -> None:
         if self.client:
             self.client.close()
-            print("MongoDB connection closed")
+            logging.info("MongoDB connection closed")
 
 # Create a database instance to be used throughout the app
 db = Database()
