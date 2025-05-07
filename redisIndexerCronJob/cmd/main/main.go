@@ -67,14 +67,14 @@ func main() {
 		log.Fatalf("MongoDB product fetch error: %v", err)
 	}
 
-	log.Printf("Got %d restaurants and %d products from MongoDB", len(restaurants), prodCursor.RemainingBatchLength())
+	log.Printf("Got %d restaurants from MongoDB", len(restaurants))
 
 	var products []bson.M
 	if err = prodCursor.All(ctx, &products); err != nil {
 		log.Fatalf("MongoDB product decode error: %v", err)
 	}
 
-	log.Printf("Decoded %d products from MongoDB", len(products))
+	log.Printf("Got and decoded %d products from MongoDB", len(products))
 
 	// Build a map of restaurantID -> []products for products_text
 	productsByRestaurant := make(map[string][]bson.M)
