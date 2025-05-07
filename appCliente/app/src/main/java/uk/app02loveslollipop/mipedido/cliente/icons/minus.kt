@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 
 
 
-public val minus: ImageVector
+val minus: ImageVector
     get() {
         if (_minus != null) {
             return _minus!!

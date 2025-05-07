@@ -102,6 +102,18 @@ class ApiConnector private constructor() {
         return apiCall { apiService.getRestaurants() }
     }
     
+    /**
+     * Search for restaurants by query string (minimum 3 characters)
+     * @param query The search query
+     * @param limit Maximum number of results (default 10)
+     * @param offset Number of results to skip (default 0)
+     * @return Result containing a list of restaurants or an error
+     */
+    suspend fun searchRestaurants(query: String, limit: Int = 10, offset: Int = 0): Result<List<Restaurant>> {
+        return apiCall { apiService.searchRestaurants(query, limit, offset) }
+            .mapCatching { it.results }
+    }
+    
     // Product API endpoints
     
     /**
@@ -121,6 +133,18 @@ class ApiConnector private constructor() {
      */
     suspend fun getProductDetails(restaurantId: String, productId: String): Result<Product> {
         return apiCall { apiService.getProductDetails(restaurantId, productId) }
+    }
+    
+    /**
+     * Search for products by query string (minimum 3 characters)
+     * @param query The search query
+     * @param limit Maximum number of results (default 10)
+     * @param offset Number of results to skip (default 0)
+     * @return Result containing a list of products or an error
+     */
+    suspend fun searchProducts(query: String, limit: Int = 10, offset: Int = 0): Result<List<Product>> {
+        return apiCall { apiService.searchProducts(query, limit, offset) }
+            .mapCatching { it.results }
     }
     
     // Order API endpoints

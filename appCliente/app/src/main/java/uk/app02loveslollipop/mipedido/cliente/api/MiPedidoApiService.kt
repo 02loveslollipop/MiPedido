@@ -11,6 +11,14 @@ interface MiPedidoApiService {
     @GET("restaurant/")
     suspend fun getRestaurants(): Response<List<Restaurant>>
     
+    // Search restaurants endpoint
+    @GET("search/restaurants")
+    suspend fun searchRestaurants(
+        @Query("q") query: String,
+        @Query("limit") limit: Int = 10,
+        @Query("offset") offset: Int = 0
+    ): Response<SearchRestaurantsResponse>
+    
     // Product endpoints
     @GET("products/{restaurantId}")
     suspend fun getProductsByRestaurant(
@@ -22,6 +30,14 @@ interface MiPedidoApiService {
         @Path("restaurantId") restaurantId: String,
         @Path("productId") productId: String
     ): Response<Product>
+    
+    // Search products endpoint
+    @GET("search/products")
+    suspend fun searchProducts(
+        @Query("q") query: String,
+        @Query("limit") limit: Int = 10,
+        @Query("offset") offset: Int = 0
+    ): Response<SearchProductsResponse>
     
     // Order endpoints
     @POST("order/")

@@ -53,6 +53,11 @@ fun RestaurantsScreen(
     var userLocation by remember { mutableStateOf<Position?>(null) }
     var showLocationDialog by remember { mutableStateOf(false) }
     
+    var restaurantSearchQuery by remember { mutableStateOf("") }
+    var isRestaurantSearching by remember { mutableStateOf(false) }
+    var restaurantSearchResults by remember { mutableStateOf<List<Restaurant>>(emptyList()) }
+    var restaurantSearchError by remember { mutableStateOf<String?>(null) }
+    
     // Add state for restaurant type filtering
     var selectedType by remember { mutableStateOf<String?>(null) }
     
@@ -147,6 +152,39 @@ fun RestaurantsScreen(
             } finally {
                 isLoading = false
             }
+        }
+    }
+    
+    fun searchRestaurants(query: String) {
+        coroutineScope.launch {
+            isRestaurantSearching = true
+            restaurantSearchError = null
+            try {
+                val result = apiConnector.searchRestaurants(query)
+                result.fold(
+                    onSuccess = { list ->
+                        restaurantSearchResults = list
+                    },
+                    onFailure = { throwable ->
+                        restaurantSearchError = throwable.message ?: "No se pudieron buscar restaurantes"
+                        restaurantSearchResults = emptyList()
+                    }
+                )
+            } catch (e: Exception) {
+                restaurantSearchError = e.message ?: "Error desconocido"
+                restaurantSearchResults = emptyList()
+            } finally {
+                isRestaurantSearching = false
+            }
+        }
+    }
+
+    LaunchedEffect(restaurantSearchQuery) {
+        if (restaurantSearchQuery.length >= 3) {
+            searchRestaurants(restaurantSearchQuery)
+        } else if (restaurantSearchQuery.isEmpty()) {
+            restaurantSearchResults = emptyList()
+            restaurantSearchError = null
         }
     }
     
@@ -281,76 +319,143 @@ fun RestaurantsScreen(
                 )
             } else {
                 Column {
-                    // Restaurant type filter section
-                    if (restaurantTypes.isNotEmpty()) {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
+                    OutlinedTextField(
+                        value = restaurantSearchQuery,
+                        onValueChange = { newValue -> restaurantSearchQuery = newValue },
+                        label = { Text("Buscar restaurantes") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        singleLine = true,
+                        trailingIcon = {
+                            if (restaurantSearchQuery.isNotEmpty()) {
+                                IconButton(onClick = { restaurantSearchQuery = "" }) {
+                                    Icon(Icons.Default.Refresh, contentDescription = "Limpiar búsqueda")
+                                }
+                            }
+                        }
+                    )
+                    val showRestaurantSearch = restaurantSearchQuery.length >= 3
+                    if (showRestaurantSearch) {
+                        if (isRestaurantSearching) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        } else if (restaurantSearchError != null) {
                             Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp)
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = "Filtrar por tipo:",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    text = restaurantSearchError ?: "Error desconocido",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.error
                                 )
-                                
-                                LazyRow(
-                                    contentPadding = PaddingValues(4.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.fillMaxWidth()
+                            }
+                        } else if (restaurantSearchResults.isEmpty()) {
+                            Text(
+                                text = "No se encontraron restaurantes",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            )
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Adaptive(minSize = 300.dp),
+                                contentPadding = PaddingValues(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(restaurantSearchResults) { restaurant ->
+                                    RestaurantCard(
+                                        restaurant = restaurant,
+                                        onClick = {
+                                            selectedRestaurant = restaurant
+                                            showOrderTypeDialog = true
+                                        },
+                                        userLocation = userLocation
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        // Restaurant type filter section
+                        if (restaurantTypes.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp)
                                 ) {
-                                    // "All" filter option
-                                    item {
-                                        FilterChip(
-                                            selected = selectedType == null,
-                                            onClick = { selectedType = null },
-                                            label = { Text("Todos") },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                        )
-                                    }
+                                    Text(
+                                        text = "Filtrar por tipo:",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                     
-                                    // Restaurant type filters
-                                    items(restaurantTypes) { type ->
-                                        FilterChip(
-                                            selected = selectedType == type,
-                                            onClick = { selectedType = type },
-                                            label = { Text(type) },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                    LazyRow(
+                                        contentPadding = PaddingValues(4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        // "All" filter option
+                                        item {
+                                            FilterChip(
+                                                selected = selectedType == null,
+                                                onClick = { selectedType = null },
+                                                label = { Text("Todos") },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
                                             )
-                                        )
+                                        }
+                                        
+                                        // Restaurant type filters
+                                        items(restaurantTypes) { type ->
+                                            FilterChip(
+                                                selected = selectedType == type,
+                                                onClick = { selectedType = type },
+                                                label = { Text(type) },
+                                                colors = FilterChipDefaults.filterChipColors(
+                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                                )
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    
-                    // Restaurant grid
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 300.dp),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(filteredRestaurants) { restaurant ->
-                            RestaurantCard(
-                                restaurant = restaurant,
-                                onClick = {
-                                    selectedRestaurant = restaurant
-                                    showOrderTypeDialog = true
-                                },
-                                userLocation = userLocation
-                            )
+                        
+                        // Restaurant grid
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 300.dp),
+                            contentPadding = PaddingValues(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(filteredRestaurants) { restaurant ->
+                                RestaurantCard(
+                                    restaurant = restaurant,
+                                    onClick = {
+                                        selectedRestaurant = restaurant
+                                        showOrderTypeDialog = true
+                                    },
+                                    userLocation = userLocation
+                                )
+                            }
                         }
                     }
                 }

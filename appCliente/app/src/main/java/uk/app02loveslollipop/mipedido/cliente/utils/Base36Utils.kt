@@ -1,5 +1,6 @@
 package uk.app02loveslollipop.mipedido.cliente.utils
 
+import uk.app02loveslollipop.mipedido.cliente.utils.Base36Utils.encodeObjectIdToShortFormat
 import java.math.BigInteger
 
 /**
@@ -139,6 +140,6 @@ object Base36Utils {
      */
     @Deprecated("Use encodeObjectIdToShortFormat for the new encoding", ReplaceWith("encodeObjectIdToShortFormat(this)"))
     fun String.hexToBase36(length: Int = 6): String {
-        return encodeOrderId(this, length)
+        return encodeObjectIdToShortFormat(this)
     }
 }

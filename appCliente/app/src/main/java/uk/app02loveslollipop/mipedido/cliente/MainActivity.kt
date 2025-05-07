@@ -92,7 +92,7 @@ fun MiPedidoApp() {
         // Products Screen
         composable(
             route = "products/{restaurantId}/{orderId}/{userId}/{isCreator}",
-            arguments = kotlin.collections.listOf(
+            arguments = listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType },
@@ -118,7 +118,7 @@ fun MiPedidoApp() {
         // QR Code Screen
         composable(
             route = "qr/{restaurantId}/{orderId}/{userId}",
-            arguments = kotlin.collections.listOf(
+            arguments = listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
@@ -152,7 +152,7 @@ fun MiPedidoApp() {
         // Cart Screen
         composable(
             route = "cart/{restaurantId}/{orderId}/{userId}/{isCreator}",
-            arguments = kotlin.collections.listOf(
+            arguments = listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType },
@@ -181,7 +181,7 @@ fun MiPedidoApp() {
         // Checkout QR Screen
         composable(
             route = "checkout-qr/{restaurantId}/{orderId}/{userId}",
-            arguments = kotlin.collections.listOf(
+            arguments = listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
@@ -202,7 +202,7 @@ fun MiPedidoApp() {
         // Order Accepted Screen
         composable(
             route = "order-accepted/{restaurantId}/{orderId}/{userId}",
-            arguments = kotlin.collections.listOf(
+            arguments = listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
@@ -222,7 +222,7 @@ fun MiPedidoApp() {
         // Review Screen
         composable(
             route = "review/{restaurantId}/{orderId}/{userId}",
-            arguments = kotlin.collections.listOf(
+            arguments = listOf(
                 navArgument("restaurantId") { type = NavType.StringType },
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType }
@@ -242,7 +242,7 @@ fun MiPedidoApp() {
         // Checkout Slave Screen
         composable(
             route = "checkout-slave/{orderId}/{userId}/{totalPrice}",
-            arguments = kotlin.collections.listOf(
+            arguments = listOf(
                 navArgument("orderId") { type = NavType.StringType },
                 navArgument("userId") { type = NavType.StringType },
                 navArgument("totalPrice") { type = NavType.FloatType }

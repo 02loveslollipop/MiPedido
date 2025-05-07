@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
@@ -42,6 +43,11 @@ fun ProductsScreen(
     var isLoading by remember { mutableStateOf(false) }
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearching by remember { mutableStateOf(false) }
+    var searchResults by remember { mutableStateOf<List<Product>>(emptyList()) }
+    var searchError by remember { mutableStateOf<String?>(null) }
     
     // Cart items (productId -> quantity)
     val cartItems = remember { mutableStateMapOf<String, Int>() }
@@ -131,6 +137,41 @@ fun ProductsScreen(
         }
     }
     
+    // Function to search products
+    fun searchProducts(query: String) {
+        coroutineScope.launch {
+            isSearching = true
+            searchError = null
+            try {
+                val result = apiConnector.searchProducts(query)
+                result.fold(
+                    onSuccess = { productsList ->
+                        searchResults = productsList
+                    },
+                    onFailure = { throwable ->
+                        searchError = throwable.message ?: "No se pudieron buscar productos"
+                        searchResults = emptyList()
+                    }
+                )
+            } catch (e: Exception) {
+                searchError = e.message ?: "Error desconocido"
+                searchResults = emptyList()
+            } finally {
+                isSearching = false
+            }
+        }
+    }
+    
+    // Watch searchQuery and trigger search if >= 3 chars, else reset
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.length >= 3) {
+            searchProducts(searchQuery)
+        } else if (searchQuery.isEmpty()) {
+            searchResults = emptyList()
+            searchError = null
+        }
+    }
+    
     // Load products and cart items on first composition
     LaunchedEffect(key1 = restaurantId) {
         loadProducts()
@@ -202,76 +243,167 @@ fun ProductsScreen(
                     .padding(paddingValues)
                     .pullRefresh(pullRefreshState)
             ) {
-                if (error != null) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = error ?: "Error desconocido",
-                            style = MaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        Button(onClick = { loadProducts() }) {
-                            Text("Reintentar")
-                        }
-                    }
-                } else if (products.isEmpty() && !isLoading) {
-                    Text(
-                        text = "No se encontraron productos",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
+                Column(modifier = Modifier.fillMaxSize()) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { newValue ->
+                            searchQuery = newValue
+                        },
+                        label = { Text("Buscar productos") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
-                            .align(Alignment.Center)
-                    )
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 300.dp),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(products) { product ->
-                            val quantity = cartItems[product.id] ?: 0
-                            
-                            ProductCard(
-                                product = product,
-                                onClick = { selectedProduct = product },
-                                cartQuantity = quantity,
-                                onIncreaseQuantity = {
-                                    if (quantity > 0) {
-                                        // If already in cart, just increase the quantity with existing ingredients
-                                        modifyOrderInAPI(
-                                            product = product,
-                                            quantity = quantity + 1,
-                                            ingredients = product.ingredients
-                                        )
-                                    } else {
-                                        // If not in cart, go to personalize screen
-                                        selectedProduct = product
-                                    }
-                                },
-                                onDecreaseQuantity = {
-                                    if (quantity > 0) {
-                                        // If quantity would go to 0, remove from cart
-                                        // Otherwise reduce quantity
-                                        modifyOrderInAPI(
-                                            product = product,
-                                            quantity = quantity - 1,
-                                            ingredients = product.ingredients
-                                        )
-                                    }
+                            .padding(16.dp),
+                        singleLine = true,
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Limpiar búsqueda")
                                 }
+                            }
+                        }
+                    )
+                    
+                    val showSearch = searchQuery.length >= 3
+                    if (showSearch) {
+                        if (isSearching) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        } else if (searchError != null) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = searchError ?: "Error desconocido",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        } else if (searchResults.isEmpty()) {
+                            Text(
+                                text = "No se encontraron productos",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .align(Alignment.CenterHorizontally)
                             )
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Adaptive(minSize = 300.dp),
+                                contentPadding = PaddingValues(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(searchResults) { product ->
+                                    val quantity = cartItems[product.id] ?: 0
+                                    ProductCard(
+                                        product = product,
+                                        onClick = { selectedProduct = product },
+                                        cartQuantity = quantity,
+                                        onIncreaseQuantity = {
+                                            if (quantity > 0) {
+                                                modifyOrderInAPI(
+                                                    product = product,
+                                                    quantity = quantity + 1,
+                                                    ingredients = product.ingredients
+                                                )
+                                            } else {
+                                                selectedProduct = product
+                                            }
+                                        },
+                                        onDecreaseQuantity = {
+                                            if (quantity > 0) {
+                                                modifyOrderInAPI(
+                                                    product = product,
+                                                    quantity = quantity - 1,
+                                                    ingredients = product.ingredients
+                                                )
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        if (error != null) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = error ?: "Error desconocido",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                                
+                                Spacer(modifier = Modifier.height(16.dp))
+                                
+                                Button(onClick = { loadProducts() }) {
+                                    Text("Reintentar")
+                                }
+                            }
+                        } else if (products.isEmpty() && !isLoading) {
+                            Text(
+                                text = "No se encontraron productos",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .align(Alignment.CenterHorizontally)
+                            )
+                        } else {
+                            LazyVerticalGrid(
+                                columns = GridCells.Adaptive(minSize = 300.dp),
+                                contentPadding = PaddingValues(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                items(products) { product ->
+                                    val quantity = cartItems[product.id] ?: 0
+                                    
+                                    ProductCard(
+                                        product = product,
+                                        onClick = { selectedProduct = product },
+                                        cartQuantity = quantity,
+                                        onIncreaseQuantity = {
+                                            if (quantity > 0) {
+                                                // If already in cart, just increase the quantity with existing ingredients
+                                                modifyOrderInAPI(
+                                                    product = product,
+                                                    quantity = quantity + 1,
+                                                    ingredients = product.ingredients
+                                                )
+                                            } else {
+                                                // If not in cart, go to personalize screen
+                                                selectedProduct = product
+                                            }
+                                        },
+                                        onDecreaseQuantity = {
+                                            if (quantity > 0) {
+                                                // If quantity would go to 0, remove from cart
+                                                // Otherwise reduce quantity
+                                                modifyOrderInAPI(
+                                                    product = product,
+                                                    quantity = quantity - 1,
+                                                    ingredients = product.ingredients
+                                                )
+                                            }
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
