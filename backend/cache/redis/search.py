@@ -10,7 +10,7 @@ from redis.exceptions import AuthenticationError, ResponseError  # Import except
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = str(os.getenv("REDIS_DB", 0))  # Changed str() to int()
+REDIS_DB = str(os.getenv("REDIS_DB", 0))
 REDIS_DECODE_RESPONSES = os.getenv("REDIS_DECODE_RESPONSES", "True") == "True"
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 REDIS_USERNAME = os.getenv("REDIS_USERNAME", None)
