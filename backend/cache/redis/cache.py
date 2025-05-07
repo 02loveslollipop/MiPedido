@@ -43,7 +43,6 @@ async def invalidate_restaurant_cache(restaurant_id: str):
 
 async def cache_restaurant_list(restaurants: List[dict], ttl: int = 3600):
     r = await get_redis()
-    print(json.dumps(restaurants)) #TODO: remove this line
     await r.set("restaurants:all", json.dumps(restaurants), ex=ttl)
 
 async def get_cached_restaurant_list() -> Optional[List[dict]]:

@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     redis_db: str = str(os.getenv("REDIS_DB", 0))
     redis_password: str | None = os.getenv("REDIS_PASSWORD", None)
     redis_decode_responses: bool = os.getenv("REDIS_DECODE_RESPONSES", "True") == "True"
+    redis_username: str | None = os.getenv("REDIS_USERNAME", None)
     
     class Config:
         env_file = ".env"
