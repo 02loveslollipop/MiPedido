@@ -27,7 +27,7 @@ def get_wildcard(query: str) -> str:
     escaped_query = query.replace("'", r"\\'").replace('"', r'\\"')
     # separate words by spaces and add wildcard for fuzzy match based on Levenshtein distance
     words = escaped_query.split()
-    wildcard_query = " ".join([f"%{word}%" for word in words])
+    wildcard_query = " ".join([f"%%{word}%%" for word in words])
     return wildcard_query
 
 def to_restaurant_query(query: str) -> str:

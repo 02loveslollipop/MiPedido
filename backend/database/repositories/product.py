@@ -176,3 +176,28 @@ class ProductRepository:
             
         except Exception as e:
             raise e
+    
+    @classmethod
+    async def list_products_by_ids(cls, product_refs: list[dict]) -> list[Product]:
+        """
+        Given a list of product references (dicts with product_id and restaurant_id),
+        fetch the corresponding Product objects from the database.
+        """
+        products = []
+        for ref in product_refs:
+            product_id = ref.get("product_id")
+            restaurant_id = ref.get("restaurant_id")
+            if not product_id or not restaurant_id:
+                continue
+            product = await cls.get_product(product_id, restaurant_id)
+            if product:
+                # Convert dict to Product model (for search endpoint compatibility)
+                products.append(Product(
+                    id=product["id"],
+                    name=product["name"],
+                    description=product["description"],
+                    price=product["price"],
+                    img_url=product["img_url"],
+                    ingredients=product["ingredients"]
+                ))
+        return products
