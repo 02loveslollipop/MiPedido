@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from database import db
 from routers import router
 from utils import env
+from database.repositories.restuarant import RestaurantRepository
+from database.repositories.product import ProductRepository
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,6 +15,9 @@ async def lifespan(app: FastAPI):
     if db.db is None:
         db.db = db.Database()
     print("FastAPI application started")
+
+    # No cache refresh here; handled by external job
+
     yield
     # Shutdown: Close database connection
     db.db.close_db_connection()

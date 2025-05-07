@@ -1,4 +1,5 @@
 ratingCronJob/.env
 webSocketEngine/test
 webSocketEngine/.env
+redisIndexerCronJob/.env
 redisIndexerCronJob/cmd/main/.env

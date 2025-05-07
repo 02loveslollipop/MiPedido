@@ -2818,7 +2818,7 @@
 									"top": 208,
 									"width": 136,
 									"height": 13,
-									"text": "MapBox SDK",
+									"text": "OpenStreetMap",
 									"wordWrap": true
 								},
 								{
@@ -2834,7 +2834,7 @@
 									"top": 223,
 									"width": 136,
 									"height": 26,
-									"text": "[Container: MapBox API]",
+									"text": "[Container: OpenStreetMap]",
 									"wordWrap": true
 								},
 								{
@@ -4095,8 +4095,8 @@
 					"_parent": {
 						"$ref": "AAAAAAGIJ9MNFXaLtCg="
 					},
-					"name": "MapBox SDK",
-					"technology": "MapBox API",
+					"name": "OpenStreetMap",
+					"technology": "OpenStreetMap",
 					"kind": "server-webapp"
 				},
 				{
