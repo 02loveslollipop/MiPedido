@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     admin_public_key: str | None = os.getenv("ADMIN_PUBLIC_KEY", None)
     admin_private_key: str | None = os.getenv("ADMIN_PRIVATE_KEY", None)
     
+    # Redis
+    redis_host: str = os.getenv("REDIS_HOST", "localhost")
+    redis_port: int = int(os.getenv("REDIS_PORT", 6379))
+    redis_db: str = str(os.getenv("REDIS_DB", 0))
+    redis_password: str | None = os.getenv("REDIS_PASSWORD", None)
+    redis_decode_responses: bool = os.getenv("REDIS_DECODE_RESPONSES", "True") == "True"
+    redis_username: str | None = os.getenv("REDIS_USERNAME", None)
+    
     class Config:
         env_file = ".env"
 

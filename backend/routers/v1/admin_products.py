@@ -7,6 +7,7 @@ from models.product import ProductCreate, Product, ProductUpdate
 from database.repositories import ProductRepository, RestaurantRepository
 from utils.admin_auth import get_current_admin, AdminTokenData
 from utils.admin_logger import log_admin_operation
+from cache.redis.cache import cache_product
 
 router = APIRouter(
     prefix="/admin/products",
@@ -55,6 +56,9 @@ async def admin_create_product(
             raise HTTPException(status_code=404, detail="Restaurant not found")
             
         created_product = await ProductRepository.create_product(product)
+        
+        # Update cache
+        await cache_product(created_product.id, created_product.model_dump())
         
         # Log the operation
         await log_admin_operation(
@@ -135,6 +139,9 @@ async def admin_update_product(
         
         # Get the updated product
         updated_product = await ProductRepository.get_product(product_id)
+        
+        # Update cache
+        await cache_product(product_id, updated_product)
         
         # Log the operation
         await log_admin_operation(
