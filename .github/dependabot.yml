@@ -28,4 +28,4 @@ updates:
   - package-ecosystem: "gradle" # See documentation for possible values
     directory: "/appCliente/app/" # Location of package manifests
     schedule:
-      interval: "daily"
+      interval: "weekly"
