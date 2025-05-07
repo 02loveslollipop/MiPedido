@@ -1170,6 +1170,116 @@ Authorization: Bearer {access_token}
 }
 ```
 
+## Search
+
+### Search Restaurants
+
+**URL**: `/v1/search/restaurants`
+
+**Method**: `GET`
+
+**Auth required**: `No`
+
+**Content-Type**: `application/json`
+
+**Description**: Search for restaurants by name, description, type, or associated products. Returns restaurants that match the search query.
+
+#### Input: Query Parameters
+- `q` (string, required): Search query for restaurants, products, or cuisines
+- `limit` (integer, optional, default: 10): Maximum number of results to return
+- `offset` (integer, optional, default: 0): Number of results to skip
+
+#### Output:
+
+- Restaurants found.
+
+**HTTP** 200: OK
+
+```json
+{
+  "count": Number,
+  "results": [
+    {
+      "id": String,
+      "name": String,
+      "type": String,
+      "img_url": String,
+      "rating": Number,
+      "description": String,
+      "position": {
+        "lat": Number,
+        "lng": Number
+      }
+    },
+    ...
+  ]
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+  "detail": String
+}
+```
+
+### Search Products
+
+**URL**: `/v1/search/products`
+
+**Method**: `GET`
+
+**Auth required**: `No`
+
+**Content-Type**: `application/json`
+
+**Description**: Search for products by name, description, or ingredients. Returns products that match the search query, including basic restaurant info for each product.
+
+#### Input: Query Parameters
+- `q` (string, required): Search query for products, ingredients, or descriptions
+- `limit` (integer, optional, default: 10): Maximum number of results to return
+- `offset` (integer, optional, default: 0): Number of results to skip
+
+#### Output:
+
+- Products found.
+
+**HTTP** 200: OK
+
+```json
+{
+  "count": Number,
+  "results": [
+    {
+      "id": String,
+      "name": String,
+      "description": String,
+      "price": Number,
+      "img_url": String,
+      "ingredients": [String],
+      "restaurant": {
+        "id": String,
+        "name": String
+      }
+    },
+    ...
+  ]
+}
+```
+
+- Internal error.
+
+**HTTP** 500: Internal Server Error
+
+```json
+{
+  "detail": String
+}
+```
+
 # MiPedido Admin API Documentation
 
 This document outlines the administrative endpoints available in the MiPedido API system.
