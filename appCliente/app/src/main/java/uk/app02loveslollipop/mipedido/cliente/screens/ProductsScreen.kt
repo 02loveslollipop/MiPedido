@@ -143,7 +143,7 @@ fun ProductsScreen(
             isSearching = true
             searchError = null
             try {
-                val result = apiConnector.searchProducts(query)
+                val result = apiConnector.searchProducts(query, restaurantId)
                 result.fold(
                     onSuccess = { productsList ->
                         searchResults = productsList

@@ -35,6 +35,7 @@ interface MiPedidoApiService {
     @GET("search/products")
     suspend fun searchProducts(
         @Query("q") query: String,
+        @Query("restaurant_id") restaurantId: String,
         @Query("limit") limit: Int = 10,
         @Query("offset") offset: Int = 0
     ): Response<SearchProductsResponse>

@@ -138,12 +138,13 @@ class ApiConnector private constructor() {
     /**
      * Search for products by query string (minimum 3 characters)
      * @param query The search query
+     * @param restaurantId The restaurant ID to filter products
      * @param limit Maximum number of results (default 10)
      * @param offset Number of results to skip (default 0)
      * @return Result containing a list of products or an error
      */
-    suspend fun searchProducts(query: String, limit: Int = 10, offset: Int = 0): Result<List<Product>> {
-        return apiCall { apiService.searchProducts(query, limit, offset) }
+    suspend fun searchProducts(query: String, restaurantId: String, limit: Int = 10, offset: Int = 0): Result<List<Product>> {
+        return apiCall { apiService.searchProducts(query, restaurantId, limit, offset) }
             .mapCatching { it.results }
     }
     
