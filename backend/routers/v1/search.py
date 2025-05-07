@@ -62,24 +62,32 @@ async def search_products_endpoint(
         product_refs = await search_products(q, restaurant_id, limit=limit, offset=offset)
         if not product_refs:
             return SearchResponse(count=0, results=[])
-        # Fetch product details for each product_id
-        products = await ProductRepository.list_products_by_ids(product_refs)
+        # Fetch product details for each product_id (only those matched by Redis, not all in restaurant)
+        products = []
+        for ref in product_refs:
+            product_id = ref.get("product_id")
+            rest_id = ref.get("restaurant_id")
+            # Only include if Redis returned a match for this product in the given restaurant
+            if not product_id or rest_id != restaurant_id:
+                continue
+            product = await ProductRepository.get_product(product_id, restaurant_id)
+            if product:
+                products.append((product, rest_id))
         # Fetch all restaurants for mapping id->name
         all_restaurants = await RestaurantRepository.list_restaurants()
         restaurant_map = {r.id: r for r in all_restaurants}
         # Build response with product models and nested restaurant info
         results = []
-        for p in products:
-            rest = restaurant_map.get(p.restaurant_id)
+        for product, rest_id in products:
+            rest = restaurant_map.get(rest_id)
             product_model = Product(
-                id=p.id,
-                name=p.name,
-                description=p.description,
-                price=p.price,
-                img_url=p.img_url,
-                ingredients=p.ingredients
+                id=product["id"],
+                name=product["name"],
+                description=product["description"],
+                price=product["price"],
+                img_url=product["img_url"],
+                ingredients=product["ingredients"]
             )
-            # Attach restaurant info as dict (to match API response)
             product_dict = product_model.model_dump()
             product_dict["restaurant"] = {
                 "id": rest.id if rest else None,
