@@ -32,13 +32,16 @@ async def search_restaurants_endpoint(
         # Get restaurant IDs from Redis search
         restaurant_ids = await search_restaurants(q, limit=limit, offset=offset)
         
-        # Fetch full restaurant data for the matching IDs
-        results = []
-        for restaurant_id in restaurant_ids:
-            restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
-            if restaurant:
-                results.append(restaurant.model_dump())
+        print(f"Restaurant IDs: {restaurant_ids}")
         
+        if not restaurant_ids:
+            return SearchResponse(count=0, results=[])
+        # Fetch all restaurants in a single query
+        all_restaurants = await RestaurantRepository.list_restaurants()
+        # Build a dict for fast lookup
+        restaurant_dict = {r.id: r for r in all_restaurants}
+        # Build Restaurant models for results (as dicts for Pydantic v2 compatibility)
+        results = [Restaurant.from_db_model(restaurant_dict[rid]).model_dump() for rid in restaurant_ids if rid in restaurant_dict]
         return SearchResponse(count=len(results), results=results)
     except Exception as e:
         error_detail = f"Search error: {str(e)}\n Stack trace: {traceback.format_exc()}"
@@ -47,35 +50,42 @@ async def search_restaurants_endpoint(
 @router.get("/products", response_model=SearchResponse)
 async def search_products_endpoint(
     q: str = Query(..., description="Search query for products, ingredients or descriptions"),
+    restaurant_id: str = Query(..., description="Restaurant ID to filter products by restaurant"),
     limit: int = Query(10, description="Maximum number of results to return"),
     offset: int = Query(0, description="Number of results to skip")
 ):
     """
-    Search for products by name, description, or ingredients.
-    Returns products that match the search query.
+    Search for products by name, description, or ingredients. Returns products that match the search query, including basic restaurant info for each product.
     """
     try:
-        # Get product references from Redis search
-        product_refs = await search_products(q, limit=limit, offset=offset)
-        
-        # Fetch full product data for the matching IDs
+        # Get product refs from Redis search (list of product_ids)
+        product_refs = await search_products(q, restaurant_id, limit=limit, offset=offset)
+        if not product_refs:
+            return SearchResponse(count=0, results=[])
+        # Fetch product details for each product_id
+        products = await ProductRepository.list_products_by_ids(product_refs)
+        # Fetch all restaurants for mapping id->name
+        all_restaurants = await RestaurantRepository.list_restaurants()
+        restaurant_map = {r.id: r for r in all_restaurants}
+        # Build response with product models and nested restaurant info
         results = []
-        for ref in product_refs:
-            product_id = ref.get("product_id")
-            restaurant_id = ref.get("restaurant_id")
-            
-            if product_id and restaurant_id:
-                product = await ProductRepository.get_product(product_id, restaurant_id)
-                if product:
-                    # Add restaurant info to the product
-                    restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
-                    if restaurant:
-                        product["restaurant"] = {
-                            "id": restaurant.id,
-                            "name": restaurant.name
-                        }
-                    results.append(product)
-        
+        for p in products:
+            rest = restaurant_map.get(p.restaurant_id)
+            product_model = Product(
+                id=p.id,
+                name=p.name,
+                description=p.description,
+                price=p.price,
+                img_url=p.img_url,
+                ingredients=p.ingredients
+            )
+            # Attach restaurant info as dict (to match API response)
+            product_dict = product_model.model_dump()
+            product_dict["restaurant"] = {
+                "id": rest.id if rest else None,
+                "name": rest.name if rest else None
+            }
+            results.append(product_dict)
         return SearchResponse(count=len(results), results=results)
     except Exception as e:
         error_detail = f"Search error: {str(e)}\n Stack trace: {traceback.format_exc()}"

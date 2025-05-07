@@ -2,11 +2,14 @@ import redis.asyncio as redis_asyncio
 import os
 import json
 import logging
+import traceback
+import re
 from typing import List, Dict, Optional
 from redis.commands.search.field import TextField, TagField
 from redis.commands.search.index_definition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 from redis.exceptions import AuthenticationError, ResponseError  # Import exceptions from the correct module
+from fastapi import HTTPException
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
@@ -17,6 +20,23 @@ REDIS_USERNAME = os.getenv("REDIS_USERNAME", None)
 
 # Singleton Redis connection for search
 redis_client: Optional[redis_asyncio.Redis] = None
+
+def get_wildcard(query: str) -> str:
+    """Convert a query string to a Redis search query string"""
+    # Escape any special characters in the query
+    escaped_query = query.replace("'", r"\\'").replace('"', r'\\"')
+    # separate words by spaces and add wildcard for fuzzy match based on Levenshtein distance
+    words = escaped_query.split()
+    wildcard_query = " ".join([f"%{word}%" for word in words])
+    return wildcard_query
+
+def to_restaurant_query(query: str) -> str:
+    return f" (@name:{query}) | (@description:{query}) | (@type:{query}) | (@products_text:{query})"
+
+def to_product_query(query: str, restaurant_id: str) -> str:
+    # Compose the RediSearch query for product search within a restaurant
+    # Example: ( (@name:%fish%) | (@description:%fish%) | (@ingredients:%fish%) ) @restaurant_id:"68105134fb5fb08039605d38"
+    return f"((@name:{query}) | (@description:{query}) | (@ingredients:{query})) @restaurant_id:\"{restaurant_id}\""
 
 async def get_redis_search_client() -> redis_asyncio.Redis:
     global redis_client
@@ -111,40 +131,46 @@ async def index_restaurant(restaurant_id: str, restaurant_data: dict, products: 
             await r.hset(f"product:{product_id}", mapping=product_doc)
 
 async def search_restaurants(query: str, limit: int = 10, offset: int = 0) -> List[dict]:
-    """Search restaurants by name, description, type or products"""
+    """Search restaurants by name, description, type or products (supports prefix/non-exact match)"""
     if not query:
-        return []
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
     r = await get_redis_search_client()
-    # Build search query - escape any special characters in the query
-    escaped_query = query.replace("'", r"\\'").replace('"', r'\\"')
-    # Use a simple OR query across all fields for compatibility
-    redis_query = f'@name:"{escaped_query}" | @description:"{escaped_query}" | @type:"{escaped_query}" | @products_text:"{escaped_query}"'
-    # Execute search
+    # Build search query - remove any non A-Z, a-z, 0-9 characters and escape any special characters
+    #regex = re.compile(r"[^A-Za-z0-9 ]")
+    #cleaned_query = regex.sub("", query)
+    
+    redis_query = to_restaurant_query(get_wildcard(query))
+    
+    print(f"Redis query: {redis_query}")
     try:
+        print(f"Requesting Redis search with query: {redis_query}")
         query_obj = Query(redis_query).paging(offset, limit)
+        print(f"Query object: {query_obj}")
         results = await r.ft("restaurant-idx").search(query_obj)
+        print(f"Results: {str(results.docs)}")  
         restaurant_ids = []
         for doc in results.docs:
+            print(f"Document ID: {doc.id}")
             restaurant_id = doc.id.split(":", 1)[1] if ":" in doc.id else doc.id
             restaurant_ids.append(restaurant_id)
+        print(f"Restaurant IDs: {restaurant_ids}")
         return restaurant_ids
     except Exception as e:
         logging.error(f"Redis search error: {str(e)}")
-        return []
+        raise HTTPException(status_code=500, detail=traceback.format_exc())  
 
-async def search_products(query: str, limit: int = 10, offset: int = 0) -> List[dict]:
-    """Search products by name, description or ingredients"""
-    if not query:
+async def search_products(query: str, restaurant_id: str, limit: int = 10, offset: int = 0) -> List[dict]:
+    """Search products by name, description or ingredients (supports prefix/non-exact match)"""
+    if not query or not restaurant_id:
         return []
     r = await get_redis_search_client()
-    # Build search query - escape any special characters in the query
-    escaped_query = query.replace("'", r"\\'").replace('"', r'\\"')
-    # Use a simple OR query across all fields for compatibility
-    redis_query = f'@name:"{escaped_query}" | @description:"{escaped_query}" | @ingredients:"{escaped_query}"'
-    # Execute search
+    redis_query = to_product_query(get_wildcard(query), restaurant_id)
+    print(redis_query)
     try:
+        print(f"Requesting Redis search with query: {redis_query}")
         query_obj = Query(redis_query).paging(offset, limit)
         results = await r.ft("product-idx").search(query_obj)
+        print(f"Results: {str(results.docs)}")
         products = []
         for doc in results.docs:
             product_id = doc.id.split(":", 1)[1] if ":" in doc.id else doc.id
@@ -156,4 +182,4 @@ async def search_products(query: str, limit: int = 10, offset: int = 0) -> List[
         return products
     except Exception as e:
         logging.error(f"Redis search error: {str(e)}")
-        return []
+        raise HTTPException(status_code=500, detail=traceback.format_exc())

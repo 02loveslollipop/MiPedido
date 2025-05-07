@@ -1236,10 +1236,11 @@ Authorization: Bearer {access_token}
 
 **Content-Type**: `application/json`
 
-**Description**: Search for products by name, description, or ingredients. Returns products that match the search query, including basic restaurant info for each product.
+**Description**: Search for products by name, description, or ingredients. Returns products that match the search query, including basic restaurant info for each product. **The restaurant_id parameter is now required.**
 
 #### Input: Query Parameters
 - `q` (string, required): Search query for products, ingredients, or descriptions
+- `restaurant_id` (string, required): The restaurant ID to filter products by restaurant
 - `limit` (integer, optional, default: 10): Maximum number of results to return
 - `offset` (integer, optional, default: 0): Number of results to skip
 
@@ -1279,6 +1280,13 @@ Authorization: Bearer {access_token}
   "detail": String
 }
 ```
+
+#### Example curl request
+
+```sh
+curl "http://localhost:8000/v1/search/products?q=burger&restaurant_id=YOUR_RESTAURANT_ID&limit=10&offset=0"
+```
+Replace `YOUR_RESTAURANT_ID` with the actual restaurant ID.
 
 # MiPedido Admin API Documentation
 
