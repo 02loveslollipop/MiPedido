@@ -13,6 +13,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import uk.app02loveslollipop.mipedido.cliente.models.*
 import java.lang.reflect.Type
 import java.util.concurrent.TimeUnit
+import uk.app02loveslollipop.mipedido.cliente.models.ReviewRequest
 
 /**
  * API Connector for MiPedido API
@@ -226,5 +227,19 @@ class ApiConnector private constructor() {
      */
     suspend fun getFullOrderIdFromShortCode(shortCode: String): Result<ShortCodeResponse> {
         return apiCall { apiService.resolveShortCode(shortCode) }
+    }
+    
+    /**
+     * Submit a review for a restaurant
+     * @param restaurantId The restaurant ID
+     * @param rating The rating (1-5)
+     * @return Result containing the review response or an error
+     */
+    suspend fun submitReview(restaurantId: String, rating: Int): Result<ReviewResponse> {
+        val review = ReviewRequest(
+            restaurant_id = restaurantId,
+            rating = rating
+        )
+        return apiCall { apiService.submitReview(review) }
     }
 }

@@ -69,4 +69,10 @@ interface MiPedidoApiService {
     suspend fun resolveShortCode(
         @Path("shortCode") shortCode: String
     ): Response<ShortCodeResponse>
+    
+    // Review endpoint
+    @POST("review/")
+    suspend fun submitReview(
+        @Body review: ReviewRequest
+    ): Response<ReviewResponse>
 }

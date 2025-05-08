@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import kotlinx.coroutines.launch
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
 
@@ -23,6 +24,9 @@ fun ReviewScreen(
     navController: NavController? = null
 ) {
     var rating by remember { mutableStateOf(0) }
+    val (isSubmitting, setIsSubmitting) = remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     val navigateToRestaurants = {
         navController?.popBackStack("restaurants", false)
@@ -74,12 +78,46 @@ fun ReviewScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = {
-                    navigateToRestaurants()
+                    setIsSubmitting(true)
+                    errorMessage = null
+                    coroutineScope.launch {
+                        try {
+                            val apiConnector = uk.app02loveslollipop.mipedido.cliente.api.ApiConnector.getInstance()
+                            val result = apiConnector.submitReview(restaurantId, rating)
+                            result.fold(
+                                onSuccess = {
+                                    // On success, return to main menu
+                                    navigateToRestaurants()
+                                },
+                                onFailure = { throwable ->
+                                    errorMessage = throwable.message ?: "No se pudo enviar la reseña"
+                                }
+                            )
+                        } catch (e: Exception) {
+                            errorMessage = e.message ?: "Error desconocido"
+                        } finally {
+                            setIsSubmitting(false)
+                        }
+                    }
                 },
-                enabled = rating > 0,
+                enabled = rating > 0 && !isSubmitting,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Enviar Review")
+                if (isSubmitting) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                } else {
+                    Text("Enviar Review")
+                }
+            }
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = errorMessage!!,
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }
