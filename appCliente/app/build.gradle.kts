@@ -69,7 +69,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     
     // Coil for image loading
-    implementation("io.coil-kt:coil-compose:2.4.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
     
     // Navigation Component
     implementation("androidx.navigation:navigation-compose:2.7.0")
