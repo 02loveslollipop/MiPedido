@@ -65,7 +65,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.1")
     
     // Coroutines for asynchronous programming
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
     
     // Coil for image loading
