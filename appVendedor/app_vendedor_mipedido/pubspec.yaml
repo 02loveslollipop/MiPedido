@@ -39,7 +39,7 @@ dependencies:
   shared_preferences: ^2.5.3
   permission_handler: ^12.0.0+1
   flutter_launcher_icons: ^0.14.3
-  rename: ^3.0.2
+  rename: ^3.1.0
 
 flutter_icons:
   android: "launcher_icon"
