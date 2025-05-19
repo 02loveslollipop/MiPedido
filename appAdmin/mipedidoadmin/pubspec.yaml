@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  fluent_ui: ^4.11.3
+  fluent_ui: ^4.11.5
   http: ^1.4.0
   shared_preferences: ^2.5.3
   window_manager: ^0.4.3
