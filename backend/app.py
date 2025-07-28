@@ -48,5 +48,7 @@ app.add_middleware(
 # Register the router
 app.include_router(router)
 
+#This is a test
+
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000)
