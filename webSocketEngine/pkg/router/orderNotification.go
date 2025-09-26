@@ -46,7 +46,7 @@ func orderNotificationHandler(c *gin.Context) {
 
 	// Find the order in MongoDB
 	var order models.Order
-	err = orderWatcher.GetCollection().FindOne(c, bson.M{"_id": orderObjID}).Decode(&order)
+	err = orderWatcher.GetCollection().FindOne(c.Request.Context(), bson.M{"_id": orderObjID}).Decode(&order)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Order not found"})
@@ -64,7 +64,7 @@ func orderNotificationHandler(c *gin.Context) {
 			"error":      "Order has already been notified",
 			"notifiedAt": notifiedAtTime,
 		})
-		
+
 		return
 	}
 
