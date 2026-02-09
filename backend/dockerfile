@@ -1,5 +1,7 @@
 FROM python:3.13-alpine
 WORKDIR /app
+# Ensure application path is on PYTHONPATH so local packages can be imported
+ENV PYTHONPATH=/app
 COPY ./* /app/
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
