@@ -64,3 +64,25 @@ jobs:
             # echo "Running worker test command..."
             # heroku run --app ${HEROKU_APP} "./rating-cron-binary --once"
           fi
+
+      # Optional: a commented example workflow job for running a manual worker test using Heroku CLI.
+      # You can copy this into your workflow file to add a manual trigger (workflow_dispatch) to run one-off commands.
+      #
+      # Example (uncomment to enable):
+      #
+      # worker-test:
+      #  name: Manual worker test (Heroku run)
+      #  runs-on: ubuntu-latest
+      #  permissions: write-all
+      #  steps:
+      #    - uses: actions/checkout@v4
+      #    - name: Install Heroku CLI
+      #      run: curl https://cli-assets.heroku.com/install.sh | sh
+      #    - name: Run worker test command
+      #      env:
+      #        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      #      run: |
+      #        # replace <COMMAND> with the one-off command you want to run, for example './rating-cron-binary --once' or 'python backend/scripts/fill_db.py'
+      #        heroku run --app ${{ secrets.HEROKU_APP_BACKEND }} "<COMMAND>"
+      #
+      # Note: enabling this requires that the GH Actions runner can authenticate with Heroku via HEROKU_API_KEY and that the secret HEROKU_APP_* is present.

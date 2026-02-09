@@ -29,4 +29,13 @@ Notes & tips:
   - or temporarily scale a worker: `heroku ps:scale worker=1` and inspect `heroku logs --tail --app <HEROKU_APP>`.
 - Note: GitHub Actions cannot manage the Heroku Scheduler add-on directly; Scheduler must be configured through the Heroku Dashboard or API.
 
+### Example Scheduler entries (your request)
+- **rating-cron** — Daily at 02:00 UTC
+  - Heroku Scheduler command: `heroku run --app <HEROKU_APP> ./rating-cron-binary`
+  - Suggestion: ensure your binary accepts a `--once` or `--run-once` flag if needed, or use an entrypoint script that exits when done.
+- **redisIndexerCronJob** — Every 3 hours
+  - Heroku Scheduler command: `heroku run --app <HEROKU_APP> ./redis-indexer-binary`
+
+If you want, I can add these example entries to the docs in a more structured table or add a sample Scheduler API call that configures them automatically (requires Heroku API key + permission).
+
 If you want, I can: (A) open a PR with these files (draft), (B) make these files copy directly into the service directories and open a PR, or (C) add CI tests that validate the templates format. Which do you prefer?
