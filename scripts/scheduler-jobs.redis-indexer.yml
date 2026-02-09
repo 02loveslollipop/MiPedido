@@ -1,0 +1,3 @@
+- command: "./redis-indexer-binary"
+  frequency: hourly
+  every: 3

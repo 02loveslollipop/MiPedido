@@ -65,6 +65,44 @@ jobs:
             # heroku run --app ${HEROKU_APP} "./rating-cron-binary --once"
           fi
 
+  create-scheduler-jobs:
+    name: Create Heroku Scheduler entries (post-deploy)
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    # Only run when a HEROKU_API_KEY is present in repository secrets
+    if: ${{ secrets.HEROKU_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install script deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pyyaml
+
+      - name: Create rating-cron Scheduler entries
+        if: ${{ secrets.HEROKU_APP_RATING_CRON }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          python scripts/create_heroku_scheduler_jobs.py --app "${{ secrets.HEROKU_APP_RATING_CRON }}" --jobs-file scripts/scheduler-jobs.rating-cron.yml || true
+
+      - name: Create redis-indexer Scheduler entries
+        if: ${{ secrets.HEROKU_APP_REDIS_INDEXER }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          python scripts/create_heroku_scheduler_jobs.py --app "${{ secrets.HEROKU_APP_REDIS_INDEXER }}" --jobs-file scripts/scheduler-jobs.redis-indexer.yml || true
+
+      - name: Reminder: manual steps if automation failed
+        run: |
+          echo "If jobs could not be created programmatically, open the Scheduler dashboard:"
+          echo "  heroku addons:open scheduler --app <YOUR_APP>"
+
       # Optional: a commented example workflow job for running a manual worker test using Heroku CLI.
       # You can copy this into your workflow file to add a manual trigger (workflow_dispatch) to run one-off commands.
       #

@@ -42,4 +42,9 @@ If you want, I can add these example entries to the docs in a more structured ta
 
 See `scripts/create_heroku_scheduler_jobs.py` and `scripts/scheduler-jobs.example.yml` for a starting implementation. Note: programmatic creation of schedule entries depends on the add-on provider; when the provider does not expose a public API the script will print CLI/dashboard steps for manual creation.
 
+**Automatic post-deploy execution**
+- This template includes an optional job `create-scheduler-jobs` which runs **after** `build-and-deploy` completes and will attempt to provision Scheduler add-ons and create scheduled jobs automatically.
+- The job only runs when the `HEROKU_API_KEY` secret is set at the repository level. It will also look for `HEROKU_APP_RATING_CRON` and `HEROKU_APP_REDIS_INDEXER` secrets (per-app names) and run the appropriate jobs. If the secrets are absent, the job steps are skipped.
+- To enable automation, add the repository secrets: `HEROKU_API_KEY`, `HEROKU_APP_RATING_CRON`, and `HEROKU_APP_REDIS_INDEXER` (adjust names as needed for your apps). If you prefer to manage Scheduler manually, simply omit these secrets.
+
 If you want, I can: (A) open a PR with these files (draft), (B) make these files copy directly into the service directories and open a PR, or (C) add CI tests that validate the templates format. Which do you prefer?
