@@ -1,0 +1,55 @@
+name: Set Heroku config from .env (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: 'Comma-separated list of Heroku app names (or leave blank to use per-app secrets)'
+        required: false
+        default: ''
+      mongo_uri:
+        description: 'Optional MongoDB URI to override .env MONGODB_URL (secret)'
+        required: false
+        default: ''
+
+jobs:
+  set-config:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.HEROKU_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Determine target apps
+        id: apps
+        run: |
+          if [ -n "${{ github.event.inputs.apps }}" ]; then
+            echo "apps=${{ github.event.inputs.apps }}" >> $GITHUB_OUTPUT
+          else
+            # Use per-app secrets if present
+            APPS=""
+            if [ -n "${{ secrets.HEROKU_APP_BACKEND }}" ]; then APPS="$APPS,${{ secrets.HEROKU_APP_BACKEND }}"; fi
+            if [ -n "${{ secrets.HEROKU_APP_WS }}" ]; then APPS="$APPS,${{ secrets.HEROKU_APP_WS }}"; fi
+            if [ -n "${{ secrets.HEROKU_APP_REDIS_INDEXER }}" ]; then APPS="$APPS,${{ secrets.HEROKU_APP_REDIS_INDEXER }}"; fi
+            if [ -n "${{ secrets.HEROKU_APP_RATING_CRON }}" ]; then APPS="$APPS,${{ secrets.HEROKU_APP_RATING_CRON }}"; fi
+            # Trim leading commas
+            APPS=${APPS#,}
+            echo "apps=$APPS" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run config update per app
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          APPS="${{ steps.apps.outputs.apps }}"
+          MONGO_OVERRIDE="${{ github.event.inputs.mongo_uri }}"
+          python scripts/create_heroku_config_from_env.py --app "$(echo $APPS | tr ',' ' ')" --mongo-uri "$MONGO_OVERRIDE" || true
