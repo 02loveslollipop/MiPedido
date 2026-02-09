@@ -6,3 +6,9 @@ web: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app --bind 0.0.0.0:$PORT
 # If you have worker processes, add lines like:
 # worker: python worker.py
 # rating-cron: ./rating-cron-binary
+#
+# Scheduling & testing:
+# - Use Heroku Scheduler (Add-on) to run one-off commands on a schedule, for example:
+#   heroku run --app <HEROKU_APP> "python backend/scripts/fill_db.py"
+# - Or declare a process in Procfile and run it as a worker (be aware that persistent worker dynos incur running costs).
+# - To test a worker immediately: `heroku run --app <HEROKU_APP> "<command>"` or temporarily `heroku ps:scale worker=1` and inspect logs.

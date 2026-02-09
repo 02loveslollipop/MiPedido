@@ -59,4 +59,8 @@ jobs:
             curl -fsS $URL || (echo "Smoke test failed" && exit 1)
           else
             echo "Worker process deployed for ${HEROKU_APP}, no web smoke check"
+            echo "Tip: Use Heroku Scheduler to run periodic commands, or run a one-off test using 'heroku run --app ${HEROKU_APP} <command>'"
+            # Example (uncomment to run as part of the workflow - requires HEROKU_API_KEY and a valid command):
+            # echo "Running worker test command..."
+            # heroku run --app ${HEROKU_APP} "./rating-cron-binary --once"
           fi

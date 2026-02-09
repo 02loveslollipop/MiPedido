@@ -16,7 +16,17 @@ How to use:
 
 Notes & tips:
 - The template's smoke check hits `/health`. Ensure your service exposes a health endpoint.
-- For cron jobs, the workflow releases worker images and expects you to use Heroku Scheduler (or a worker process defined in a Procfile).
 - If your Docker context places files into `/app`, keep `PYTHONPATH=/app` or adjust imports accordingly.
+
+## Cron jobs & Heroku Scheduler ⚙️
+- For periodic or one-off tasks (cron jobs) we recommend using **Heroku Scheduler**. Typical patterns:
+  - Compiled binaries (Go): build & release the image as a worker process (e.g. `rating-cron: ./rating-cron-binary`) and configure Heroku Scheduler to run a one-off command like:
+    - `heroku run ./rating-cron-binary --app <HEROKU_APP>`
+  - Python scripts: schedule a command such as `python backend/scripts/fill_db.py` via the Heroku Scheduler UI targeting your app.
+- You can also release a `worker` process type and have it run continuously, but that will incur running dyno costs; for single-run cron jobs, Scheduler is simpler and cost-efficient.
+- To test a worker after a deploy you can run:
+  - `heroku run --app <HEROKU_APP> "<command>"` (one-off run)
+  - or temporarily scale a worker: `heroku ps:scale worker=1` and inspect `heroku logs --tail --app <HEROKU_APP>`.
+- Note: GitHub Actions cannot manage the Heroku Scheduler add-on directly; Scheduler must be configured through the Heroku Dashboard or API.
 
 If you want, I can: (A) open a PR with these files (draft), (B) make these files copy directly into the service directories and open a PR, or (C) add CI tests that validate the templates format. Which do you prefer?
