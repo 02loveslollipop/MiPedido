@@ -141,8 +141,33 @@ def seed_database():
     client = MongoClient(MONGODB_URL)
     db = client[DATABASE_NAME]
     
-    # Clear existing data
-    print("Clearing existing data...")
+    # Ensure indexes/schema
+    print("Ensuring indexes and clearing existing data...")
+    # Users and Admins: unique usernames
+    db.users.create_index("username", unique=True)
+    db.admin.create_index("username", unique=True)
+
+    # Restaurants: index on name and position for geo queries
+    db.restaurants.create_index([("name", 1)])
+    db.restaurants.create_index([("position", "2dsphere")])
+
+    # Products: index on restaurant_id and text search for name/description
+    db.products.create_index([("restaurant_id", 1)])
+    db.products.create_index([("name", "text"), ("description", "text")])
+
+    # Orders: index on restaurant_id and created_at
+    db.orders.create_index([("restaurant_id", 1)])
+    db.orders.create_index([("created_at", 1)])
+
+    # Reviews: index on restaurant_id and status
+    db.reviews.create_index([("restaurant_id", 1)])
+    db.reviews.create_index([("status", 1)])
+
+    # Admin logs: index on admin_id and timestamp
+    db.admin_log.create_index([("admin_id", 1)])
+    db.admin_log.create_index([("timestamp", 1)])
+
+    # Clear collections
     db.restaurants.delete_many({})
     db.products.delete_many({})
     db.orders.delete_many({})

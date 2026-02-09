@@ -1,0 +1,54 @@
+name: CI — Backend Tests
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ping:1})'" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      PYTHONPATH: backend
+      MONGODB_URL: mongodb://localhost:27017
+      DATABASE_NAME: test_mipedido
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+      - name: Wait for MongoDB
+        run: |
+          python - <<PY
+          import time, pymongo
+          for _ in range(30):
+              try:
+                  pymongo.MongoClient('mongodb://localhost:27017', serverSelectionTimeoutMS=1000).admin.command('ping')
+                  print('Mongo is up')
+                  break
+              except Exception as e:
+                  print('Waiting for mongo...', e)
+                  time.sleep(1)
+          else:
+              raise SystemExit('Mongo did not start')
+          PY
+      - name: Run backend tests
+        working-directory: ./
+        run: |
+          pytest -q
