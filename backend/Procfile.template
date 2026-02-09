@@ -1,0 +1,8 @@
+# Procfile template for Heroku (backend)
+# Place at backend/Procfile or at repo root if deploying single service
+# Example: web process using gunicorn + uvicorn worker
+web: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app --bind 0.0.0.0:$PORT
+
+# If you have worker processes, add lines like:
+# worker: python worker.py
+# rating-cron: ./rating-cron-binary
