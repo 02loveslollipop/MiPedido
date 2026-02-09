@@ -36,6 +36,10 @@ Notes & tips:
 - **redisIndexerCronJob** — Every 3 hours
   - Heroku Scheduler command: `heroku run --app <HEROKU_APP> ./redis-indexer-binary`
 
-If you want, I can add these example entries to the docs in a more structured table or add a sample Scheduler API call that configures them automatically (requires Heroku API key + permission).
+If you want, I can add these example entries to the docs in a more structured table or add a sample Scheduler automation script that:
+- Provisions the Scheduler add-on for each app (via the Heroku Platform API)
+- Attempts to programmatically create jobs if the add-on exposes an API endpoint
+
+See `scripts/create_heroku_scheduler_jobs.py` and `scripts/scheduler-jobs.example.yml` for a starting implementation. Note: programmatic creation of schedule entries depends on the add-on provider; when the provider does not expose a public API the script will print CLI/dashboard steps for manual creation.
 
 If you want, I can: (A) open a PR with these files (draft), (B) make these files copy directly into the service directories and open a PR, or (C) add CI tests that validate the templates format. Which do you prefer?
