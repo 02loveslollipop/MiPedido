@@ -50,6 +50,11 @@ app.add_middleware(
 # Register the router
 app.include_router(router)
 
+# Health check endpoint
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 #This is a test
 
 if __name__ == "__main__":

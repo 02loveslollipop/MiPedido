@@ -1,0 +1,68 @@
+name: CI/CD — Build & Deploy to Heroku (Container Registry)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - service: backend
+            context: backend
+            dockerfile: dockerfile
+            process: web
+          - service: websocket
+            context: webSocketEngine
+            dockerfile: DockerFile
+            process: web
+          - service: redis-indexer
+            context: redisIndexerCronJob
+            dockerfile: Dockerfile
+            process: worker
+          - service: rating-cron
+            context: ratingCronJob
+            dockerfile: Dockerfile
+            process: worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set HEROKU_APP env from secrets
+        run: |
+          if [ "${{ matrix.service }}" = "backend" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_BACKEND }}" >> $GITHUB_ENV; fi
+          if [ "${{ matrix.service }}" = "websocket" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_WS }}" >> $GITHUB_ENV; fi
+          if [ "${{ matrix.service }}" = "redis-indexer" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_REDIS_INDEXER }}" >> $GITHUB_ENV; fi
+          if [ "${{ matrix.service }}" = "rating-cron" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_RATING_CRON }}" >> $GITHUB_ENV; fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Heroku Container Registry
+        run: echo "${{ secrets.HEROKU_API_KEY }}" | docker login --username=_ --password-stdin registry.heroku.com
+
+      - name: Build and push Docker image to Heroku
+        run: |
+          IMAGE=registry.heroku.com/${HEROKU_APP}/${{ matrix.process }}
+          docker build -t $IMAGE -f ${{ matrix.context }}/${{ matrix.dockerfile }} ${{ matrix.context }}
+          docker push $IMAGE
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Release image on Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          heroku container:release ${{ matrix.process }} --app $HEROKU_APP
+
+      - name: Post-deploy smoke check
+        run: |
+          if [ "${{ matrix.process }}" = "web" ]; then 
+            URL="https://${HEROKU_APP}.herokuapp.com/"
+            echo "Checking $URL"
+            curl -fsS $URL || (echo "Smoke test failed" && exit 1)
+          else
+            echo "Worker process deployed for ${HEROKU_APP}, no web smoke check"
+          fi
