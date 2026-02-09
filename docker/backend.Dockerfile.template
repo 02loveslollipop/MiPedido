@@ -1,0 +1,30 @@
+# Dockerfile template for Backend (Python FastAPI)
+# - Multi-stage recommended for smaller images
+# - Set PYTHONPATH so local imports (from database import db) work in container
+
+# ---- Builder (optional) ----
+FROM python:3.13-slim AS builder
+WORKDIR /app
+COPY backend/pyproject.toml backend/requirements.txt* ./
+# Install build deps if required
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential gcc && rm -rf /var/lib/apt/lists/*
+RUN pip install --upgrade pip
+RUN pip wheel --wheel-dir=/wheels -r requirements.txt
+
+# ---- Final image ----
+FROM python:3.13-slim
+WORKDIR /app
+ENV PYTHONPATH=/app
+# Copy only what we need
+COPY --from=builder /wheels /wheels
+COPY backend/ /app/
+RUN pip install --no-cache-dir /wheels/* || pip install --no-cache-dir -r requirements.txt
+
+EXPOSE 8000
+# Use gunicorn for production with uvicorn workers
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "app:app", "--bind", "0.0.0.0:$PORT"]
+
+# Notes:
+# - Replace 'requirements.txt' handling if you use poetry/pyproject.
+# - For smaller images, consider using 'python:3.13-alpine' but ensure C extensions build.
+# - This template expects your app package to be at backend/ and entrypoint `app:app`.

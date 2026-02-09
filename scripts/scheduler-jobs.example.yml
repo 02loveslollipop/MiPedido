@@ -1,0 +1,11 @@
+# Example scheduler jobs YAML
+# frequency values: daily | hourly | ten_minutes
+# use `at: "HH:MM"` for daily to specify UTC time
+-
+  command: "./rating-cron-binary"
+  frequency: daily
+  at: "02:00"
+-
+  command: "./redis-indexer-binary"
+  frequency: hourly
+  every: 3

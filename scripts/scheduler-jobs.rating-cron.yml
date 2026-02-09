@@ -1,0 +1,3 @@
+- command: "./rating-cron-binary"
+  frequency: daily
+  at: "02:00"

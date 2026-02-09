@@ -13,6 +13,10 @@ dotenv.load_dotenv()
 # MongoDB connection details
 MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "mipedido")
+# Optional TLS client certs for X.509 auth
+MONGO_TLS_CERTFILE = os.getenv("MONGO_TLS_CERTFILE")
+MONGO_TLS_CAFILE = os.getenv("MONGO_TLS_CAFILE")
+MONGO_TLS_KEYFILE = os.getenv("MONGO_TLS_KEYFILE")
 
 # Sample data
 RESTAURANT_NAMES = [
@@ -559,7 +563,18 @@ def create_reviews(db, restaurant_ids):
     print(f"Total pending reviews created: {review_count}")
 
 def main():
-    print(f"Connecting to MongoDB at {MONGODB_URL}")
+    # Mask the password when printing the URI to avoid leaking secrets
+    try:
+        masked = MONGODB_URL
+        if '://' in masked and '@' in masked:
+            prefix, rest = masked.split('://', 1)
+            userinfo, host = rest.split('@', 1)
+            if ':' in userinfo:
+                user, _ = userinfo.split(':', 1)
+                masked = f"{prefix}://{user}:***@{host}"
+        print(f"Connecting to MongoDB at {masked}")
+    except Exception:
+        print("Connecting to MongoDB (URI masked)")
     print(f"Using database: {DATABASE_NAME}")
     
     try:
