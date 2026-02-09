@@ -5,8 +5,12 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import sys
 from bson import ObjectId
 from typing import Any, Dict, List
+
+# Ensure backend package is importable when running tests from repo root
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import app
 from database.db import Database, db
