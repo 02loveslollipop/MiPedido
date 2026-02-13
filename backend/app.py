@@ -3,7 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from contextlib import asynccontextmanager
 
-from database import db
+try:
+    from database import db
+except ModuleNotFoundError:
+    # Some build contexts put database files at /app (as db.py) instead of /app/database
+    from db import db
 from routers import router
 from utils import env
 from database.repositories.restuarant import RestaurantRepository
