@@ -2,7 +2,6 @@ import redis.asyncio as redis_asyncio
 import os
 import json
 import logging
-import traceback
 import re
 from typing import List, Dict, Optional
 from redis.commands.search.field import TextField, TagField
@@ -10,6 +9,7 @@ from redis.commands.search.index_definition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 from redis.exceptions import AuthenticationError, ResponseError  # Import exceptions from the correct module
 from fastapi import HTTPException
+from database import db as database
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
@@ -130,56 +130,85 @@ async def index_restaurant(restaurant_id: str, restaurant_data: dict, products: 
             # Store with product: prefix
             await r.hset(f"product:{product_id}", mapping=product_doc)
 
+def _word_regexes(query: str) -> List[re.Pattern]:
+    """Case-insensitive substring regex per word (AND across words in the Mongo fallback)."""
+    return [re.compile(re.escape(w), re.IGNORECASE) for w in query.split() if w]
+
+async def _mongo_search_restaurant_ids(query: str, limit: int, offset: int) -> List[str]:
+    """MongoDB fallback when RediSearch is unavailable: match words against
+    restaurant name/description/type and product name/description/ingredients."""
+    collection = database.db.db["restaurants"]
+    word_filters = [{"$or": [{"name": r}, {"description": r}, {"type": r}]} for r in _word_regexes(query)]
+    direct_ids = await collection.distinct("_id", {"$and": word_filters} if word_filters else {})
+    product_filters = [{"$or": [{"name": r}, {"description": r}, {"ingredients": r}]} for r in _word_regexes(query)]
+    product_restaurant_ids = await database.db.db["products"].distinct(
+        "restaurant_id", {"$and": product_filters} if product_filters else {})
+    # Direct restaurant matches first, then restaurants matched via their products
+    ids: List[str] = []
+    seen = set()
+    for oid in list(direct_ids) + product_restaurant_ids:
+        sid = str(oid)
+        if sid not in seen:
+            seen.add(sid)
+            ids.append(sid)
+    return ids[offset:offset + limit]
+
+async def _mongo_search_products(query: str, restaurant_id: str, limit: int, offset: int) -> List[Dict]:
+    """MongoDB fallback when RediSearch is unavailable."""
+    collection = database.db.db["products"]
+    word_filters = [{"$or": [{"name": r}, {"description": r}, {"ingredients": r}]} for r in _word_regexes(query)]
+    mongo_filter = {"restaurant_id": restaurant_id}
+    if word_filters:
+        mongo_filter["$and"] = word_filters
+    cursor = collection.find(mongo_filter).skip(offset).limit(limit)
+    return [{"product_id": str(doc["_id"]), "restaurant_id": doc["restaurant_id"]}
+            async for doc in cursor]
+
 async def search_restaurants(query: str, limit: int = 10, offset: int = 0) -> List[dict]:
     """Search restaurants by name, description, type or products (supports prefix/non-exact match)"""
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty")
-    r = await get_redis_search_client()
-    # Build search query - remove any non A-Z, a-z, 0-9 characters and escape any special characters
-    #regex = re.compile(r"[^A-Za-z0-9 ]")
-    #cleaned_query = regex.sub("", query)
-    
-    redis_query = to_restaurant_query(get_wildcard(query))
-    
-    print(f"Redis query: {redis_query}")
     try:
-        print(f"Requesting Redis search with query: {redis_query}")
+        r = await get_redis_search_client()
+        # Build search query - remove any non A-Z, a-z, 0-9 characters and escape any special characters
+        #regex = re.compile(r"[^A-Za-z0-9 ]")
+        #cleaned_query = regex.sub("", query)
+
+        redis_query = to_restaurant_query(get_wildcard(query))
+
+        print(f"Redis query: {redis_query}")
         query_obj = Query(redis_query).paging(offset, limit)
-        print(f"Query object: {query_obj}")
         results = await r.ft("restaurant-idx").search(query_obj)
-        print(f"Results: {str(results.docs)}")  
         restaurant_ids = []
         for doc in results.docs:
-            print(f"Document ID: {doc.id}")
             restaurant_id = doc.id.split(":", 1)[1] if ":" in doc.id else doc.id
             restaurant_ids.append(restaurant_id)
-        print(f"Restaurant IDs: {restaurant_ids}")
         return restaurant_ids
+    except HTTPException:
+        raise
     except Exception as e:
-        logging.error(f"Redis search error: {str(e)}")
-        raise HTTPException(status_code=500, detail=traceback.format_exc())  
+        logging.warning(f"Redis search unavailable, falling back to MongoDB: {e}")
+        return await _mongo_search_restaurant_ids(query, limit, offset)
 
 async def search_products(query: str, restaurant_id: str, limit: int = 10, offset: int = 0) -> List[dict]:
     """Search products by name, description or ingredients (supports prefix/non-exact match)"""
     if not query or not restaurant_id:
         return []
-    r = await get_redis_search_client()
-    redis_query = to_product_query(get_wildcard(query), restaurant_id)
-    print(redis_query)
     try:
-        print(f"Requesting Redis search with query: {redis_query}")
+        r = await get_redis_search_client()
+        redis_query = to_product_query(get_wildcard(query), restaurant_id)
+        print(redis_query)
         query_obj = Query(redis_query).paging(offset, limit)
         results = await r.ft("product-idx").search(query_obj)
-        print(f"Results: {str(results.docs)}")
         products = []
         for doc in results.docs:
             product_id = doc.id.split(":", 1)[1] if ":" in doc.id else doc.id
-            restaurant_id = getattr(doc, "restaurant_id", None)
+            doc_restaurant_id = getattr(doc, "restaurant_id", None)
             products.append({
                 "product_id": product_id,
-                "restaurant_id": restaurant_id
+                "restaurant_id": doc_restaurant_id
             })
         return products
     except Exception as e:
-        logging.error(f"Redis search error: {str(e)}")
-        raise HTTPException(status_code=500, detail=traceback.format_exc())
+        logging.warning(f"Redis search unavailable, falling back to MongoDB: {e}")
+        return await _mongo_search_products(query, restaurant_id, limit, offset)

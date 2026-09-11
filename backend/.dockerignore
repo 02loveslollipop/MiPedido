@@ -1,0 +1,6 @@
+# Keep dev/test artifacts out of the production image
+__pycache__/
+**/__pycache__/
+*.pyc
+tests/
+.env

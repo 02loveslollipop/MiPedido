@@ -1,9 +1,40 @@
-FROM python:3.13-alpine
+# slim (glibc) so binary wheels (pymongo, cryptography, ...) install without
+# compiling; alpine's musl has no wheels for some of them
+FROM python:3.13-slim
+
 WORKDIR /app
-# Ensure application path is on PYTHONPATH so local packages can be imported
-# Set PYTHONPATH to backend so imports like `from database import db` succeed
-ENV PYTHONPATH=/app/backend
-COPY ./* /app/
-RUN pip install --no-cache-dir -r requirements.txt
+# Application packages are copied individually (copying parent dirs would
+# flatten them: COPY of a directory copies its *contents*)
+ENV PYTHONPATH=/app PYTHONDONTWRITEBYTECODE=1
+
+COPY app.py requirements.txt /app/
+COPY cache /app/cache
+COPY database /app/database
+COPY models /app/models
+COPY routers /app/routers
+COPY utils /app/utils
+
+# Versions must stay in sync with requirements.txt (used by CI and local dev)
+RUN pip install --no-cache-dir --only-binary :all: \
+      fastapi==0.141.1 \
+      uvicorn==0.52.4 \
+      gunicorn==26.2.0 \
+      pydantic==2.13.5 \
+      pydantic-settings==2.15.0 \
+      motor==3.7.1 \
+      pymongo==4.18.1 \
+      python-dotenv==1.2.3 \
+      sqlalchemy==2.0.52 \
+      databases==0.9.0 \
+      asyncpg==0.31.0 \
+      pyjwt==2.14.0 \
+      python-multipart==0.0.32 \
+      vercel_blob==0.4.2 \
+      cryptography==50.0.1 \
+      redis==8.1.0 \
+    && useradd --system --create-home --uid 10001 appuser
+USER appuser
+
 EXPOSE 8000
-CMD [ "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000" ]
+# Heroku routes web traffic to $PORT; fall back to 8000 for local runs
+CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker app:app --bind 0.0.0.0:${PORT:-8000}"]

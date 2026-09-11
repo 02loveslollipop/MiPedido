@@ -73,7 +73,7 @@ class TestOrderEndpoints:
         response = await async_client.get(f"/v1/order/{order_id}/{nonexistent_user_id}")
         
         assert response.status_code == 404
-        assert response.json()["detail"] == "User not found for order"
+        assert response.json()["detail"] == "User not found in order"
 
     @pytest.mark.asyncio
     async def test_modify_user_order_create(self, async_client, setup_test_db):

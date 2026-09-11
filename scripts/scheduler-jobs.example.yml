@@ -1,11 +1,12 @@
 # Example scheduler jobs YAML
 # frequency values: daily | hourly | ten_minutes
 # use `at: "HH:MM"` for daily to specify UTC time
+# commands must match the binary names built by each image's Dockerfile
 -
-  command: "./rating-cron-binary"
+  command: "./ratingCronJob"
   frequency: daily
   at: "02:00"
 -
-  command: "./redis-indexer-binary"
+  command: "./redisIndexerCronJob"
   frequency: hourly
   every: 3
