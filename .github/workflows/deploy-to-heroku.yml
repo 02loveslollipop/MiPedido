@@ -17,12 +17,14 @@ jobs:
             process: web
             smoke_check: true
             health_path: /health
+            ensure_dyno: true
           - service: websocket
             context: webSocketEngine
             dockerfile: DockerFile
             process: web
             smoke_check: true
             health_path: /
+            ensure_dyno: true
           # Cron services are one-shot binaries executed by Heroku Scheduler one-off
           # dynos. They are released as the `web` process type so one-off dynos run
           # this image; no dynos are scaled on those apps.
@@ -32,12 +34,14 @@ jobs:
             process: web
             smoke_check: false
             binary: redisIndexerCronJob
+            ensure_dyno: false
           - service: rating-cron
             context: ratingCronJob
             dockerfile: Dockerfile
             process: web
             smoke_check: false
             binary: ratingCronJob
+            ensure_dyno: false
     steps:
       - uses: actions/checkout@v4
 
@@ -68,6 +72,15 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           heroku container:release ${{ matrix.process }} --app $HEROKU_APP
+
+      - name: Ensure web dyno is running
+        if: ${{ matrix.ensure_dyno }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          # container:release does not turn on a dyno when the formation is empty
+          # (e.g. first deploy); idempotent for existing formations.
+          heroku ps:scale web=1:basic --app $HEROKU_APP
 
       - name: Post-deploy smoke check
         if: ${{ matrix.smoke_check }}
