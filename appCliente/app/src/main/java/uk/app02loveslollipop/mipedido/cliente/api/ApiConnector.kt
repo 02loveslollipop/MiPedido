@@ -21,7 +21,7 @@ import uk.app02loveslollipop.mipedido.cliente.models.ReviewRequest
  */
 class ApiConnector private constructor() {
     companion object {
-        private const val BASE_URL = "https://valkyrie.02loveslollipop.uk/v1/"
+        private const val BASE_URL = "https://valkyrie.02labs.me/v1/"
         private const val TAG = "ApiConnector"
         
         @Volatile
