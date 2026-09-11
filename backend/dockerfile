@@ -1,9 +1,11 @@
-FROM python:3.13-alpine
+# slim (glibc) so binary wheels (pymongo, cryptography, ...) install without
+# compiling; alpine's musl has no wheels for some of them
+FROM python:3.13-slim
 WORKDIR /app
 # Application code is copied flat into /app, so PYTHONPATH must point there
 ENV PYTHONPATH=/app
-COPY ./* /app/
-RUN pip install --no-cache-dir -r requirements.txt
+COPY . /app/
+RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
 EXPOSE 8000
 # Heroku routes web traffic to $PORT; fall back to 8000 for local runs
 CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker app:app --bind 0.0.0.0:${PORT:-8000}"]

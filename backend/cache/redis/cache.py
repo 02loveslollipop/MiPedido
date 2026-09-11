@@ -15,6 +15,8 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 # Singleton Redis connection
 redis: Optional[redis_asyncio.Redis] = None
 
+RESTAURANT_LIST_CACHE_KEY = "restaurants:all"
+
 async def get_redis() -> redis_asyncio.Redis:
     global redis
     if redis is None:
@@ -59,12 +61,12 @@ async def invalidate_restaurant_cache(restaurant_id: str):
 
 async def cache_restaurant_list(restaurants: List[dict], ttl: int = 3600):
     async def op(r):
-        await r.set("restaurants:all", json.dumps(restaurants, default=str), ex=ttl)
+        await r.set(RESTAURANT_LIST_CACHE_KEY, json.dumps(restaurants, default=str), ex=ttl)
     await _redis_op(op)
 
 async def get_cached_restaurant_list() -> Optional[List[dict]]:
     async def op(r):
-        return await r.get("restaurants:all")
+        return await r.get(RESTAURANT_LIST_CACHE_KEY)
     val = await _redis_op(op)
     if val:
         return json.loads(val)
@@ -72,7 +74,7 @@ async def get_cached_restaurant_list() -> Optional[List[dict]]:
 
 async def invalidate_restaurant_list_cache():
     async def op(r):
-        await r.delete("restaurants:all")
+        await r.delete(RESTAURANT_LIST_CACHE_KEY)
     await _redis_op(op)
 
 # Product cache functions
