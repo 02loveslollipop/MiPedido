@@ -84,6 +84,8 @@ jobs:
 
       - name: Post-deploy smoke check
         if: ${{ matrix.smoke_check }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           # Default domains have random suffixes; never guess <app>.herokuapp.com
           BASE_URL="$(heroku apps:info --app "$HEROKU_APP" --json | jq -r '.app.web_url' | sed 's:/$::')"
