@@ -2,7 +2,7 @@ import pytest
 import pytest_asyncio
 import asyncio
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import sys
@@ -31,7 +31,7 @@ async def async_client():
     """
     Create an async client for the FastAPI app
     """
-    async with AsyncClient(app=app, base_url="http://127.0.0.1") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://127.0.0.1") as client:
         yield client
 
 

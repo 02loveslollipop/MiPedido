@@ -48,8 +48,8 @@ class WebSocketConnector private constructor() {
 
     companion object {
         private const val TAG = "WebSocketConnector"
-        // Use the same host as REST API but port 8080 and ws protocol
-        private const val BASE_URL = "ws://wattson.02loveslollipop.uk/ws/orderNotification"
+        // Heroku terminates TLS and only serves WebSocket over wss://
+        private const val BASE_URL = "wss://wattson.02loveslollipop.uk/ws/orderNotification"
         private const val NORMAL_CLOSURE_STATUS = 1000
         private const val DEFAULT_TOPIC = "orders"
 

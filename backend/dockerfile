@@ -1,9 +1,9 @@
 FROM python:3.13-alpine
 WORKDIR /app
-# Ensure application path is on PYTHONPATH so local packages can be imported
-# Set PYTHONPATH to backend so imports like `from database import db` succeed
-ENV PYTHONPATH=/app/backend
+# Application code is copied flat into /app, so PYTHONPATH must point there
+ENV PYTHONPATH=/app
 COPY ./* /app/
 RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
-CMD [ "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000" ]
+# Heroku routes web traffic to $PORT; fall back to 8000 for local runs
+CMD ["sh", "-c", "gunicorn -w 2 -k uvicorn.workers.UvicornWorker app:app --bind 0.0.0.0:${PORT:-8000}"]

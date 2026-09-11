@@ -16,7 +16,9 @@ class ReviewCreate(BaseModel):
     restaurant_id: str
     rating: int
 
-@router.post("/", response_model=Review, status_code=201)
+# by_alias=False so the response carries "id" (as documented and expected by the
+# cliente app) instead of the Mongo alias "_id"; inserts still use by_alias=True.
+@router.post("/", response_model=Review, status_code=201, response_model_by_alias=False)
 async def create_review(review: ReviewCreate):
     """
     Create an anonymous review for a restaurant

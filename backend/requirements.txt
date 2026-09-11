@@ -17,5 +17,5 @@ redis
 # Testing dependencies
 pytest
 pytest-asyncio
-httpx
+httpx>=0.28
 

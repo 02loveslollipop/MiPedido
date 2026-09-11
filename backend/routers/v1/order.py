@@ -88,8 +88,8 @@ async def modify_user_order(order_id: str, user_id: str, item_update: OrderItemU
         if result["status"] == "error":
             if result["message"] == "Order not found":
                 raise HTTPException(status_code=404, detail="Order not found")
-            elif result["message"] == "User not found for order":
-                raise HTTPException(status_code=404, detail="User not found for order")
+            elif result["message"] == "User not found in order":
+                raise HTTPException(status_code=404, detail="User not found in order")
             elif result["message"] == "Product not found in the restaurant":
                 raise HTTPException(status_code=404, detail="Product not found in the restaurant")
             elif result["message"] == "Ingredient not found for product":
@@ -133,10 +133,10 @@ async def get_user_order(order_id: str, user_id: str):
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Order not found"
                 )
-            elif result["message"] == "User not found for order":
+            elif result["message"] == "User not found in order":
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found for order"
+                    detail="User not found in order"
                 )
             else:
                 raise HTTPException(

@@ -4,14 +4,14 @@ This file explains what the template files do and how to use them.
 
 Files added in this PR:
 
-- `.github/workflows/deploy-to-heroku-template.yml` — A configurable workflow that builds and pushes per-service Docker images to Heroku Container Registry and releases them.
+- `.github/workflow-templates/deploy-to-heroku-template.yml` — A configurable workflow that builds and pushes per-service Docker images to Heroku Container Registry and releases them. **Note:** it lives outside `.github/workflows/` on purpose — files in `.github/workflows/` are treated as *active* workflows by GitHub, and this template is documentation only (it would double-deploy and fail to parse otherwise).
 - `docker/backend.Dockerfile.template` — Multi-stage Python Dockerfile for the backend (FastAPI + gunicorn). Copy/rename and adapt it to `backend/Dockerfile`.
 - `backend/Procfile.template` — Procfile template for Heroku process types (web).
 
 How to use:
 1. Copy `docker/backend.Dockerfile.template` → `backend/Dockerfile` and update packaging commands if you use Poetry/poetry-builds/etc.
 2. Copy `backend/Procfile.template` → `backend/Procfile` (or to repo root if deploying monorepo) and confirm process names.
-3. Copy `.github/workflows/deploy-to-heroku-template.yml` → `.github/workflows/deploy-to-heroku.yml` and update the matrix entries to match your services and contexts.
+3. Copy `.github/workflow-templates/deploy-to-heroku-template.yml` → `.github/workflows/deploy-to-heroku.yml` and update the matrix entries to match your services and contexts.
 4. Add GitHub repository secrets: `HEROKU_API_KEY` and `HEROKU_APP_<SERVICE>` for each service, e.g. `HEROKU_APP_BACKEND`.
 
 Notes & tips:
@@ -31,10 +31,12 @@ Notes & tips:
 
 ### Example Scheduler entries (your request)
 - **rating-cron** — Daily at 02:00 UTC
-  - Heroku Scheduler command: `heroku run --app <HEROKU_APP> ./rating-cron-binary`
+  - Heroku Scheduler command: `heroku run --app <HEROKU_APP> ./ratingCronJob`
   - Suggestion: ensure your binary accepts a `--once` or `--run-once` flag if needed, or use an entrypoint script that exits when done.
 - **redisIndexerCronJob** — Every 3 hours
-  - Heroku Scheduler command: `heroku run --app <HEROKU_APP> ./redis-indexer-binary`
+  - Heroku Scheduler command: `heroku run --app <HEROKU_APP> ./redisIndexerCronJob`
+
+The commands in the Scheduler entries must match the binary names built by each image's Dockerfile (`ratingCronJob/Dockerfile` builds `./ratingCronJob`, `redisIndexerCronJob/Dockerfile` builds `./redisIndexerCronJob`).
 
 If you want, I can add these example entries to the docs in a more structured table or add a sample Scheduler automation script that:
 - Provisions the Scheduler add-on for each app (via the Heroku Platform API)
