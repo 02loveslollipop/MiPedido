@@ -86,8 +86,13 @@ jobs:
         if: ${{ matrix.smoke_check }}
         run: |
           URL="https://${HEROKU_APP}.herokuapp.com${{ matrix.health_path }}"
-          echo "Checking $URL"
-          curl -fsS $URL || (echo "Smoke test failed" && exit 1)
+          # Dynos take a while to boot after container:release; retry for up to ~2 min
+          for i in $(seq 1 12); do
+            echo "Attempt $i: checking $URL"
+            if curl -fsS -m 10 "$URL"; then echo "Smoke test passed"; exit 0; fi
+            sleep 10
+          done
+          echo "Smoke test failed after 12 attempts" && exit 1
 
       - name: One-off dyno check for cron binaries
         if: ${{ !matrix.smoke_check }}
