@@ -131,7 +131,7 @@ jobs:
           if [ -z "$HEROKU_APP_REDIS_INDEXER" ]; then echo "HEROKU_APP_REDIS_INDEXER not set, skipping"; exit 0; fi
           python scripts/create_heroku_scheduler_jobs.py --app "$HEROKU_APP_REDIS_INDEXER" --jobs-file scripts/scheduler-jobs.redis-indexer.yml
 
-      - name: Reminder: manual steps if automation failed
+      - name: "Reminder: manual steps if automation failed"
         run: |
           echo "If jobs could not be created programmatically, open the Scheduler dashboard:"
           echo "  heroku addons:open scheduler --app <YOUR_APP>"
