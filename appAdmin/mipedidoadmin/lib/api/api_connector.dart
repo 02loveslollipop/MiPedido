@@ -13,7 +13,7 @@ class ApiConnector {
   // Base API URL
   final String _baseUrl =
       //'http://127.0.0.1:8000'; // Change to your actual API URL
-      'https://valkyrie.02loveslollipop.uk'; // Production URL
+      'https://valkyrie.02labs.me'; // Production URL
 
   // Token storage keys
   final String _accessTokenKey = 'admin_access_token';

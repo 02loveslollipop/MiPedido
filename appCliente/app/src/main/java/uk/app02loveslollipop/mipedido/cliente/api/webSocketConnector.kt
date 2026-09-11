@@ -49,7 +49,7 @@ class WebSocketConnector private constructor() {
     companion object {
         private const val TAG = "WebSocketConnector"
         // Heroku terminates TLS and only serves WebSocket over wss://
-        private const val BASE_URL = "wss://wattson.02loveslollipop.uk/ws/orderNotification"
+        private const val BASE_URL = "wss://wattson.02labs.me/ws/orderNotification"
         private const val NORMAL_CLOSURE_STATUS = 1000
         private const val DEFAULT_TOPIC = "orders"
 

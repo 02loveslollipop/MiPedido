@@ -7,7 +7,7 @@ import '../models/product.dart';
 class ApiConnector {
   static final ApiConnector _instance = ApiConnector._internal();
   static const String _baseUrl =
-      'https://valkyrie.02loveslollipop.uk/v1'; // Replace with your actual API URL
+      'https://valkyrie.02labs.me/v1'; // Replace with your actual API URL
   static const String _tokenKey = 'mipedido_access_token';
   static const String _userIdKey = 'mipedido_user_id';
   static const String _restaurantIdKey = 'mipedido_restaurant_id';
