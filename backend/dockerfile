@@ -13,6 +13,7 @@ COPY database /app/database
 COPY models /app/models
 COPY routers /app/routers
 COPY utils /app/utils
+COPY scripts /app/scripts
 
 # Versions must stay in sync with requirements.txt (used by CI and local dev)
 RUN pip install --no-cache-dir --only-binary :all: \
