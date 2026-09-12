@@ -68,7 +68,14 @@ jobs:
         run: |
           IMAGE=registry.heroku.com/${HEROKU_APP}/${{ matrix.process }}
           docker build -t $IMAGE -f ${{ matrix.context }}/${{ matrix.dockerfile }} ${{ matrix.context }}
-          docker push $IMAGE
+          # The registry can reset connections mid-push; retry before failing
+          n=0
+          until docker push $IMAGE; do
+            n=$((n+1))
+            [ $n -ge 3 ] && { echo "docker push failed after $n attempts"; exit 1; }
+            echo "docker push attempt $n failed, retrying in 15s"
+            sleep 15
+          done
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
