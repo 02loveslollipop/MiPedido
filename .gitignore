@@ -3,3 +3,5 @@ webSocketEngine/test
 webSocketEngine/.env
 redisIndexerCronJob/.env
 redisIndexerCronJob/cmd/main/.env
+__pycache__/
+*.pyc
