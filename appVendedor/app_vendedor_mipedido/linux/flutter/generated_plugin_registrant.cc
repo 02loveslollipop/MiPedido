@@ -8,4 +8,5 @@
 
 
 void fl_register_plugins(FlPluginRegistry* registry) {
+  // No plugins to register on Linux.
 }

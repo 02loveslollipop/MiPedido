@@ -26,8 +26,12 @@ constexpr const wchar_t kGetPreferredBrightnessRegKey[] =
   L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 constexpr const wchar_t kGetPreferredBrightnessRegValue[] = L"AppsUseLightTheme";
 
-// The number of Win32Window objects that currently exist.
-static int g_active_window_count = 0;
+// Returns the count of active Win32Window instances.
+// Cannot be const because it tracks the dynamic lifetime of window instances at runtime.
+int& ActiveWindowCount() {
+  static int active_window_count = 0;
+  return active_window_count;
+}
 
 using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
@@ -62,10 +66,8 @@ class WindowClassRegistrar {
 
   // Returns the singleton registrar instance.
   static WindowClassRegistrar* GetInstance() {
-    if (!instance_) {
-      instance_ = new WindowClassRegistrar();
-    }
-    return instance_;
+    static WindowClassRegistrar instance;
+    return &instance;
   }
 
   // Returns the name of the window class, registering the class if it hasn't
@@ -79,12 +81,8 @@ class WindowClassRegistrar {
  private:
   WindowClassRegistrar() = default;
 
-  static WindowClassRegistrar* instance_;
-
   bool class_registered_ = false;
 };
-
-WindowClassRegistrar* WindowClassRegistrar::instance_ = nullptr;
 
 const wchar_t* WindowClassRegistrar::GetWindowClass() {
   if (!class_registered_) {
@@ -97,7 +95,7 @@ const wchar_t* WindowClassRegistrar::GetWindowClass() {
     window_class.hInstance = GetModuleHandle(nullptr);
     window_class.hIcon =
         LoadIcon(window_class.hInstance, MAKEINTRESOURCE(IDI_APP_ICON));
-    window_class.hbrBackground = 0;
+    window_class.hbrBackground = nullptr;
     window_class.lpszMenuName = nullptr;
     window_class.lpfnWndProc = Win32Window::WndProc;
     RegisterClass(&window_class);
@@ -112,11 +110,11 @@ void WindowClassRegistrar::UnregisterWindowClass() {
 }
 
 Win32Window::Win32Window() {
-  ++g_active_window_count;
+  ++ActiveWindowCount();
 }
 
 Win32Window::~Win32Window() {
-  --g_active_window_count;
+  --ActiveWindowCount();
   Destroy();
 }
 
@@ -222,13 +220,13 @@ Win32Window::MessageHandler(HWND hwnd,
 }
 
 void Win32Window::Destroy() {
-  OnDestroy();
+  Win32Window::OnDestroy();
 
   if (window_handle_) {
     DestroyWindow(window_handle_);
     window_handle_ = nullptr;
   }
-  if (g_active_window_count == 0) {
+  if (ActiveWindowCount() == 0) {
     WindowClassRegistrar::GetInstance()->UnregisterWindowClass();
   }
 }

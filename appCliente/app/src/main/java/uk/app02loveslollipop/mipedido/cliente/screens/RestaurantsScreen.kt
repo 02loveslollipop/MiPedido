@@ -35,6 +35,8 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 
+private const val DEFAULT_ERROR_MESSAGE = "Error desconocido"
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun RestaurantsScreen(
@@ -96,33 +98,14 @@ fun RestaurantsScreen(
     
     // Location Permission Dialog
     if (showLocationDialog) {
-        AlertDialog(
-            onDismissRequest = { showLocationDialog = false },
-            title = { Text("Permiso de ubicación") },
-            text = { 
-                Text(
-                    "Para ver la distancia a los restaurantes, necesitas habilitar el permiso de ubicación. " +
-                    "Sin este permiso, no podrás ver qué tan lejos están los restaurantes."
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        // Open app settings
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                            data = Uri.fromParts("package", context.packageName, null)
-                        }
-                        (context as? Activity)?.startActivity(intent)
-                        showLocationDialog = false
-                    }
-                ) {
-                    Text("Ir a Ajustes")
+        LocationPermissionDialog(
+            onDismiss = { showLocationDialog = false },
+            onGoToSettings = {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLocationDialog = false }) {
-                    Text("Más tarde")
-                }
+                (context as? Activity)?.startActivity(intent)
+                showLocationDialog = false
             }
         )
     }
@@ -148,7 +131,7 @@ fun RestaurantsScreen(
                     }
                 )
             } catch (e: Exception) {
-                error = e.message ?: "Error desconocido"
+                error = e.message ?: DEFAULT_ERROR_MESSAGE
             } finally {
                 isLoading = false
             }
@@ -171,7 +154,7 @@ fun RestaurantsScreen(
                     }
                 )
             } catch (e: Exception) {
-                restaurantSearchError = e.message ?: "Error desconocido"
+                restaurantSearchError = e.message ?: DEFAULT_ERROR_MESSAGE
                 restaurantSearchResults = emptyList()
             } finally {
                 isRestaurantSearching = false
@@ -206,7 +189,7 @@ fun RestaurantsScreen(
                     }
                 )
             } catch (e: Exception) {
-                error = e.message ?: "Error desconocido"
+                error = e.message ?: DEFAULT_ERROR_MESSAGE
             } finally {
                 isLoading = false
             }
@@ -236,7 +219,7 @@ fun RestaurantsScreen(
                     }
                 )
             } catch (e: Exception) {
-                error = e.message ?: "Error desconocido"
+                error = e.message ?: DEFAULT_ERROR_MESSAGE
             } finally {
                 isLoading = false
             }
@@ -286,225 +269,312 @@ fun RestaurantsScreen(
                 .padding(paddingValues)
                 .pullRefresh(pullRefreshState)
         ) {
-            if (error != null) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
+            when {
+                error != null -> {
+                    RestaurantErrorState(
+                        errorMessage = error ?: DEFAULT_ERROR_MESSAGE,
+                        onRetry = { loadRestaurants() }
+                    )
+                }
+                restaurants.isEmpty() && !isLoading -> {
                     Text(
-                        text = error ?: "Error desconocido",
+                        text = "No se encontraron restaurantes",
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Button(onClick = { loadRestaurants() }) {
-                        Text("Reintentar")
-                    }
-                }
-            } else if (restaurants.isEmpty() && !isLoading) {
-                Text(
-                    text = "No se encontraron restaurantes",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .align(Alignment.Center)
-                )
-            } else {
-                Column {
-                    OutlinedTextField(
-                        value = restaurantSearchQuery,
-                        onValueChange = { newValue -> restaurantSearchQuery = newValue },
-                        label = { Text("Buscar restaurantes") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        singleLine = true,
-                        trailingIcon = {
-                            if (restaurantSearchQuery.isNotEmpty()) {
-                                IconButton(onClick = { restaurantSearchQuery = "" }) {
-                                    Icon(Icons.Default.Refresh, contentDescription = "Limpiar búsqueda")
-                                }
-                            }
-                        }
+                            .padding(16.dp)
+                            .align(Alignment.Center)
                     )
-                    val showRestaurantSearch = restaurantSearchQuery.length >= 3
-                    if (showRestaurantSearch) {
-                        if (isRestaurantSearching) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
-                            }
-                        } else if (restaurantSearchError != null) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = restaurantSearchError ?: "Error desconocido",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        } else if (restaurantSearchResults.isEmpty()) {
-                            Text(
-                                text = "No se encontraron restaurantes",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                            )
-                        } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(minSize = 300.dp),
-                                contentPadding = PaddingValues(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(restaurantSearchResults) { restaurant ->
-                                    RestaurantCard(
-                                        restaurant = restaurant,
-                                        onClick = {
-                                            selectedRestaurant = restaurant
-                                            showOrderTypeDialog = true
-                                        },
-                                        userLocation = userLocation
-                                    )
-                                }
-                            }
-                        }
-                    } else {
-                        // Restaurant type filter section
-                        if (restaurantTypes.isNotEmpty()) {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                ) {
-                                    Text(
-                                        text = "Filtrar por tipo:",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                    
-                                    LazyRow(
-                                        contentPadding = PaddingValues(4.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        // "All" filter option
-                                        item {
-                                            FilterChip(
-                                                selected = selectedType == null,
-                                                onClick = { selectedType = null },
-                                                label = { Text("Todos") },
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                                )
-                                            )
-                                        }
-                                        
-                                        // Restaurant type filters
-                                        items(restaurantTypes) { type ->
-                                            FilterChip(
-                                                selected = selectedType == type,
-                                                onClick = { selectedType = type },
-                                                label = { Text(type) },
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                                )
-                                            )
-                                        }
+                }
+                else -> {
+                    Column {
+                        OutlinedTextField(
+                            value = restaurantSearchQuery,
+                            onValueChange = { newValue -> restaurantSearchQuery = newValue },
+                            label = { Text("Buscar restaurantes") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            singleLine = true,
+                            trailingIcon = {
+                                if (restaurantSearchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { restaurantSearchQuery = "" }) {
+                                        Icon(Icons.Default.Refresh, contentDescription = "Limpiar búsqueda")
                                     }
                                 }
                             }
-                        }
+                        )
                         
-                        // Restaurant grid
-                        LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 300.dp),
-                            contentPadding = PaddingValues(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(filteredRestaurants) { restaurant ->
-                                RestaurantCard(
-                                    restaurant = restaurant,
-                                    onClick = {
-                                        selectedRestaurant = restaurant
-                                        showOrderTypeDialog = true
-                                    },
-                                    userLocation = userLocation
-                                )
-                            }
+                        if (restaurantSearchQuery.length >= 3) {
+                            RestaurantSearchSection(
+                                isSearching = isRestaurantSearching,
+                                searchError = restaurantSearchError,
+                                searchResults = restaurantSearchResults,
+                                userLocation = userLocation,
+                                onRestaurantClick = {
+                                    selectedRestaurant = it
+                                    showOrderTypeDialog = true
+                                }
+                            )
+                        } else {
+                            RestaurantTypeFilterSection(
+                                restaurantTypes = restaurantTypes,
+                                selectedType = selectedType,
+                                onSelectType = { selectedType = it }
+                            )
+                            
+                            RestaurantGrid(
+                                restaurants = filteredRestaurants,
+                                userLocation = userLocation,
+                                onRestaurantClick = {
+                                    selectedRestaurant = it
+                                    showOrderTypeDialog = true
+                                }
+                            )
                         }
                     }
                 }
             }
             
-            // Pull Refresh Indicator - must be at the end of the Box
             PullRefreshIndicator(
                 refreshing = isLoading,
                 state = pullRefreshState,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
             
-            // Order Type Dialog
             if (showOrderTypeDialog) {
-                AlertDialog(
-                    onDismissRequest = { 
+                OrderTypeSelectionDialog(
+                    onDismiss = {
                         showOrderTypeDialog = false
                         selectedRestaurant = null
                     },
-                    title = { Text("Selecciona el tipo de pedido") },
-                    text = { 
-                        Text("¿Deseas hacer un pedido normal o grupal?")
-                    },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                showOrderTypeDialog = false
-                                selectedRestaurant?.let { restaurant ->
-                                    createNormalOrder(restaurant.id)
-                                }
-                            }
-                        ) {
-                            Text("Orden Normal")
+                    onNormalOrder = {
+                        showOrderTypeDialog = false
+                        selectedRestaurant?.let { restaurant ->
+                            createNormalOrder(restaurant.id)
                         }
                     },
-                    dismissButton = {
-                        Button(
-                            onClick = {
-                                showOrderTypeDialog = false
-                                selectedRestaurant?.let { restaurant ->
-                                    createCollaborativeOrder(restaurant.id)
-                                }
-                            }
-                        ) {
-                            Text("Orden Grupal")
+                    onCollaborativeOrder = {
+                        showOrderTypeDialog = false
+                        selectedRestaurant?.let { restaurant ->
+                            createCollaborativeOrder(restaurant.id)
                         }
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun LocationPermissionDialog(
+    onDismiss: () -> Unit,
+    onGoToSettings: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Permiso de ubicación") },
+        text = { 
+            Text(
+                "Para ver la distancia a los restaurantes, necesitas habilitar el permiso de ubicación. " +
+                "Sin este permiso, no podrás ver qué tan lejos están los restaurantes."
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onGoToSettings) {
+                Text("Ir a Ajustes")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Más tarde")
+            }
+        }
+    )
+}
+
+@Composable
+private fun OrderTypeSelectionDialog(
+    onDismiss: () -> Unit,
+    onNormalOrder: () -> Unit,
+    onCollaborativeOrder: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Selecciona el tipo de pedido") },
+        text = { 
+            Text("¿Deseas hacer un pedido normal o grupal?")
+        },
+        confirmButton = {
+            Button(onClick = onNormalOrder) {
+                Text("Orden Normal")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onCollaborativeOrder) {
+                Text("Orden Grupal")
+            }
+        }
+    )
+}
+
+@Composable
+private fun RestaurantErrorState(
+    errorMessage: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = errorMessage,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.error
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Button(onClick = onRetry) {
+            Text("Reintentar")
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RestaurantTypeFilterSection(
+    restaurantTypes: List<String>,
+    selectedType: String?,
+    onSelectType: (String?) -> Unit
+) {
+    if (restaurantTypes.isEmpty()) return
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp)
+        ) {
+            Text(
+                text = "Filtrar por tipo:",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+            
+            LazyRow(
+                contentPadding = PaddingValues(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                item {
+                    FilterChip(
+                        selected = selectedType == null,
+                        onClick = { onSelectType(null) },
+                        label = { Text("Todos") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+                
+                items(restaurantTypes) { type ->
+                    FilterChip(
+                        selected = selectedType == type,
+                        onClick = { onSelectType(type) },
+                        label = { Text(type) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RestaurantSearchSection(
+    isSearching: Boolean,
+    searchError: String?,
+    searchResults: List<Restaurant>,
+    userLocation: Position?,
+    onRestaurantClick: (Restaurant) -> Unit
+) {
+    when {
+        isSearching -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+        searchError != null -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = searchError,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        searchResults.isEmpty() -> {
+            Text(
+                text = "No se encontraron restaurantes",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
+        }
+        else -> {
+            RestaurantGrid(
+                restaurants = searchResults,
+                userLocation = userLocation,
+                onRestaurantClick = onRestaurantClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun RestaurantGrid(
+    restaurants: List<Restaurant>,
+    userLocation: Position?,
+    onRestaurantClick: (Restaurant) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 300.dp),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
+    ) {
+        items(restaurants) { restaurant ->
+            RestaurantCard(
+                restaurant = restaurant,
+                onClick = { onRestaurantClick(restaurant) },
+                userLocation = userLocation
+            )
         }
     }
 }

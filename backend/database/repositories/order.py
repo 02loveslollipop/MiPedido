@@ -5,6 +5,8 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from fastapi import HTTPException
 
+ORDER_NOT_FOUND = "Order not found"
+
 class OrderRepository:
     collection = db.db.db["orders"]
     
@@ -75,6 +77,80 @@ class OrderRepository:
             raise e
     
     @classmethod
+    async def _get_and_validate_product(cls, product_id: str, ingredients: list[str]) -> Dict[str, Any]:
+        """Validates that a product exists and any requested ingredients are valid."""
+        product_collection = db.db.db["products"]
+        product = await product_collection.find_one({
+            "_id": ObjectId(product_id),
+            "$or": [
+                {"active": True},
+                {"active": {"$exists": False}}
+            ]
+        })
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        if ingredients:
+            valid_ingredients = set(product.get("ingredients", []))
+            for ingredient in ingredients:
+                if ingredient not in valid_ingredients:
+                    raise HTTPException(status_code=400, detail=f"Invalid ingredient: {ingredient}")
+        return product
+
+    @classmethod
+    async def _apply_order_modification(
+        cls,
+        order_id: str,
+        user_oid: ObjectId,
+        order: Dict[str, Any],
+        product_id: str,
+        product: Dict[str, Any],
+        quantity: int,
+        ingredients: list[str]
+    ) -> Dict[str, str]:
+        """Updates or deletes user products within an order."""
+        user_products = order["users"][str(user_oid)]["products"]
+        existing_product_index = next(
+            (idx for idx, p in enumerate(user_products) if p.get("id") == product_id),
+            None
+        )
+        
+        if quantity == 0:
+            if existing_product_index is not None:
+                user_products.pop(existing_product_index)
+                await cls.collection.update_one(
+                    {"_id": ObjectId(order_id)},
+                    {"$set": {f"users.{str(user_oid)}.products": user_products}}
+                )
+                return {"status": "success", "message": "Deleted"}
+            return {"status": "success", "message": "Nothing to delete"}
+        
+        product_data = {
+            "id": product_id,
+            "name": product["name"],
+            "price": product["price"],
+            "img_url": product["img_url"],
+            "quantity": quantity,
+            "ingredients": ingredients or []
+        }
+        
+        if existing_product_index is not None:
+            user_products[existing_product_index] = product_data
+            await cls.collection.update_one(
+                {"_id": ObjectId(order_id)},
+                {"$set": {f"users.{str(user_oid)}.products": user_products}}
+            )
+            return {"status": "success", "message": "Updated"}
+        
+        user_products.append(product_data)
+        await cls.collection.update_one(
+            {"_id": ObjectId(order_id)},
+            {"$set": {f"users.{str(user_oid)}.products": user_products}}
+        )
+        return {"status": "success", "message": "Created"}
+
+    @classmethod
     async def modify_order(cls, order_id: str, user_id: str, product_id: str, quantity: int, ingredients: list[str]) -> Dict[str, str]:
         """
         Modifies an order for a specific user.
@@ -84,86 +160,15 @@ class OrderRepository:
             # Get the order from the database
             order = await cls.collection.find_one({"_id": ObjectId(order_id)})
             if not order:
-                raise HTTPException(status_code=404, detail="Order not found")
+                raise HTTPException(status_code=404, detail=ORDER_NOT_FOUND)
             
             # Check if the user exists in the order
             user_oid = ObjectId(user_id)
             if str(user_oid) not in order["users"]:
                 raise HTTPException(status_code=404, detail="User not found in order")
             
-            # Get the product details from the products collection
-            product_collection = db.db.db["products"]
-            # Only allow active products
-            product = await product_collection.find_one({
-                "_id": ObjectId(product_id),
-                "$or": [
-                    {"active": True},
-                    {"active": {"$exists": False}}
-                ]
-            })
-            
-            if not product:
-                return HTTPException(status_code=404, detail="Product not found")
-            
-            # Validate ingredients if provided
-            if ingredients:
-                # Check if all provided ingredients are valid for this product
-                valid_ingredients = set(product.get("ingredients", []))
-                for ingredient in ingredients:
-                    if ingredient not in valid_ingredients:
-                        raise HTTPException(status_code=400, detail=f"Invalid ingredient: {ingredient}")
-            
-            # Find if the product already exists in the user's order
-            user_products = order["users"][str(user_oid)]["products"]
-            existing_product_index = None
-            
-            for idx, p in enumerate(user_products):
-                if p.get("id") == product_id:
-                    existing_product_index = idx
-                    break
-            
-            # If quantity is 0, delete the product if it exists
-            if quantity == 0:
-                if existing_product_index is not None:
-                    # Remove the product from the user's order
-                    user_products.pop(existing_product_index)
-                    
-                    # Update the order in the database
-                    await cls.collection.update_one(
-                        {"_id": ObjectId(order_id)},
-                        {"$set": {f"users.{str(user_oid)}.products": user_products}}
-                    )
-                    return {"status": "success", "message": "Deleted"}
-                # If product doesn't exist and quantity is 0, do nothing
-                return {"status": "success", "message": "Nothing to delete"}
-            
-            # Create product data
-            product_data = {
-                "id": product_id,
-                "name": product["name"],
-                "price": product["price"],
-                "img_url": product["img_url"],
-                "quantity": quantity,
-                "ingredients": ingredients or []
-            }
-            
-            # If product exists, update it
-            if existing_product_index is not None:
-                user_products[existing_product_index] = product_data
-                await cls.collection.update_one(
-                    {"_id": ObjectId(order_id)},
-                    {"$set": {f"users.{str(user_oid)}.products": user_products}}
-                )
-                return {"status": "success", "message": "Updated"}
-            
-            # If product doesn't exist, add it
-            user_products.append(product_data)
-            await cls.collection.update_one(
-                {"_id": ObjectId(order_id)},
-                {"$set": {f"users.{str(user_oid)}.products": user_products}}
-            )
-            return {"status": "success", "message": "Created"}
-            
+            product = await cls._get_and_validate_product(product_id, ingredients)
+            return await cls._apply_order_modification(order_id, user_oid, order, product_id, product, quantity, ingredients)
         except Exception as e:
             raise e
     
@@ -181,7 +186,7 @@ class OrderRepository:
                 
             order = await cls.collection.find_one({"_id": order_obj_id})
             if not order:
-                raise HTTPException(status_code=404, detail="Order not found")
+                raise HTTPException(status_code=404, detail=ORDER_NOT_FOUND)
             
             # Check if the user exists in the order
             if user_id not in order["users"]:
@@ -203,7 +208,7 @@ class OrderRepository:
             # Get the order from the database
             order = await cls.collection.find_one({"_id": ObjectId(order_id)})
             if not order:
-                return {"status": "error", "message": "Order not found"}
+                return {"status": "error", "message": ORDER_NOT_FOUND}
             
             # Check if order is already fulfilled
             if order.get("fulfilled_at"):
@@ -243,7 +248,7 @@ class OrderRepository:
             # Get the order from the database
             order = await cls.collection.find_one({"_id": ObjectId(order_id)})
             if not order:
-                return {"status": "error", "message": "Order not found"}
+                return {"status": "error", "message": ORDER_NOT_FOUND}
             
             # Check if order is already fulfilled
             if order.get("fulfilled_at"):

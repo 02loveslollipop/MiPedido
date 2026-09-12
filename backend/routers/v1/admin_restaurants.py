@@ -16,6 +16,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+RESTAURANT_NOT_FOUND = "Restaurant not found"
+ERROR_ADMIN_RESTAURANT_OPERATION = "Error in admin restaurant operation: %s"
+
 class RestaurantUpdate(BaseModel):
     """Schema for updating restaurant details"""
     name: str | None = None
@@ -23,7 +26,13 @@ class RestaurantUpdate(BaseModel):
     type: str | None = None
     description: str | None = None
     
-@router.get("/", response_model=List[Restaurant])
+@router.get(
+    "/",
+    response_model=List[Restaurant],
+    responses={
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_list_restaurants(current_admin: AdminTokenData = Depends(get_current_admin)):
     """
     List all restaurants. Only accessible by admins.
@@ -34,12 +43,18 @@ async def admin_list_restaurants(current_admin: AdminTokenData = Depends(get_cur
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error listing restaurants: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_RESTAURANT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.post("/", response_model=Restaurant, status_code=201)
+@router.post(
+    "/",
+    response_model=Restaurant,
+    status_code=201,
+    responses={
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_create_restaurant(
     restaurant: RestaurantCreate, 
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -65,16 +80,21 @@ async def admin_create_restaurant(
         
         return created_restaurant
     except HTTPException as e:
-        logging.error(f"Error creating restaurant: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_RESTAURANT_OPERATION, e)
         raise e
     except Exception as e:
-        logging.error(f"Error creating restaurant: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_RESTAURANT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.get("/{restaurant_id}", response_model=Restaurant)
+@router.get(
+    "/{restaurant_id}",
+    response_model=Restaurant,
+    responses={
+        404: {"description": RESTAURANT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_get_restaurant(
     restaurant_id: str, 
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -85,15 +105,23 @@ async def admin_get_restaurant(
     try:
         restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
         if not restaurant:
-            raise HTTPException(status_code=404, detail="Restaurant not found")
+            raise HTTPException(status_code=404, detail=RESTAURANT_NOT_FOUND)
         return restaurant
     except HTTPException:
         raise
     except Exception as e:
+        logging.exception(ERROR_ADMIN_RESTAURANT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{restaurant_id}", response_model=Restaurant)
+@router.put(
+    "/{restaurant_id}",
+    response_model=Restaurant,
+    responses={
+        404: {"description": RESTAURANT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_update_restaurant(
     restaurant_id: str,
     restaurant_data: RestaurantUpdate,
@@ -106,7 +134,7 @@ async def admin_update_restaurant(
         # First check if restaurant exists
         existing_restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
         if not existing_restaurant:
-            raise HTTPException(status_code=404, detail="Restaurant not found")
+            raise HTTPException(status_code=404, detail=RESTAURANT_NOT_FOUND)
         
         # Build update data dictionary
         update_data = {}
@@ -145,12 +173,18 @@ async def admin_update_restaurant(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error updating restaurant: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_RESTAURANT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.delete("/{restaurant_id}", status_code=204)
+@router.delete(
+    "/{restaurant_id}",
+    status_code=204,
+    responses={
+        404: {"description": RESTAURANT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_delete_restaurant(
     restaurant_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -162,7 +196,7 @@ async def admin_delete_restaurant(
         # Check if restaurant exists
         existing_restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
         if not existing_restaurant:
-            raise HTTPException(status_code=404, detail="Restaurant not found")
+            raise HTTPException(status_code=404, detail=RESTAURANT_NOT_FOUND)
         
         # Save restaurant info for logging before deletion
         restaurant_name = existing_restaurant.name
@@ -187,10 +221,19 @@ async def admin_delete_restaurant(
     except HTTPException:
         raise
     except Exception as e:
+        logging.exception(ERROR_ADMIN_RESTAURANT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{restaurant_id}/update-rating", status_code=200)
+@router.put(
+    "/{restaurant_id}/update-rating",
+    status_code=200,
+    responses={
+        400: {"description": "Invalid rating input"},
+        404: {"description": RESTAURANT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_update_restaurant_rating(
     restaurant_id: str,
     data: dict,
@@ -212,7 +255,7 @@ async def admin_update_restaurant_rating(
         # Check if restaurant exists
         existing_restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
         if not existing_restaurant:
-            raise HTTPException(status_code=404, detail="Restaurant not found")
+            raise HTTPException(status_code=404, detail=RESTAURANT_NOT_FOUND)
             
         # Store old rating for logging
         old_rating = existing_restaurant.rating
@@ -241,5 +284,6 @@ async def admin_update_restaurant_rating(
     except HTTPException:
         raise
     except Exception as e:
+        logging.exception(ERROR_ADMIN_RESTAURANT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

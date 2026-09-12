@@ -189,6 +189,19 @@ fun ProductsScreen(
         }
     )
     
+    fun handleAdjustQuantity(product: Product, delta: Int) {
+        val quantity = cartItems[product.id] ?: 0
+        if (delta > 0) {
+            if (quantity > 0) {
+                modifyOrderInAPI(product, quantity + 1, product.ingredients)
+            } else {
+                selectedProduct = product
+            }
+        } else if (delta < 0 && quantity > 0) {
+            modifyOrderInAPI(product, quantity - 1, product.ingredients)
+        }
+    }
+
     if (selectedProduct != null) {
         PersonalizeProductScreen(
             product = selectedProduct!!,
@@ -213,29 +226,10 @@ fun ProductsScreen(
     } else {
         Scaffold(
             topBar = {
-                NavBar(
-                    title = "Menú",
-                    onBackPressed = onNavigateBack,
-                    actions = {
-                        BadgedBox(
-                            badge = {
-                                if (totalCartItems.value > 0) {
-                                    Badge { Text("${totalCartItems.value}") }
-                                }
-                            }
-                        ) {
-                            IconButton(
-                                onClick = { 
-                                    onNavigateToCart(restaurantId, orderId, userId, isCreator)
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ShoppingCart,
-                                    contentDescription = "Carrito de Compras"
-                                )
-                            }
-                        }
-                    }
+                ProductsTopBar(
+                    onNavigateBack = onNavigateBack,
+                    totalCartItems = totalCartItems.value,
+                    onNavigateToCart = { onNavigateToCart(restaurantId, orderId, userId, isCreator) }
                 )
             }
         ) { paddingValues ->
@@ -246,167 +240,30 @@ fun ProductsScreen(
                     .pullRefresh(pullRefreshState)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { newValue ->
-                            searchQuery = newValue
-                        },
-                        label = { Text("Buscar productos") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        singleLine = true,
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Limpiar búsqueda")
-                                }
-                            }
-                        }
+                    ProductsSearchField(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it }
                     )
                     
-                    val showSearch = searchQuery.length >= 3
-                    if (showSearch) {
-                        if (isSearching) {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
-                            }
-                        } else if (searchError != null) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = searchError ?: DEFAULT_ERROR_MESSAGE,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        } else if (searchResults.isEmpty()) {
-                            Text(
-                                text = "No se encontraron productos",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                                    .align(Alignment.CenterHorizontally)
-                            )
-                        } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(minSize = 300.dp),
-                                contentPadding = PaddingValues(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(searchResults) { product ->
-                                    val quantity = cartItems[product.id] ?: 0
-                                    ProductCard(
-                                        product = product,
-                                        onClick = { selectedProduct = product },
-                                        cartQuantity = quantity,
-                                        onIncreaseQuantity = {
-                                            if (quantity > 0) {
-                                                modifyOrderInAPI(
-                                                    product = product,
-                                                    quantity = quantity + 1,
-                                                    ingredients = product.ingredients
-                                                )
-                                            } else {
-                                                selectedProduct = product
-                                            }
-                                        },
-                                        onDecreaseQuantity = {
-                                            if (quantity > 0) {
-                                                modifyOrderInAPI(
-                                                    product = product,
-                                                    quantity = quantity - 1,
-                                                    ingredients = product.ingredients
-                                                )
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                    if (searchQuery.length >= 3) {
+                        ProductsSearchSection(
+                            isSearching = isSearching,
+                            searchError = searchError,
+                            searchResults = searchResults,
+                            cartItems = cartItems,
+                            onProductClick = { selectedProduct = it },
+                            onAdjustQuantity = ::handleAdjustQuantity
+                        )
                     } else {
-                        if (error != null) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = error ?: DEFAULT_ERROR_MESSAGE,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.error
-                                )
-                                
-                                Spacer(modifier = Modifier.height(16.dp))
-                                
-                                Button(onClick = { loadProducts() }) {
-                                    Text("Reintentar")
-                                }
-                            }
-                        } else if (products.isEmpty() && !isLoading) {
-                            Text(
-                                text = "No se encontraron productos",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp)
-                                    .align(Alignment.CenterHorizontally)
-                            )
-                        } else {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(minSize = 300.dp),
-                                contentPadding = PaddingValues(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(products) { product ->
-                                    val quantity = cartItems[product.id] ?: 0
-                                    
-                                    ProductCard(
-                                        product = product,
-                                        onClick = { selectedProduct = product },
-                                        cartQuantity = quantity,
-                                        onIncreaseQuantity = {
-                                            if (quantity > 0) {
-                                                // If already in cart, just increase the quantity with existing ingredients
-                                                modifyOrderInAPI(
-                                                    product = product,
-                                                    quantity = quantity + 1,
-                                                    ingredients = product.ingredients
-                                                )
-                                            } else {
-                                                // If not in cart, go to personalize screen
-                                                selectedProduct = product
-                                            }
-                                        },
-                                        onDecreaseQuantity = {
-                                            if (quantity > 0) {
-                                                // If quantity would go to 0, remove from cart
-                                                // Otherwise reduce quantity
-                                                modifyOrderInAPI(
-                                                    product = product,
-                                                    quantity = quantity - 1,
-                                                    ingredients = product.ingredients
-                                                )
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
+                        ProductsDefaultSection(
+                            isLoading = isLoading,
+                            error = error,
+                            products = products,
+                            cartItems = cartItems,
+                            onRetry = { loadProducts() },
+                            onProductClick = { selectedProduct = it },
+                            onAdjustQuantity = ::handleAdjustQuantity
+                        )
                     }
                 }
                 
@@ -416,6 +273,192 @@ fun ProductsScreen(
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProductsTopBar(
+    onNavigateBack: () -> Unit,
+    totalCartItems: Int,
+    onNavigateToCart: () -> Unit
+) {
+    NavBar(
+        title = "Menú",
+        onBackPressed = onNavigateBack,
+        actions = {
+            BadgedBox(
+                badge = {
+                    if (totalCartItems > 0) {
+                        Badge { Text("$totalCartItems") }
+                    }
+                }
+            ) {
+                IconButton(onClick = onNavigateToCart) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = "Carrito de Compras"
+                    )
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun ProductsSearchField(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
+        label = { Text("Buscar productos") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        singleLine = true,
+        trailingIcon = {
+            if (searchQuery.isNotEmpty()) {
+                IconButton(onClick = { onSearchQueryChange("") }) {
+                    Icon(Icons.Default.Close, contentDescription = "Limpiar búsqueda")
+                }
+            }
+        }
+    )
+}
+
+@Composable
+private fun ProductsSearchSection(
+    isSearching: Boolean,
+    searchError: String?,
+    searchResults: List<Product>,
+    cartItems: Map<String, Int>,
+    onProductClick: (Product) -> Unit,
+    onAdjustQuantity: (Product, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when {
+        isSearching -> {
+            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        }
+        searchError != null -> {
+            Column(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = searchError,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        searchResults.isEmpty() -> {
+            Text(
+                text = "No se encontraron productos",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
+        }
+        else -> {
+            ProductGrid(
+                products = searchResults,
+                cartItems = cartItems,
+                onProductClick = onProductClick,
+                onAdjustQuantity = onAdjustQuantity,
+                modifier = modifier
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductsDefaultSection(
+    isLoading: Boolean,
+    error: String?,
+    products: List<Product>,
+    cartItems: Map<String, Int>,
+    onRetry: () -> Unit,
+    onProductClick: (Product) -> Unit,
+    onAdjustQuantity: (Product, Int) -> Unit
+) {
+    when {
+        error != null -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onRetry) {
+                    Text("Reintentar")
+                }
+            }
+        }
+        products.isEmpty() && !isLoading -> {
+            Text(
+                text = "No se encontraron productos",
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
+        }
+        else -> {
+            ProductGrid(
+                products = products,
+                cartItems = cartItems,
+                onProductClick = onProductClick,
+                onAdjustQuantity = onAdjustQuantity
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductGrid(
+    products: List<Product>,
+    cartItems: Map<String, Int>,
+    onProductClick: (Product) -> Unit,
+    onAdjustQuantity: (Product, Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 300.dp),
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
+    ) {
+        items(products) { product ->
+            val quantity = cartItems[product.id] ?: 0
+            ProductCard(
+                product = product,
+                onClick = { onProductClick(product) },
+                cartQuantity = quantity,
+                onIncreaseQuantity = { onAdjustQuantity(product, 1) },
+                onDecreaseQuantity = { onAdjustQuantity(product, -1) }
+            )
         }
     }
 }
