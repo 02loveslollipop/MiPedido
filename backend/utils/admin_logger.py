@@ -1,7 +1,6 @@
 from models.admin_log import AdminLogCreate
 from database.repositories.admin_log_repository import AdminLogRepository
 from typing import Optional, Any
-import asyncio
 
 async def log_admin_operation(
     admin_id: str,
@@ -36,6 +35,5 @@ async def log_admin_operation(
         details=details
     )
     
-    # Run logging in background to avoid blocking the main operation
-    # If logging fails, the main operation will still succeed
-    asyncio.create_task(AdminLogRepository.create_log(log_data))
+    # Await log creation; create_log catches any exceptions internally so the main operation will still succeed
+    await AdminLogRepository.create_log(log_data)

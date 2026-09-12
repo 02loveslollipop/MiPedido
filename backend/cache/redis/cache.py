@@ -17,7 +17,7 @@ redis: Optional[redis_asyncio.Redis] = None
 
 RESTAURANT_LIST_CACHE_KEY = "restaurants:all"
 
-async def get_redis() -> redis_asyncio.Redis:
+def get_redis() -> redis_asyncio.Redis:
     global redis
     if redis is None:
         redis = redis_asyncio.Redis(
@@ -34,7 +34,7 @@ async def get_redis() -> redis_asyncio.Redis:
 # back to MongoDB) and writes/invalidations are skipped.
 async def _redis_op(op):
     try:
-        r = await get_redis()
+        r = get_redis()
         return await op(r)
     except (RedisError, OSError) as e:
         logging.warning(f"Redis unavailable, bypassing cache: {e}")

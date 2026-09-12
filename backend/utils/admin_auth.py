@@ -54,7 +54,7 @@ def decode_admin_jwt_token(token: str) -> Dict[str, Any]:
             detail=f"Invalid admin authentication credentials: {str(e)}"
         )
 
-async def get_current_admin(token: str = Depends(oauth2_admin_scheme)) -> AdminTokenData:
+def get_current_admin(token: str = Depends(oauth2_admin_scheme)) -> AdminTokenData:
     """
     Dependency function to extract and validate admin information from JWT token in header
     """
@@ -92,7 +92,7 @@ async def get_current_admin(token: str = Depends(oauth2_admin_scheme)) -> AdminT
             detail=error_detail
         )
 
-async def get_admin_token_from_body(token_request: AdminTokenRequest) -> AdminTokenData:
+def get_admin_token_from_body(token_request: AdminTokenRequest) -> AdminTokenData:
     """
     Dependency function to extract and validate admin information from JWT token in request body
     """
@@ -149,7 +149,7 @@ def create_admin_access_token(
     to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     
     if ADMIN_PRIVATE_KEY is None:
-        raise Exception("Admin private key not configured for RS256.")
+        raise RuntimeError("Admin private key not configured for RS256.")
     
     # Create and return the token
     encoded_jwt = jwt.encode(to_encode, ADMIN_PRIVATE_KEY, algorithm=ALGORITHM)

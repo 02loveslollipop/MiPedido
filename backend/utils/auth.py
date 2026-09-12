@@ -40,7 +40,7 @@ def decode_jwt_token(token: str) -> Dict[str, Any]:
             detail=f"Invalid authentication credentials: {str(e)}"
         )
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
+def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
     """
     Dependency function to extract and validate user information from JWT token in header
     """
@@ -76,7 +76,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
             detail=error_detail
         )
 
-async def get_token_from_body(token_request: TokenRequest) -> TokenData:
+def get_token_from_body(token_request: TokenRequest) -> TokenData:
     """
     Dependency function to extract and validate user information from JWT token in request body
     """
