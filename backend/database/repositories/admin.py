@@ -66,15 +66,16 @@ class AdminRepository:
             return None
             
         # Create access token
+        now = datetime.datetime.now(datetime.timezone.utc)
         expires_delta = datetime.timedelta(minutes=TOKEN_EXPIRE_MINUTES)
-        expire = datetime.datetime.utcnow() + expires_delta
+        expire = now + expires_delta
         
         # Create token payload
         payload = {
             "sub": admin.username,
             "id": admin.id,
             "exp": expire,
-            "iat": datetime.datetime.utcnow(),
+            "iat": now,
             "role": "admin"  # Add role to distinguish from regular users
         }
         

@@ -210,7 +210,7 @@ class OrderRepository:
                 return {"status": "error", "message": "Order already fulfilled"}
             
             # Check if order has been finalized
-            if not order.get("status") == "finalized":
+            if order.get("status") != "finalized":
                 return {"status": "error", "message": "Order must be finalized before fulfillment"}
             
             # Set the fulfilled_at date and date_completed

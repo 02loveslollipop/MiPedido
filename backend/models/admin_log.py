@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 class AdminLogBase(BaseModel):
     """Base model for admin operation logs"""
@@ -10,7 +10,7 @@ class AdminLogBase(BaseModel):
     target_type: str = Field(..., description="Type of resource that was targeted (user, restaurant, product, etc.)")
     target_id: str = Field(..., description="ID of the resource that was targeted")
     details: Optional[dict] = Field(default=None, description="Additional details about the operation")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="When the operation was performed")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="When the operation was performed")
 
 class AdminLogCreate(AdminLogBase):
     """Model for creating admin log entries"""

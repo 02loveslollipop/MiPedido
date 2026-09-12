@@ -3,7 +3,7 @@ from database import db
 from models.admin import AdminBase, AdminInDB, Admin
 from typing import List, Optional
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.admin_auth import create_admin_access_token
 
 class AdminRepository:
@@ -39,7 +39,7 @@ class AdminRepository:
         admin_doc = {
             "username": username,
             "hashed_password": hashed_password,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
         }
         
         # Insert into database

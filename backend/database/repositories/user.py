@@ -87,15 +87,16 @@ class UserRepository:
             return None
             
         # Create access token
+        now = datetime.datetime.now(datetime.timezone.utc)
         expires_delta = datetime.timedelta(minutes=TOKEN_EXPIRE_MINUTES)
-        expire = datetime.datetime.utcnow() + expires_delta
+        expire = now + expires_delta
         
         # Create token payload
         payload = {
             "sub": user.username,
             "id": user.id,
             "exp": expire,
-            "iat": datetime.datetime.utcnow()
+            "iat": now
         }
         
         # Create JWT token

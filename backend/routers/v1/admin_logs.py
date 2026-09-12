@@ -72,8 +72,7 @@ async def get_admin_logs(
             "limit": limit
         }
     except Exception as e:
-        logging.error(f"Error getting admin logs: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error getting admin logs: %s", e)
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -101,7 +100,6 @@ async def get_admin_log(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error getting specific admin log: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error getting specific admin log: %s", e)
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

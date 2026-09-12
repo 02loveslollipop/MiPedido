@@ -23,7 +23,6 @@ class RestaurantCreate(RestaurantBase):
             ObjectId: lambda v: str(v),  # Convert ObjectId to string for JSON serialization
             HttpUrl: lambda v: str(v)  # Convert HttpUrl to string for JSON serialization
         }
-    pass
 
 class RestaurantInDB(RestaurantBase):
     """Model representing how restaurant is stored in database"""

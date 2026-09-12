@@ -46,7 +46,6 @@ async def get_redis_search_client() -> redis_asyncio.Redis:
             redis_client = redis_asyncio.Redis(
                 host=REDIS_HOST,
                 port=REDIS_PORT,
-                #db=REDIS_DB,
                 username=REDIS_USERNAME,
                 decode_responses=REDIS_DECODE_RESPONSES,
                 password=REDIS_PASSWORD,
@@ -58,13 +57,13 @@ async def get_redis_search_client() -> redis_asyncio.Redis:
             await redis_client.ping()  # Will raise an error if authentication fails
             logging.info("Successfully connected to Redis")
         except AuthenticationError as e:
-            logging.error(f"Redis authentication error: {e}")
+            logging.exception("Redis authentication error: %s", e)
             raise
         except ResponseError as e:
-            logging.error(f"Redis response error: {e}")
+            logging.exception("Redis response error: %s", e)
             raise
         except Exception as e:
-            logging.error(f"Redis connection error: {e}")
+            logging.exception("Redis connection error: %s", e)
             raise
     return redis_client
 
