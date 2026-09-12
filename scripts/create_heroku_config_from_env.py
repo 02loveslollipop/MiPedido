@@ -26,33 +26,25 @@ HEROKU_API = "https://api.heroku.com"
 HEADERS = {"Accept": "application/vnd.heroku+json; version=3"}
 
 
-def validate_safe_path(file_path: str) -> str:
-    """Validate and resolve path to prevent directory traversal outside allowed roots."""
-    resolved = os.path.abspath(os.path.realpath(file_path))
-    allowed_roots = [
-        os.path.abspath(os.path.realpath(os.getcwd())),
-        os.path.abspath(os.path.realpath(tempfile.gettempdir())),
-    ]
-    if "RUNNER_TEMP" in os.environ:
-        allowed_roots.append(
-            os.path.abspath(os.path.realpath(os.environ["RUNNER_TEMP"]))
-        )
-
-    if not any(
-        os.path.commonpath([resolved, root]) == root for root in allowed_roots
-    ):
-        raise SystemExit(
-            f"Invalid file path: '{file_path}' must reside in repository or temp directory."
-        )
-    return resolved
-
-
 def load_env(path: str) -> Dict[str, str]:
-    safe_path = validate_safe_path(path)
-    if not os.path.isfile(safe_path):
+    if ".." in path:
+        raise SystemExit(f"Invalid path: directory traversal not allowed in '{path}'.")
+
+    abs_path = os.path.abspath(path)
+    allowed_root = os.path.abspath(os.getcwd())
+    temp_root = os.path.abspath(os.environ.get("RUNNER_TEMP", tempfile.gettempdir()))
+
+    if not abs_path.startswith(allowed_root):
+        if not abs_path.startswith(temp_root):
+            raise SystemExit(
+                f"Access denied: path '{path}' is outside allowed directories."
+            )
+
+    if not os.path.isfile(abs_path):
         raise SystemExit(f"Env file not found at {path}")
+
     env: Dict[str, str] = {}
-    with open(safe_path, "r", encoding="utf-8") as f:
+    with open(abs_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -113,10 +105,9 @@ def main() -> None:
         print("HEROKU_API_KEY environment variable is required", file=sys.stderr)
         sys.exit(2)
 
-    safe_path = validate_safe_path(args.env_file)
     env: Dict[str, str] = {}
-    if os.path.isfile(safe_path):
-        env = load_env(safe_path)
+    if os.path.exists(args.env_file):
+        env = load_env(args.env_file)
     elif args.mongo_uri and args.mongo_uri.strip():
         # Env file absent but mongo-uri override specified
         pass
