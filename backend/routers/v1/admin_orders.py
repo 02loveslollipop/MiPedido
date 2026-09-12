@@ -13,7 +13,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/", response_model=List[Dict[str, str]])
+@router.get(
+    "/",
+    response_model=List[Dict[str, str]],
+    responses={
+        500: {"description": "Internal server error"}
+    }
+)
 async def get_orders(
     skip: int = 0,
     limit: int = 100,
@@ -26,7 +32,6 @@ async def get_orders(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin order operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin order operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

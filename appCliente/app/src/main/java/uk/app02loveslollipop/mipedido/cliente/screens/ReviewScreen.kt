@@ -12,6 +12,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import kotlinx.coroutines.launch
+import uk.app02loveslollipop.mipedido.cliente.api.ApiConnector
 import uk.app02loveslollipop.mipedido.cliente.components.NavBar
 import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
 
@@ -38,6 +39,30 @@ fun ReviewScreen(
         onConfirmNavigation = { navigateToRestaurants() }
     )
 
+    fun submitRating() {
+        setIsSubmitting(true)
+        errorMessage = null
+        coroutineScope.launch {
+            try {
+                val apiConnector = ApiConnector.getInstance()
+                val result = apiConnector.submitReview(restaurantId, rating)
+                result.fold(
+                    onSuccess = {
+                        // On success, return to main menu
+                        navigateToRestaurants()
+                    },
+                    onFailure = { throwable ->
+                        errorMessage = throwable.message ?: "No se pudo enviar la reseña"
+                    }
+                )
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Error desconocido"
+            } finally {
+                setIsSubmitting(false)
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             NavBar(
@@ -60,68 +85,85 @@ fun ReviewScreen(
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                for (i in 1..5) {
-                    IconButton(onClick = { rating = i }) {
-                        Icon(
-                            imageVector = Icons.Default.Star,
-                            contentDescription = "$i estrellas",
-                            tint = if (i <= rating) Color(0xFFFFC107) else Color.LightGray,
-                            modifier = Modifier.size(48.dp)
-                        )
-                    }
-                }
-            }
+
+            StarRatingRow(
+                rating = rating,
+                onRatingSelected = { rating = it }
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
-            Button(
-                onClick = {
-                    setIsSubmitting(true)
-                    errorMessage = null
-                    coroutineScope.launch {
-                        try {
-                            val apiConnector = uk.app02loveslollipop.mipedido.cliente.api.ApiConnector.getInstance()
-                            val result = apiConnector.submitReview(restaurantId, rating)
-                            result.fold(
-                                onSuccess = {
-                                    // On success, return to main menu
-                                    navigateToRestaurants()
-                                },
-                                onFailure = { throwable ->
-                                    errorMessage = throwable.message ?: "No se pudo enviar la reseña"
-                                }
-                            )
-                        } catch (e: Exception) {
-                            errorMessage = e.message ?: "Error desconocido"
-                        } finally {
-                            setIsSubmitting(false)
-                        }
-                    }
-                },
+
+            ReviewSubmitButton(
+                isSubmitting = isSubmitting,
                 enabled = rating > 0 && !isSubmitting,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                if (isSubmitting) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                } else {
-                    Text("Enviar Review")
-                }
-            }
+                onSubmit = { submitRating() }
+            )
+
             if (errorMessage != null) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = errorMessage!!,
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                ReviewErrorMessage(message = errorMessage!!)
             }
         }
     }
     
     // Include the confirmation dialog
     BackConfirmationDialogContent()
+}
+
+@Composable
+private fun StarRatingRow(
+    rating: Int,
+    onRatingSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        for (i in 1..5) {
+            IconButton(onClick = { onRatingSelected(i) }) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "$i estrellas",
+                    tint = if (i <= rating) Color(0xFFFFC107) else Color.LightGray,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReviewSubmitButton(
+    isSubmitting: Boolean,
+    enabled: Boolean,
+    onSubmit: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onSubmit,
+        enabled = enabled,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        if (isSubmitting) {
+            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+        } else {
+            Text("Enviar Review")
+        }
+    }
+}
+
+@Composable
+private fun ReviewErrorMessage(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = message,
+        color = Color.Red,
+        style = MaterialTheme.typography.bodyMedium,
+        textAlign = TextAlign.Center,
+        modifier = modifier.fillMaxWidth()
+    )
 }
