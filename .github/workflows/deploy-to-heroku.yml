@@ -87,7 +87,7 @@ jobs:
 
       - name: Install Heroku CLI
         run: |
-          curl -fsSL https://cli-assets.heroku.com/install.sh -o /tmp/install-heroku.sh
+          curl --proto '=https' --proto-redir '=https' -fsSL https://cli-assets.heroku.com/install.sh -o /tmp/install-heroku.sh
           echo "832fabb395cc3d75200d6dee18a7242db9e43ca2abcf0e1983adbe2ba8792b9a  /tmp/install-heroku.sh" | sha256sum --check
           sh /tmp/install-heroku.sh
           rm -f /tmp/install-heroku.sh
