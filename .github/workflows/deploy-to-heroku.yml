@@ -4,6 +4,12 @@ on:
   push:
     branches: [ main ]
 
+# Serialize deploys: overlapping runs (e.g. rapid consecutive merges) raced on
+# the same app images and transiently failed the one-off dyno checks
+concurrency:
+  group: deploy-to-heroku
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
