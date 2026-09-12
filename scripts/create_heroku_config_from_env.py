@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import tempfile
 from typing import Dict
 
 import requests
@@ -25,11 +26,33 @@ HEROKU_API = "https://api.heroku.com"
 HEADERS = {"Accept": "application/vnd.heroku+json; version=3"}
 
 
+def validate_safe_path(file_path: str) -> str:
+    """Validate and resolve path to prevent directory traversal outside allowed roots."""
+    resolved = os.path.abspath(os.path.realpath(file_path))
+    allowed_roots = [
+        os.path.abspath(os.path.realpath(os.getcwd())),
+        os.path.abspath(os.path.realpath(tempfile.gettempdir())),
+    ]
+    if "RUNNER_TEMP" in os.environ:
+        allowed_roots.append(
+            os.path.abspath(os.path.realpath(os.environ["RUNNER_TEMP"]))
+        )
+
+    if not any(
+        os.path.commonpath([resolved, root]) == root for root in allowed_roots
+    ):
+        raise SystemExit(
+            f"Invalid file path: '{file_path}' must reside in repository or temp directory."
+        )
+    return resolved
+
+
 def load_env(path: str) -> Dict[str, str]:
-    env: Dict[str, str] = {}
-    if not os.path.exists(path):
+    safe_path = validate_safe_path(path)
+    if not os.path.isfile(safe_path):
         raise SystemExit(f"Env file not found at {path}")
-    with open(path, "r", encoding="utf-8") as f:
+    env: Dict[str, str] = {}
+    with open(safe_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -90,9 +113,10 @@ def main() -> None:
         print("HEROKU_API_KEY environment variable is required", file=sys.stderr)
         sys.exit(2)
 
+    safe_path = validate_safe_path(args.env_file)
     env: Dict[str, str] = {}
-    if os.path.exists(args.env_file):
-        env = load_env(args.env_file)
+    if os.path.isfile(safe_path):
+        env = load_env(safe_path)
     elif args.mongo_uri and args.mongo_uri.strip():
         # Env file absent but mongo-uri override specified
         pass
