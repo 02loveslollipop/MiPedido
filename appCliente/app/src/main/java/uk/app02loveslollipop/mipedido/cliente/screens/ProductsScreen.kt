@@ -26,6 +26,8 @@ import uk.app02loveslollipop.mipedido.cliente.components.ProductCard
 import uk.app02loveslollipop.mipedido.cliente.models.Product
 import uk.app02loveslollipop.mipedido.cliente.models.OrderModificationRequest
 
+private const val DEFAULT_ERROR_MESSAGE = "Error desconocido"
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun ProductsScreen(
@@ -105,7 +107,7 @@ fun ProductsScreen(
                     }
                 )
             } catch (e: Exception) {
-                error = e.message ?: "Error desconocido"
+                error = e.message ?: DEFAULT_ERROR_MESSAGE
             } finally {
                 isLoading = false
             }
@@ -154,7 +156,7 @@ fun ProductsScreen(
                     }
                 )
             } catch (e: Exception) {
-                searchError = e.message ?: "Error desconocido"
+                searchError = e.message ?: DEFAULT_ERROR_MESSAGE
                 searchResults = emptyList()
             } finally {
                 isSearching = false
@@ -278,7 +280,7 @@ fun ProductsScreen(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = searchError ?: "Error desconocido",
+                                    text = searchError ?: DEFAULT_ERROR_MESSAGE,
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.error
@@ -341,7 +343,7 @@ fun ProductsScreen(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = error ?: "Error desconocido",
+                                    text = error ?: DEFAULT_ERROR_MESSAGE,
                                     style = MaterialTheme.typography.bodyLarge,
                                     textAlign = TextAlign.Center,
                                     color = MaterialTheme.colorScheme.error

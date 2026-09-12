@@ -1,7 +1,7 @@
 from bson import ObjectId
 from database import db
 from models.admin_log import AdminLogCreate, AdminLogInDB, AdminLog, AdminLogFilter
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import traceback
 
@@ -39,6 +39,42 @@ class AdminLogRepository:
             return None
     
     @classmethod
+    def _build_filter_query(cls, filters: Optional[AdminLogFilter] = None) -> Dict[str, Any]:
+        """
+        Build MongoDB query dictionary from AdminLogFilter
+        
+        Args:
+            filters: Optional filters to apply
+            
+        Returns:
+            MongoDB query filter dictionary
+        """
+        if not filters:
+            return {}
+            
+        query: Dict[str, Any] = {}
+        if filters.admin_id:
+            query["admin_id"] = filters.admin_id
+        if filters.admin_username:
+            query["admin_username"] = filters.admin_username
+        if filters.operation:
+            query["operation"] = filters.operation
+        if filters.target_type:
+            query["target_type"] = filters.target_type
+        if filters.target_id:
+            query["target_id"] = filters.target_id
+        
+        date_query: Dict[str, Any] = {}
+        if filters.from_date:
+            date_query["$gte"] = filters.from_date
+        if filters.to_date:
+            date_query["$lte"] = filters.to_date
+        if date_query:
+            query["timestamp"] = date_query
+            
+        return query
+
+    @classmethod
     async def get_logs(cls, filters: Optional[AdminLogFilter] = None, 
                       skip: int = 0, limit: int = 100) -> List[AdminLog]:
         """
@@ -53,35 +89,7 @@ class AdminLogRepository:
             List of matching log entries
         """
         try:
-            # Build query from filters
-            query = {}
-            
-            if filters:
-                if filters.admin_id:
-                    query["admin_id"] = filters.admin_id
-                
-                if filters.admin_username:
-                    query["admin_username"] = filters.admin_username
-                
-                if filters.operation:
-                    query["operation"] = filters.operation
-                
-                if filters.target_type:
-                    query["target_type"] = filters.target_type
-                
-                if filters.target_id:
-                    query["target_id"] = filters.target_id
-                
-                # Date range filtering
-                date_query = {}
-                if filters.from_date:
-                    date_query["$gte"] = filters.from_date
-                
-                if filters.to_date:
-                    date_query["$lte"] = filters.to_date
-                
-                if date_query:
-                    query["timestamp"] = date_query
+            query = cls._build_filter_query(filters)
             
             # Execute query
             cursor = cls.collection.find(query).sort("timestamp", -1).skip(skip).limit(limit)
@@ -149,35 +157,7 @@ class AdminLogRepository:
             Number of matching log entries
         """
         try:
-            # Build query from filters
-            query = {}
-            
-            if filters:
-                if filters.admin_id:
-                    query["admin_id"] = filters.admin_id
-                
-                if filters.admin_username:
-                    query["admin_username"] = filters.admin_username
-                
-                if filters.operation:
-                    query["operation"] = filters.operation
-                
-                if filters.target_type:
-                    query["target_type"] = filters.target_type
-                
-                if filters.target_id:
-                    query["target_id"] = filters.target_id
-                
-                # Date range filtering
-                date_query = {}
-                if filters.from_date:
-                    date_query["$gte"] = filters.from_date
-                
-                if filters.to_date:
-                    date_query["$lte"] = filters.to_date
-                
-                if date_query:
-                    query["timestamp"] = date_query
+            query = cls._build_filter_query(filters)
             
             # Count matching documents
             return await cls.collection.count_documents(query)

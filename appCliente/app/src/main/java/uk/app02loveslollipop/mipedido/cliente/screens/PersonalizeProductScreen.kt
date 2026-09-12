@@ -56,25 +56,12 @@ fun PersonalizeProductScreen(
     BackHandler(onBack = { handleBackPress() })
 
     if (showExitDialog) {
-        AlertDialog(
-            onDismissRequest = { showExitDialog = false },
-            title = { Text("¿Desea salir?") },
-            text = { Text("Si sale ahora, perderá los cambios realizados en este producto.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showExitDialog = false
-                        onNavigateBack()
-                    }
-                ) {
-                    Text("Salir")
-                }
+        PersonalizeExitDialog(
+            onConfirm = {
+                showExitDialog = false
+                onNavigateBack()
             },
-            dismissButton = {
-                TextButton(onClick = { showExitDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
+            onDismiss = { showExitDialog = false }
         )
     }
 
@@ -87,49 +74,20 @@ fun PersonalizeProductScreen(
             )
         },
         bottomBar = {
-            BottomAppBar(
-                actions = {
-                    // Quantity controls
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        IconButton(
-                            onClick = { 
-                                if (currentQuantity <= 1) {
-                                    currentQuantity = 0
-                                    onQuantityChange(0)
-                                } else {
-                                    currentQuantity--
-                                }
-                            }
-                        ) {
-                            Icon(
-                                if (currentQuantity <= 1) Icons.Default.Delete else minus,
-                                contentDescription = if (currentQuantity <= 1) "Eliminar" else "Reducir cantidad"
-                            )
-                        }
-                        
-                        Text(
-                            text = currentQuantity.toString(),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        
-                        IconButton(onClick = { currentQuantity++ }) {
-                            Icon(Icons.Default.Add, contentDescription = "Aumentar cantidad")
-                        }
+            PersonalizeBottomBar(
+                currentQuantity = currentQuantity,
+                onDecreaseQuantity = {
+                    if (currentQuantity <= 1) {
+                        currentQuantity = 0
+                        onQuantityChange(0)
+                    } else {
+                        currentQuantity--
                     }
                 },
-                floatingActionButton = {
-                    Button(
-                        onClick = { 
-                            onQuantityChange(currentQuantity)
-                            onConfirm(selectedIngredients.toList()) 
-                        },
-                        enabled = currentQuantity > 0
-                    ) {
-                        Text("Agregar al carrito")
-                    }
+                onIncreaseQuantity = { currentQuantity++ },
+                onConfirm = {
+                    onQuantityChange(currentQuantity)
+                    onConfirm(selectedIngredients.toList())
                 }
             )
         }
@@ -189,29 +147,106 @@ fun PersonalizeProductScreen(
             }
 
             items(product.ingredients) { ingredient ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = ingredient in selectedIngredients,
-                        onCheckedChange = { checked ->
-                            if (checked) {
-                                selectedIngredients.add(ingredient)
-                            } else {
-                                selectedIngredients.remove(ingredient)
-                            }
+                IngredientCheckboxRow(
+                    ingredient = ingredient,
+                    isSelected = ingredient in selectedIngredients,
+                    onCheckedChange = { checked ->
+                        if (checked) {
+                            selectedIngredients.add(ingredient)
+                        } else {
+                            selectedIngredients.remove(ingredient)
                         }
-                    )
-                    Text(
-                        text = ingredient,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = 8.dp)
-                    )
-                }
+                    }
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun PersonalizeExitDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("¿Desea salir?") },
+        text = { Text("Si sale ahora, perderá los cambios realizados en este producto.") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Salir")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+private fun PersonalizeBottomBar(
+    currentQuantity: Int,
+    onIncreaseQuantity: () -> Unit,
+    onDecreaseQuantity: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    BottomAppBar(
+        actions = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconButton(onClick = onDecreaseQuantity) {
+                    Icon(
+                        if (currentQuantity <= 1) Icons.Default.Delete else minus,
+                        contentDescription = if (currentQuantity <= 1) "Eliminar" else "Reducir cantidad"
+                    )
+                }
+                
+                Text(
+                    text = currentQuantity.toString(),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                
+                IconButton(onClick = onIncreaseQuantity) {
+                    Icon(Icons.Default.Add, contentDescription = "Aumentar cantidad")
+                }
+            }
+        },
+        floatingActionButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = currentQuantity > 0
+            ) {
+                Text("Agregar al carrito")
+            }
+        }
+    )
+}
+
+@Composable
+private fun IngredientCheckboxRow(
+    ingredient: String,
+    isSelected: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = isSelected,
+            onCheckedChange = onCheckedChange
+        )
+        Text(
+            text = ingredient,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }

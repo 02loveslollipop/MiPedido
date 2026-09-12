@@ -79,14 +79,18 @@ fun CheckoutQRScreen(
 
     DisposableEffect(orderId) {
         val listener = object : WebSocketConnector.WebSocketListener {
-            override fun onWelcome(orderId: String, time: String) {}
+            override fun onWelcome(orderId: String, time: String) {
+                // No action needed on welcome event in checkout QR screen
+            }
             override fun onOrderCompleted(orderId: String, restaurantId: String, timestamp: String) {
                 orderCompleted = true
             }
             override fun onError(message: String) {
                 errorMessage = message
             }
-            override fun onClosed(reason: String) {}
+            override fun onClosed(reason: String) {
+                // Normal closure; no cleanup needed here as onDispose handles disconnection
+            }
             override fun onConnectionFailure(message: String) {
                 errorMessage = message
             }

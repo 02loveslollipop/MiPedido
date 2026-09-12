@@ -13,7 +13,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/", response_model=Dict)
+@router.get(
+    "/",
+    response_model=Dict,
+    responses={
+        500: {"description": "Internal server error"}
+    }
+)
 async def get_admin_logs(
     admin_id: str = None,
     admin_username: str = None,
@@ -76,7 +82,14 @@ async def get_admin_logs(
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.get("/{log_id}", response_model=AdminLog)
+@router.get(
+    "/{log_id}",
+    response_model=AdminLog,
+    responses={
+        404: {"description": "Log entry not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def get_admin_log(
     log_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)

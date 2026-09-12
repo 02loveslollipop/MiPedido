@@ -28,6 +28,8 @@ import uk.app02loveslollipop.mipedido.cliente.icons.minus
 import java.text.NumberFormat
 import java.util.Locale
 
+private const val DEFAULT_ERROR_MESSAGE = "Error desconocido"
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun CartScreen(
@@ -81,7 +83,7 @@ fun CartScreen(
                 )
             } catch (e: Exception) {
                 Log.e("CartScreen", "Exception loading cart items: ${e.message}")
-                error = e.message ?: "Error desconocido"
+                error = e.message ?: DEFAULT_ERROR_MESSAGE
             } finally {
                 isLoading = false
             }
@@ -111,7 +113,7 @@ fun CartScreen(
                 )
             } catch (e: Exception) {
                 Log.e("CartScreen", "Exception modifying item: ${e.message}")
-                error = e.message ?: "Error desconocido"
+                error = e.message ?: DEFAULT_ERROR_MESSAGE
             }
         }
     }
@@ -152,168 +154,27 @@ fun CartScreen(
                 .padding(paddingValues)
                 .pullRefresh(pullRefreshState)
         ) {
-            if (error != null) {
-                // Error state
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = error ?: "Error desconocido",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Button(onClick = { loadCartItems() }) {
-                        Text("Reintentar")
-                    }
-                }
-            } else if (cartItems.isEmpty() && !isLoading) {
-                // Empty cart state
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Tu carrito está vacío",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text(
-                        text = "Agrega productos desde el menú para realizar tu pedido",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
+            when {
+                error != null -> {
+                    CartErrorState(
+                        errorMessage = error ?: DEFAULT_ERROR_MESSAGE,
+                        onRetry = { loadCartItems() }
                     )
                 }
-            } else {
-                // Cart content
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    // Order summary card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = "Resumen del Pedido",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // Items list
-                            LazyColumn(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                            ) {
-                                items(cartItems) { item ->
-                                    CartItemRow(
-                                        item = item,
-                                        currencyFormatter = currencyFormatter,
-                                        onIncreaseQuantity = { modifyItemQuantity(item, item.quantity + 1) },
-                                        onDecreaseQuantity = { modifyItemQuantity(item, item.quantity - 1) }
-                                    )
-                                }
-                            }
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            // Summary footer
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    "Total Items:",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    "$totalItems",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            // Add subtotal row here
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    "Subtotal:",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    currencyFormatter.format(totalPrice),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            HorizontalDivider()
-                            
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    "Total:",
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    currencyFormatter.format(totalPrice),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            
-                            // Add space before the button
-                            Spacer(modifier = Modifier.height(24.dp))
-                            
-                            // Update checkout button to use handleCheckout
-                            Button(
-                                onClick = { handleCheckout() },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ShoppingCart,
-                                    contentDescription = null,
-                                    modifier = Modifier.padding(end = 8.dp)
-                                )
-                                Text(if (isCreator) "Finalizar Pedido" else "Agregar a Pedido")
-                            }
-                        }
-                    }
+                cartItems.isEmpty() && !isLoading -> {
+                    CartEmptyState()
+                }
+                else -> {
+                    CartOrderSummary(
+                        cartItems = cartItems,
+                        totalPrice = totalPrice,
+                        totalItems = totalItems,
+                        currencyFormatter = currencyFormatter,
+                        isCreator = isCreator,
+                        onIncreaseQuantity = { item -> modifyItemQuantity(item, item.quantity + 1) },
+                        onDecreaseQuantity = { item -> modifyItemQuantity(item, item.quantity - 1) },
+                        onCheckout = { handleCheckout() }
+                    )
                 }
             }
             
@@ -403,6 +264,183 @@ private fun CartItemRow(
                         Icons.Default.Add,
                         contentDescription = "Aumentar cantidad"
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CartErrorState(
+    errorMessage: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = errorMessage,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.error
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Button(onClick = onRetry) {
+            Text("Reintentar")
+        }
+    }
+}
+
+@Composable
+private fun CartEmptyState(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Tu carrito está vacío",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "Agrega productos desde el menú para realizar tu pedido",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun CartOrderSummary(
+    cartItems: List<OrderItem>,
+    totalPrice: Double,
+    totalItems: Int,
+    currencyFormatter: NumberFormat,
+    isCreator: Boolean,
+    onIncreaseQuantity: (OrderItem) -> Unit,
+    onDecreaseQuantity: (OrderItem) -> Unit,
+    onCheckout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "Resumen del Pedido",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                ) {
+                    items(cartItems) { item ->
+                        CartItemRow(
+                            item = item,
+                            currencyFormatter = currencyFormatter,
+                            onIncreaseQuantity = { onIncreaseQuantity(item) },
+                            onDecreaseQuantity = { onDecreaseQuantity(item) }
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Total Items:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        "$totalItems",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Subtotal:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        currencyFormatter.format(totalPrice),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Total:",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        currencyFormatter.format(totalPrice),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Button(
+                    onClick = onCheckout,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = null,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(if (isCreator) "Finalizar Pedido" else "Agregar a Pedido")
                 }
             }
         }

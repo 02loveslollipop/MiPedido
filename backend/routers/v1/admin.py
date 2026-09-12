@@ -12,7 +12,14 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/login", response_model=AdminToken)
+@router.post(
+    "/login",
+    response_model=AdminToken,
+    responses={
+        401: {"description": "Invalid admin credentials"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_login(admin_auth: AdminAuth):
     """
     Admin login endpoint
@@ -38,7 +45,14 @@ async def admin_login(admin_auth: AdminAuth):
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.get("/me", response_model=Admin)
+@router.get(
+    "/me",
+    response_model=Admin,
+    responses={
+        404: {"description": "Admin not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def get_current_admin_info(current_admin: AdminTokenData = Depends(get_current_admin)):
     """
     Get current admin information
@@ -62,7 +76,15 @@ async def get_current_admin_info(current_admin: AdminTokenData = Depends(get_cur
         raise HTTPException(status_code=500, detail=error_detail)
 
 # Admin management endpoints
-@router.post("/", response_model=Admin, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=Admin,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"description": "Bad request"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def create_admin(
     admin: AdminAuth,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -95,7 +117,13 @@ async def create_admin(
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.get("/", response_model=List[Admin])
+@router.get(
+    "/",
+    response_model=List[Admin],
+    responses={
+        500: {"description": "Internal server error"}
+    }
+)
 async def list_admins(current_admin: AdminTokenData = Depends(get_current_admin)):
     """
     List all admin users
@@ -109,7 +137,15 @@ async def list_admins(current_admin: AdminTokenData = Depends(get_current_admin)
         error_detail = f"Error: {str(e)}\n{traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{admin_id}", response_model=Admin)
+@router.put(
+    "/{admin_id}",
+    response_model=Admin,
+    responses={
+        400: {"description": "Bad request"},
+        404: {"description": "Admin not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def update_admin(
     admin_id: str,
     admin_update: AdminUpdate,

@@ -15,7 +15,16 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/restaurant/{restaurant_id}", response_model=List[Dict])
+PRODUCT_NOT_FOUND = "Product not found"
+
+@router.get(
+    "/restaurant/{restaurant_id}",
+    response_model=List[Dict],
+    responses={
+        404: {"description": "Restaurant not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_list_products(
     restaurant_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -36,12 +45,19 @@ async def admin_list_products(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin product operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin product operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.post("/", response_model=Product, status_code=201)
+@router.post(
+    "/",
+    response_model=Product,
+    status_code=201,
+    responses={
+        404: {"description": "Restaurant not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_create_product(
     product: ProductCreate,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -77,12 +93,18 @@ async def admin_create_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin product operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin product operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.get("/{product_id}", response_model=Dict)
+@router.get(
+    "/{product_id}",
+    response_model=Dict,
+    responses={
+        404: {"description": PRODUCT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_get_product(
     product_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -93,17 +115,23 @@ async def admin_get_product(
     try:
         product = await ProductRepository.get_product(product_id)
         if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND)
         return product
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin product operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin product operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{product_id}", response_model=Dict)
+@router.put(
+    "/{product_id}",
+    response_model=Dict,
+    responses={
+        404: {"description": PRODUCT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_update_product(
     product_id: str,
     product_data: ProductUpdate,
@@ -116,7 +144,7 @@ async def admin_update_product(
         # First check if product exists
         existing_product = await ProductRepository.get_product(product_id)
         if not existing_product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND)
         
         # Build update data dictionary
         update_data = {}
@@ -161,12 +189,18 @@ async def admin_update_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin product operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin product operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.delete("/{product_id}", status_code=204)
+@router.delete(
+    "/{product_id}",
+    status_code=204,
+    responses={
+        404: {"description": PRODUCT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_delete_product(
     product_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -179,7 +213,7 @@ async def admin_delete_product(
         # Check if product exists
         existing_product = await ProductRepository.get_product(product_id)
         if not existing_product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND)
         
         # Save product info for logging
         product_name = existing_product.get("name", "")
@@ -208,12 +242,18 @@ async def admin_delete_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin product operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin product operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{product_id}/enable", status_code=200)
+@router.put(
+    "/{product_id}/enable",
+    status_code=200,
+    responses={
+        404: {"description": PRODUCT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_enable_product(
     product_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -225,7 +265,7 @@ async def admin_enable_product(
         # Find the product to get its restaurant_id
         product = await ProductRepository.get_product(product_id)
         if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND)
             
         restaurant_id = product.get("restaurant_id")
         product_name = product.get("name", "")
@@ -253,12 +293,18 @@ async def admin_enable_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin product operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin product operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{product_id}/disable", status_code=200)
+@router.put(
+    "/{product_id}/disable",
+    status_code=200,
+    responses={
+        404: {"description": PRODUCT_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_disable_product(
     product_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -270,7 +316,7 @@ async def admin_disable_product(
         # Find the product to get its restaurant_id
         product = await ProductRepository.get_product(product_id)
         if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            raise HTTPException(status_code=404, detail=PRODUCT_NOT_FOUND)
             
         restaurant_id = product.get("restaurant_id")
         product_name = product.get("name", "")
@@ -298,7 +344,6 @@ async def admin_disable_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin product operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error in admin product operation: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
