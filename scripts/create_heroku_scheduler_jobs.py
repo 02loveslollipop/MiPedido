@@ -37,6 +37,11 @@ from typing import Any, Dict, List, Optional
 import requests
 import yaml
 
+try:
+    from scripts.path_utils import validate_safe_path
+except ImportError:
+    from path_utils import validate_safe_path
+
 HEROKU_API = "https://api.heroku.com"
 HEADERS = {"Accept": "application/vnd.heroku+json; version=3"}
 
@@ -45,6 +50,7 @@ def heroku_request(method: str, path: str, token: str, **kwargs) -> requests.Res
     headers = kwargs.pop("headers", {})
     headers.update(HEADERS)
     headers.update({"Authorization": f"Bearer {token}"})
+    kwargs.setdefault("timeout", 30)
     return requests.request(method, HEROKU_API + path, headers=headers, **kwargs)
 
 
@@ -102,7 +108,7 @@ def post_job_to_scheduler_api(scheduler_api_url: str, job: Dict[str, Any]) -> bo
     """
     try:
         print(f"Posting job to {scheduler_api_url}: {job}")
-        resp = requests.post(scheduler_api_url.rstrip("/") + "/jobs", json=job)
+        resp = requests.post(scheduler_api_url.rstrip("/") + "/jobs", json=job, timeout=30)
         if resp.status_code >= 200 and resp.status_code < 300:
             print("Job created ok")
             return True
@@ -114,7 +120,8 @@ def post_job_to_scheduler_api(scheduler_api_url: str, job: Dict[str, Any]) -> bo
 
 
 def load_jobs_file(path: str) -> List[Dict[str, Any]]:
-    with open(path, "r", encoding="utf-8") as f:
+    abs_path = validate_safe_path(path, description="Jobs file")
+    with open(abs_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if not isinstance(data, list):
         raise SystemExit("Jobs file must be a YAML list of job objects")

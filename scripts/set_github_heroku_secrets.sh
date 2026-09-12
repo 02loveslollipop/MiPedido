@@ -27,7 +27,7 @@ fi
 # Loop through required secrets and set them (read from env or ask)
 for s in "${REQUIRED_SECRETS[@]}"; do
   val=""
-  if [ -n "${!s-}" ]; then
+  if [[ -n "${!s-}" ]]; then
     val="${!s}"
   else
     read -r -p "Enter value for $s: " val

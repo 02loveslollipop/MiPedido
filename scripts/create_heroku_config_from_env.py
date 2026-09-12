@@ -17,31 +17,21 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-import tempfile
 from typing import Dict
 
 import requests
+
+try:
+    from scripts.path_utils import validate_safe_path
+except ImportError:
+    from path_utils import validate_safe_path
 
 HEROKU_API = "https://api.heroku.com"
 HEADERS = {"Accept": "application/vnd.heroku+json; version=3"}
 
 
 def load_env(path: str) -> Dict[str, str]:
-    if ".." in path:
-        raise SystemExit(f"Invalid path: directory traversal not allowed in '{path}'.")
-
-    abs_path = os.path.abspath(path)
-    allowed_root = os.path.abspath(os.getcwd())
-    temp_root = os.path.abspath(os.environ.get("RUNNER_TEMP", tempfile.gettempdir()))
-
-    if not abs_path.startswith(allowed_root):
-        if not abs_path.startswith(temp_root):
-            raise SystemExit(
-                f"Access denied: path '{path}' is outside allowed directories."
-            )
-
-    if not os.path.isfile(abs_path):
-        raise SystemExit(f"Env file not found at {path}")
+    abs_path = validate_safe_path(path, description="Env file")
 
     env: Dict[str, str] = {}
     with open(abs_path, "r", encoding="utf-8") as f:
