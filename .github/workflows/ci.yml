@@ -42,7 +42,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          pip install --only-binary :all: -r backend/requirements.txt
+          pip install --only-binary :all: --require-hashes -r backend/requirements.lock
       - name: Wait for MongoDB
         run: |
           python - <<PY

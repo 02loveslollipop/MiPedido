@@ -5,3 +5,4 @@ redisIndexerCronJob/.env
 redisIndexerCronJob/cmd/main/.env
 __pycache__/
 *.pyc
+.zcode/

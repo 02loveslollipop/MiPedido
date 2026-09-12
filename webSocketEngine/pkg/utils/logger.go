@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -61,6 +62,9 @@ func LogNon2xxResponses() gin.HandlerFunc {
 
 		// Log non-2xx responses
 		if writer.statusCode < 200 || writer.statusCode >= 300 {
+			sanitizedPath := SanitizeLog(c.Request.URL.Path)
+			sanitizedQuery := SanitizeLog(fmt.Sprintf("%v", c.Request.URL.Query()))
+
 			// Format the response body as JSON if possible
 			var prettyJSON bytes.Buffer
 			if err := json.Indent(&prettyJSON, writer.body.Bytes(), "", "  "); err == nil {
@@ -73,34 +77,61 @@ func LogNon2xxResponses() gin.HandlerFunc {
 					}
 				}
 
-				log.Printf("HTTP Error [%d] - %s %s - Duration: %v\nRequest: %s\nResponse: %s\nQuery Params: %v",
+				sanitizedReqBody := SanitizeLog(requestBodyFormatted)
+				sanitizedRespBody := SanitizeLog(prettyJSON.String())
+
+				log.Printf("HTTP Error [%d] - %s %s - Duration: %v\nRequest: %s\nResponse: %s\nQuery Params: %s",
 					writer.statusCode,
 					c.Request.Method,
-					c.Request.URL.Path,
+					sanitizedPath,
 					duration,
-					requestBodyFormatted,
-					prettyJSON.String(),
-					c.Request.URL.Query())
+					sanitizedReqBody,
+					sanitizedRespBody,
+					sanitizedQuery)
 			} else {
 				// If JSON formatting fails, log the raw response
-				log.Printf("HTTP Error [%d] - %s %s - Duration: %v\nRequest: %s\nResponse: %s\nQuery Params: %v",
+				sanitizedReqBody := SanitizeLog(requestBody)
+				sanitizedRespBody := SanitizeLog(writer.body.String())
+
+				log.Printf("HTTP Error [%d] - %s %s - Duration: %v\nRequest: %s\nResponse: %s\nQuery Params: %s",
 					writer.statusCode,
 					c.Request.Method,
-					c.Request.URL.Path,
+					sanitizedPath,
 					duration,
-					requestBody,
-					writer.body.String(),
-					c.Request.URL.Query())
+					sanitizedReqBody,
+					sanitizedRespBody,
+					sanitizedQuery)
 			}
 		}
 	}
 }
 
+// SanitizeLog removes CR and LF characters to prevent log injection (CWE-117).
+func SanitizeLog(s string) string {
+	s = strings.ReplaceAll(s, "\r", "\\r")
+	s = strings.ReplaceAll(s, "\n", "\\n")
+	return s
+}
+
 // LogRequest is a helper function to log request data
 func LogRequest(c *gin.Context, message string, data ...interface{}) {
-	requestInfo := fmt.Sprintf("[%s %s] %s", c.Request.Method, c.Request.URL.Path, message)
+	method := ""
+	path := ""
+	if c != nil && c.Request != nil {
+		method = c.Request.Method
+		if c.Request.URL != nil {
+			path = c.Request.URL.Path
+		}
+	}
+	sanitizedPath := SanitizeLog(path)
+	sanitizedMessage := SanitizeLog(message)
+	requestInfo := fmt.Sprintf("[%s %s] %s", method, sanitizedPath, sanitizedMessage)
 	if len(data) > 0 {
-		log.Printf("%s - %v", requestInfo, data)
+		sanitizedData := make([]interface{}, len(data))
+		for i, d := range data {
+			sanitizedData[i] = SanitizeLog(fmt.Sprintf("%v", d))
+		}
+		log.Printf("%s - %v", requestInfo, sanitizedData)
 	} else {
 		log.Printf("%s", requestInfo)
 	}
