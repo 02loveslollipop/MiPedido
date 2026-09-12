@@ -16,7 +16,7 @@ jobs:
     name: Lint GitHub Actions workflows
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run actionlint
         run: |
           docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color .github/workflows/*.yml .github/workflow-templates/*.yml
@@ -35,9 +35,9 @@ jobs:
       MONGODB_URL: mongodb://localhost:27017
       DATABASE_NAME: test_mipedido
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Install dependencies

@@ -23,7 +23,7 @@ jobs:
           #   dockerfile: DockerFile
           #   process: web
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set HEROKU_APP env from secrets
         env:
@@ -34,7 +34,7 @@ jobs:
           # Add mapping for other services if needed
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
       - name: Login to Heroku Container Registry
         env:
@@ -82,10 +82,10 @@ jobs:
     # NOTE: the `secrets` context is not allowed in job-level `if:` conditionals.
     # Guard on secret presence inside the step (see the [ -z ... ] checks below).
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -124,7 +124,7 @@ jobs:
       #  runs-on: ubuntu-latest
       #  permissions: write-all
       #  steps:
-      #    - uses: actions/checkout@v4
+      #    - uses: actions/checkout@v7
       #    - name: Install Heroku CLI
       #      run: curl https://cli-assets.heroku.com/install.sh | sh
       #    - name: Run worker test command
