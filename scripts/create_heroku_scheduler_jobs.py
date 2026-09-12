@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import tempfile
 import time
 from typing import Any, Dict, List, Optional
 
@@ -45,6 +46,7 @@ def heroku_request(method: str, path: str, token: str, **kwargs) -> requests.Res
     headers = kwargs.pop("headers", {})
     headers.update(HEADERS)
     headers.update({"Authorization": f"Bearer {token}"})
+    kwargs.setdefault("timeout", 30)
     return requests.request(method, HEROKU_API + path, headers=headers, **kwargs)
 
 
@@ -102,7 +104,7 @@ def post_job_to_scheduler_api(scheduler_api_url: str, job: Dict[str, Any]) -> bo
     """
     try:
         print(f"Posting job to {scheduler_api_url}: {job}")
-        resp = requests.post(scheduler_api_url.rstrip("/") + "/jobs", json=job)
+        resp = requests.post(scheduler_api_url.rstrip("/") + "/jobs", json=job, timeout=30)
         if resp.status_code >= 200 and resp.status_code < 300:
             print("Job created ok")
             return True
@@ -114,7 +116,23 @@ def post_job_to_scheduler_api(scheduler_api_url: str, job: Dict[str, Any]) -> bo
 
 
 def load_jobs_file(path: str) -> List[Dict[str, Any]]:
-    with open(path, "r", encoding="utf-8") as f:
+    if ".." in path:
+        raise SystemExit(f"Invalid path: directory traversal not allowed in '{path}'.")
+
+    abs_path = os.path.abspath(path)
+    allowed_root = os.path.abspath(os.getcwd())
+    temp_root = os.path.abspath(os.environ.get("RUNNER_TEMP", tempfile.gettempdir()))
+
+    if not abs_path.startswith(allowed_root):
+        if not abs_path.startswith(temp_root):
+            raise SystemExit(
+                f"Access denied: path '{path}' is outside allowed directories."
+            )
+
+    if not os.path.isfile(abs_path):
+        raise SystemExit(f"Jobs file not found at {path}")
+
+    with open(abs_path, "r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if not isinstance(data, list):
         raise SystemExit("Jobs file must be a YAML list of job objects")
