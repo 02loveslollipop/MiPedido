@@ -16,6 +16,7 @@ router = APIRouter(
 )
 
 PRODUCT_NOT_FOUND = "Product not found"
+ERROR_ADMIN_PRODUCT_OPERATION = "Error in admin product operation: %s"
 
 @router.get(
     "/restaurant/{restaurant_id}",
@@ -45,7 +46,7 @@ async def admin_list_products(
     except HTTPException:
         raise
     except Exception as e:
-        logging.exception("Error in admin product operation: %s", e)
+        logging.exception(ERROR_ADMIN_PRODUCT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -93,7 +94,7 @@ async def admin_create_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.exception("Error in admin product operation: %s", e)
+        logging.exception(ERROR_ADMIN_PRODUCT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -120,7 +121,7 @@ async def admin_get_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.exception("Error in admin product operation: %s", e)
+        logging.exception(ERROR_ADMIN_PRODUCT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -189,7 +190,7 @@ async def admin_update_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.exception("Error in admin product operation: %s", e)
+        logging.exception(ERROR_ADMIN_PRODUCT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -242,7 +243,7 @@ async def admin_delete_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.exception("Error in admin product operation: %s", e)
+        logging.exception(ERROR_ADMIN_PRODUCT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -293,7 +294,7 @@ async def admin_enable_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.exception("Error in admin product operation: %s", e)
+        logging.exception(ERROR_ADMIN_PRODUCT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
@@ -344,6 +345,6 @@ async def admin_disable_product(
     except HTTPException:
         raise
     except Exception as e:
-        logging.exception("Error in admin product operation: %s", e)
+        logging.exception(ERROR_ADMIN_PRODUCT_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

@@ -50,17 +50,9 @@ fun CartScreen(
     var cartItems by remember { mutableStateOf<List<OrderItem>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
     
-    // Currency formatter
-    val currencyFormatter = NumberFormat.getCurrencyInstance(Locale.getDefault())
-    
-    // Calculate total
+    // Calculate total for checkout navigation
     val totalPrice = remember(cartItems) {
         cartItems.sumOf { it.price * it.quantity }
-    }
-    
-    // Calculate total items
-    val totalItems = remember(cartItems) {
-        cartItems.sumOf { it.quantity }
     }
     
     // Function to load cart items
@@ -167,9 +159,6 @@ fun CartScreen(
                 else -> {
                     CartOrderSummary(
                         cartItems = cartItems,
-                        totalPrice = totalPrice,
-                        totalItems = totalItems,
-                        currencyFormatter = currencyFormatter,
                         isCreator = isCreator,
                         onIncreaseQuantity = { item -> modifyItemQuantity(item, item.quantity + 1) },
                         onDecreaseQuantity = { item -> modifyItemQuantity(item, item.quantity - 1) },
@@ -328,15 +317,19 @@ private fun CartEmptyState(
 @Composable
 private fun CartOrderSummary(
     cartItems: List<OrderItem>,
-    totalPrice: Double,
-    totalItems: Int,
-    currencyFormatter: NumberFormat,
     isCreator: Boolean,
     onIncreaseQuantity: (OrderItem) -> Unit,
     onDecreaseQuantity: (OrderItem) -> Unit,
     onCheckout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale.getDefault()) }
+    val totalPrice = remember(cartItems) {
+        cartItems.sumOf { it.price * it.quantity }
+    }
+    val totalItems = remember(cartItems) {
+        cartItems.sumOf { it.quantity }
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
