@@ -79,5 +79,5 @@ class RestaurantRepository:
                 description=document.get("description"),
                 position=position
             )
-        except:
+        except Exception:
             return None

@@ -83,23 +83,13 @@ fun QrScannerScreen(
     }
     val scanner = remember { BarcodeScanning.getClient(options) }
 
-    fun handleError(throwable: Throwable) {
-        val message = resolveQrErrorMessage(throwable)
-        Log.e("QrScannerScreen", "Error joining order: $message")
+    fun showError(message: String) {
         errorMessage = message
         showErrorDialog = true
     }
 
     fun processQrCode(qrContent: String) {
-        Log.d("QrScannerScreen", "Processing QR code: $qrContent")
-
-        if (isScanningPaused && !isScanningPausedByCodeInput) {
-            Log.d("QrScannerScreen", "QR code processing is paused")
-            return
-        }
-
-        if (isLoading && !isScanningPausedByCodeInput) {
-            Log.d("QrScannerScreen", "QR code processing is in progress")
+        if ((isScanningPaused || isLoading) && !isScanningPausedByCodeInput) {
             return
         }
 
@@ -108,41 +98,24 @@ fun QrScannerScreen(
 
         coroutineScope.launch {
             try {
-                Log.d("QrScannerScreen", "Attempting to join order with ID: $qrContent")
-                val result = apiConnector.joinOrder(qrContent)
-                result.fold(
-                    onSuccess = { response ->
-                        if (response.restaurantId.isNullOrEmpty()) {
-                            Log.e("QrScannerScreen", "Error: Received empty restaurant ID from server")
-                            errorMessage = "Error: No se recibió ID de restaurante válido"
-                            showErrorDialog = true
-                        } else {
-                            Log.d("QrScannerScreen", "Success joining order: restaurantId=${response.restaurantId}, userId=${response.userId}")
-                            onNavigateToProductsScreen(
-                                response.restaurantId,
-                                qrContent,
-                                response.userId,
-                                false
-                            )
-                        }
+                executeQrJoin(
+                    apiConnector = apiConnector,
+                    qrContent = qrContent,
+                    onSuccess = { restaurantId, orderId, userId ->
+                        onNavigateToProductsScreen(restaurantId, orderId, userId, false)
                     },
-                    onFailure = { throwable -> handleError(throwable) }
+                    onError = ::showError
                 )
-            } catch (e: Exception) {
-                handleError(e)
             } finally {
                 isLoading = false
-                if (isScanningPausedByCodeInput) {
-                    isScanningPausedByCodeInput = false
-                }
+                isScanningPausedByCodeInput = false
             }
         }
     }
 
     fun processShortCode(shortCode: String) {
-        if (shortCode.trim().isEmpty() || shortCode.length != 9) {
-            errorMessage = "Por favor ingresa un código válido (exactamente 8 caracteres sin contar guiones)"
-            showErrorDialog = true
+        if (shortCode.trim().length != 9) {
+            showError("Por favor ingresa un código válido (exactamente 8 caracteres sin contar guiones)")
             return
         }
 
@@ -151,25 +124,16 @@ fun QrScannerScreen(
         isScanningPausedByCodeInput = true
 
         coroutineScope.launch {
-            try {
-                Log.d("QrScannerScreen", "Resolving short code: $shortCode")
-                val shortCodeResult = apiConnector.getFullOrderIdFromShortCode(shortCode)
-                shortCodeResult.fold(
-                    onSuccess = { response ->
-                        Log.d("QrScannerScreen", "Short code resolved to order ID: ${response.objectId}")
-                        processQrCode(response.objectId)
-                    },
-                    onFailure = { throwable ->
-                        Log.e("QrScannerScreen", "Error resolving short code: ${throwable.message}")
-                        handleError(throwable)
-                        isLoading = false
-                    }
-                )
-            } catch (e: Exception) {
-                Log.e("QrScannerScreen", "Exception in processShortCode: ${e.message}")
-                handleError(e)
-                isLoading = false
-            }
+            executeShortCodeResolution(
+                apiConnector = apiConnector,
+                shortCode = shortCode,
+                onSuccess = ::processQrCode,
+                onError = { message ->
+                    showError(message)
+                    isLoading = false
+                    isScanningPausedByCodeInput = false
+                }
+            )
         }
     }
 
@@ -547,4 +511,57 @@ private fun QrErrorDialog(
             }
         }
     )
+}
+
+private suspend fun executeQrJoin(
+    apiConnector: ApiConnector,
+    qrContent: String,
+    onSuccess: (restaurantId: String, orderId: String, userId: String) -> Unit,
+    onError: (String) -> Unit
+) {
+    try {
+        Log.d("QrScannerScreen", "Attempting to join order with ID: $qrContent")
+        val result = apiConnector.joinOrder(qrContent)
+        result.fold(
+            onSuccess = { response ->
+                if (response.restaurantId.isNullOrEmpty()) {
+                    Log.e("QrScannerScreen", "Error: Received empty restaurant ID from server")
+                    onError("Error: No se recibió ID de restaurante válido")
+                } else {
+                    Log.d("QrScannerScreen", "Success joining order: restaurantId=${response.restaurantId}, userId=${response.userId}")
+                    onSuccess(response.restaurantId, qrContent, response.userId)
+                }
+            },
+            onFailure = { throwable ->
+                onError(resolveQrErrorMessage(throwable))
+            }
+        )
+    } catch (e: Exception) {
+        onError(resolveQrErrorMessage(e))
+    }
+}
+
+private suspend fun executeShortCodeResolution(
+    apiConnector: ApiConnector,
+    shortCode: String,
+    onSuccess: (String) -> Unit,
+    onError: (String) -> Unit
+) {
+    try {
+        Log.d("QrScannerScreen", "Resolving short code: $shortCode")
+        val shortCodeResult = apiConnector.getFullOrderIdFromShortCode(shortCode)
+        shortCodeResult.fold(
+            onSuccess = { response ->
+                Log.d("QrScannerScreen", "Short code resolved to order ID: ${response.objectId}")
+                onSuccess(response.objectId)
+            },
+            onFailure = { throwable ->
+                Log.e("QrScannerScreen", "Error resolving short code: ${throwable.message}")
+                onError(resolveQrErrorMessage(throwable))
+            }
+        )
+    } catch (e: Exception) {
+        Log.e("QrScannerScreen", "Exception in executeShortCodeResolution: ${e.message}")
+        onError(resolveQrErrorMessage(e))
+    }
 }

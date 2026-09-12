@@ -45,7 +45,8 @@ fun PersonalizeProductScreen(
     }
 
     fun handleBackPress() {
-        if (quantity > 0 || currentQuantity > 0 || selectedIngredients.isNotEmpty()) {
+        val hasChanges = quantity > 0 || currentQuantity > 0 || selectedIngredients.isNotEmpty()
+        if (hasChanges) {
             showExitDialog = true
         } else {
             onNavigateBack()
@@ -92,73 +93,85 @@ fun PersonalizeProductScreen(
             )
         }
     ) { paddingValues ->
-        LazyColumn(
+        PersonalizeProductContent(
+            product = product,
+            selectedIngredients = selectedIngredients,
+            onToggleIngredient = { ingredient, checked ->
+                if (checked) {
+                    selectedIngredients.add(ingredient)
+                } else {
+                    selectedIngredients.remove(ingredient)
+                }
+            },
             modifier = modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                // Product Image
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(product.imageUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = product.name,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentScale = ContentScale.Crop
-                )
-            }
+                .padding(paddingValues)
+        )
+    }
+}
 
-            item {
-                Column(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = product.name,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    
-                    Text(
-                        text = NumberFormat.getCurrencyInstance(Locale.getDefault())
-                            .format(product.price),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+@Composable
+private fun PersonalizeProductContent(
+    product: Product,
+    selectedIngredients: List<String>,
+    onToggleIngredient: (String, Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currencyFormatter = remember { NumberFormat.getCurrencyInstance(Locale.getDefault()) }
 
-                    Text(
-                        text = product.description,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+    LazyColumn(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(product.imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = product.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentScale = ContentScale.Crop
+            )
+        }
 
-                }
-            }
-
-            item {
+        item {
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
-                    text = "Ingredientes",
+                    text = product.name,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    text = currencyFormatter.format(product.price),
                     style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = product.description,
+                    style = MaterialTheme.typography.bodyLarge
                 )
             }
+        }
 
-            items(product.ingredients) { ingredient ->
-                IngredientCheckboxRow(
-                    ingredient = ingredient,
-                    isSelected = ingredient in selectedIngredients,
-                    onCheckedChange = { checked ->
-                        if (checked) {
-                            selectedIngredients.add(ingredient)
-                        } else {
-                            selectedIngredients.remove(ingredient)
-                        }
-                    }
-                )
-            }
+        item {
+            Text(
+                text = "Ingredientes",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        items(product.ingredients) { ingredient ->
+            IngredientCheckboxRow(
+                ingredient = ingredient,
+                isSelected = ingredient in selectedIngredients,
+                onCheckedChange = { checked -> onToggleIngredient(ingredient, checked) }
+            )
         }
     }
 }

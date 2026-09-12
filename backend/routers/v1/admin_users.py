@@ -16,12 +16,22 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+USER_NOT_FOUND = "User not found"
+ERROR_ADMIN_USER_OPERATION = "Error in admin user operation: %s"
+
 class UserUpdate(BaseModel):
     """Schema for updating user details"""
     username: str | None = None
     password: str | None = None
 
-@router.get("/", response_model=List[Dict])
+@router.get(
+    "/",
+    response_model=List[Dict],
+    responses={
+        404: {"description": "No users found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_admin)):
     """
     List all users. Only accessible by admins.
@@ -46,14 +56,20 @@ async def admin_list_users(current_admin: AdminTokenData = Depends(get_current_a
     except HTTPException as e:
         raise e
     except Exception as e:
-        logging.error(f"Error in admin user operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_USER_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
         
 
 
-@router.get("/{user_id}", response_model=Dict)
+@router.get(
+    "/{user_id}",
+    response_model=Dict,
+    responses={
+        404: {"description": USER_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_get_user(
     user_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -65,7 +81,7 @@ async def admin_get_user(
         user = await UserRepository.get_user_by_id(user_id)
 
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
         # Format the user data
         user_data = {
             "id": user.id,
@@ -76,12 +92,19 @@ async def admin_get_user(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin user operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_USER_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.post("/", response_model=User, status_code=201)
+@router.post(
+    "/",
+    response_model=User,
+    status_code=201,
+    responses={
+        400: {"description": "Username already exists"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_create_user(
     user_auth: UserAuth, 
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -117,13 +140,19 @@ async def admin_create_user(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin user operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_USER_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
-        logging.error(f"Error creating user: {error_detail}")
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{user_id}", status_code=200)
+@router.put(
+    "/{user_id}",
+    status_code=200,
+    responses={
+        400: {"description": "Invalid update data"},
+        404: {"description": USER_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_update_user(
     user_id: str,
     user_data: UserUpdate,
@@ -136,7 +165,7 @@ async def admin_update_user(
         # First check if user exists
         existing_user = await UserRepository.get_user_by_id(user_id)
         if not existing_user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
         
         # Build update data dictionary
         update_data = {}
@@ -187,12 +216,18 @@ async def admin_update_user(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin user operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_USER_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.delete("/{user_id}", status_code=204)
+@router.delete(
+    "/{user_id}",
+    status_code=204,
+    responses={
+        404: {"description": USER_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_delete_user(
     user_id: str,
     current_admin: AdminTokenData = Depends(get_current_admin)
@@ -204,7 +239,7 @@ async def admin_delete_user(
         # Check if user exists
         existing_user = await UserRepository.get_user_by_id(user_id)
         if not existing_user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
         
         # Store user info for logging
         username = existing_user.username
@@ -229,12 +264,19 @@ async def admin_delete_user(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin user operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_USER_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{user_id}/assign-restaurant", status_code=200)
+@router.put(
+    "/{user_id}/assign-restaurant",
+    status_code=200,
+    responses={
+        400: {"description": "Restaurant ID required"},
+        404: {"description": "User or restaurant not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_assign_restaurant(
     user_id: str,
     data: dict,
@@ -252,7 +294,7 @@ async def admin_assign_restaurant(
         # Check if user exists
         user = await UserRepository.get_user_by_id(user_id)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
         
         # Check if restaurant exists
         restaurant = await RestaurantRepository.get_restaurant(restaurant_id)
@@ -294,12 +336,19 @@ async def admin_assign_restaurant(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin user operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_USER_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.put("/{user_id}/revoke-restaurant", status_code=200)
+@router.put(
+    "/{user_id}/revoke-restaurant",
+    status_code=200,
+    responses={
+        400: {"description": "Restaurant ID required or not controlled by user"},
+        404: {"description": USER_NOT_FOUND},
+        500: {"description": "Internal server error"}
+    }
+)
 async def admin_revoke_restaurant(
     user_id: str,
     data: dict,
@@ -317,8 +366,8 @@ async def admin_revoke_restaurant(
         # Check if user exists
         user = await UserRepository.get_user_by_id(user_id)
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-            
+            raise HTTPException(status_code=404, detail=USER_NOT_FOUND)
+        
         # Get current controls
         controls = user.controls.copy() if hasattr(user, 'controls') and user.controls else []
         
@@ -360,7 +409,6 @@ async def admin_revoke_restaurant(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error in admin user operation: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception(ERROR_ADMIN_USER_OPERATION, e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

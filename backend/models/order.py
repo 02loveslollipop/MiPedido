@@ -3,6 +3,9 @@ from typing import Optional, List, Dict, Any
 from bson import ObjectId
 from datetime import datetime
 
+RESTAURANT_ID_DESCRIPTION = "Unique identifier for the restaurant"
+USERS_DESCRIPTION = "Dictionary of users and their orders"
+
 # Define OrderProduct first
 class OrderProduct(BaseModel):
     id: str = Field(default=None, description="ID of the product")
@@ -23,7 +26,7 @@ class OrderItemUpdate(BaseModel):
 # Request models
 class CreateOrderRequest(BaseModel):
     """Request model for creating an order"""
-    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
+    restaurant_id: str = Field(..., description=RESTAURANT_ID_DESCRIPTION)
 
 class OrderFulfillRequest(BaseModel):
     """Request model for fulfilling an order"""
@@ -70,28 +73,28 @@ class UserOrder(BaseModel):
     
 class OrderBase(BaseModel):
     id: Optional[str] = Field(default=None, description="Unique identifier for the order")
-    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
-    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
+    restaurant_id: str = Field(..., description=RESTAURANT_ID_DESCRIPTION)
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description=USERS_DESCRIPTION)
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class OrderInDBCreate(BaseModel):
-    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
-    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
+    restaurant_id: str = Field(..., description=RESTAURANT_ID_DESCRIPTION)
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description=USERS_DESCRIPTION)
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class OrderInDB(BaseModel):
     id: str = Field(..., description="Unique identifier for the order in the database")
-    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
-    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
+    restaurant_id: str = Field(..., description=RESTAURANT_ID_DESCRIPTION)
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description=USERS_DESCRIPTION)
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 class Order(BaseModel):
     id: str = Field(..., description="Unique identifier for the order")
-    restaurant_id: str = Field(..., description="Unique identifier for the restaurant")
-    users: Dict[str, UserOrder] = Field(default_factory=dict, description="Dictionary of users and their orders")
+    restaurant_id: str = Field(..., description=RESTAURANT_ID_DESCRIPTION)
+    users: Dict[str, UserOrder] = Field(default_factory=dict, description=USERS_DESCRIPTION)
     
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
