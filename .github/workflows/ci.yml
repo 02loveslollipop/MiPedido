@@ -4,12 +4,23 @@ on:
   pull_request:
     paths:
       - 'backend/**'
+      - '.github/**'
   push:
     branches: [ main ]
     paths:
       - 'backend/**'
+      - '.github/**'
 
 jobs:
+  lint-workflows:
+    name: Lint GitHub Actions workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run actionlint
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color .github/workflows/*.yml .github/workflow-templates/*.yml
+
   backend-tests:
     runs-on: ubuntu-latest
     services:
@@ -26,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install dependencies

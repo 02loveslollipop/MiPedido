@@ -27,7 +27,7 @@ jobs:
 
       - name: Set HEROKU_APP env from secrets
         run: |
-          if [ "${{ matrix.service }}" = "backend" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_BACKEND }}" >> $GITHUB_ENV; fi
+          if [ "${{ matrix.service }}" = "backend" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_BACKEND }}" >> "$GITHUB_ENV"; fi
           # Add mapping for other services if needed
 
       - name: Set up Docker Buildx
@@ -38,9 +38,9 @@ jobs:
 
       - name: Build and push Docker image to Heroku
         run: |
-          IMAGE=registry.heroku.com/${HEROKU_APP}/${{ matrix.process }}
-          docker build -t $IMAGE -f ${{ matrix.context }}/${{ matrix.dockerfile }} ${{ matrix.context }}
-          docker push $IMAGE
+          IMAGE="registry.heroku.com/${HEROKU_APP}/${{ matrix.process }}"
+          docker build -t "$IMAGE" -f ${{ matrix.context }}/${{ matrix.dockerfile }} ${{ matrix.context }}
+          docker push "$IMAGE"
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
@@ -49,14 +49,14 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          heroku container:release ${{ matrix.process }} --app $HEROKU_APP
+          heroku container:release ${{ matrix.process }} --app "$HEROKU_APP"
 
       - name: Post-deploy smoke check
         run: |
           if [ "${{ matrix.process }}" = "web" ]; then 
             URL="https://${HEROKU_APP}.herokuapp.com/health"
             echo "Checking $URL"
-            curl -fsS $URL || (echo "Smoke test failed" && exit 1)
+            curl -fsS "$URL" || (echo "Smoke test failed" && exit 1)
           else
             echo "Worker process deployed for ${HEROKU_APP}, no web smoke check"
             echo "Tip: Use Heroku Scheduler to run periodic commands, or run a one-off test using 'heroku run --app ${HEROKU_APP} <command>'"
@@ -76,7 +76,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -101,7 +101,7 @@ jobs:
           if [ -z "$HEROKU_APP_REDIS_INDEXER" ]; then echo "HEROKU_APP_REDIS_INDEXER not set, skipping"; exit 0; fi
           python scripts/create_heroku_scheduler_jobs.py --app "$HEROKU_APP_REDIS_INDEXER" --jobs-file scripts/scheduler-jobs.redis-indexer.yml
 
-      - name: Reminder: manual steps if automation failed
+      - name: "Reminder: manual steps if automation failed"
         run: |
           echo "If jobs could not be created programmatically, open the Scheduler dashboard:"
           echo "  heroku addons:open scheduler --app <YOUR_APP>"

@@ -53,10 +53,10 @@ jobs:
 
       - name: Set HEROKU_APP env from secrets
         run: |
-          if [ "${{ matrix.service }}" = "backend" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_BACKEND }}" >> $GITHUB_ENV; fi
-          if [ "${{ matrix.service }}" = "websocket" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_WS }}" >> $GITHUB_ENV; fi
-          if [ "${{ matrix.service }}" = "redis-indexer" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_REDIS_INDEXER }}" >> $GITHUB_ENV; fi
-          if [ "${{ matrix.service }}" = "rating-cron" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_RATING_CRON }}" >> $GITHUB_ENV; fi
+          if [ "${{ matrix.service }}" = "backend" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_BACKEND }}" >> "$GITHUB_ENV"; fi
+          if [ "${{ matrix.service }}" = "websocket" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_WS }}" >> "$GITHUB_ENV"; fi
+          if [ "${{ matrix.service }}" = "redis-indexer" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_REDIS_INDEXER }}" >> "$GITHUB_ENV"; fi
+          if [ "${{ matrix.service }}" = "rating-cron" ]; then echo "HEROKU_APP=${{ secrets.HEROKU_APP_RATING_CRON }}" >> "$GITHUB_ENV"; fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -66,13 +66,13 @@ jobs:
 
       - name: Build and push Docker image to Heroku
         run: |
-          IMAGE=registry.heroku.com/${HEROKU_APP}/${{ matrix.process }}
-          docker build -t $IMAGE -f ${{ matrix.context }}/${{ matrix.dockerfile }} ${{ matrix.context }}
+          IMAGE="registry.heroku.com/${HEROKU_APP}/${{ matrix.process }}"
+          docker build -t "$IMAGE" -f ${{ matrix.context }}/${{ matrix.dockerfile }} ${{ matrix.context }}
           # The registry can reset connections mid-push; retry before failing
           n=0
-          until docker push $IMAGE; do
+          until docker push "$IMAGE"; do
             n=$((n+1))
-            [ $n -ge 3 ] && { echo "docker push failed after $n attempts"; exit 1; }
+            [ "$n" -ge 3 ] && { echo "docker push failed after $n attempts"; exit 1; }
             echo "docker push attempt $n failed, retrying in 15s"
             sleep 15
           done
@@ -84,7 +84,7 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          heroku container:release ${{ matrix.process }} --app $HEROKU_APP
+          heroku container:release ${{ matrix.process }} --app "$HEROKU_APP"
 
       - name: Ensure web dyno is running
         if: ${{ matrix.ensure_dyno }}
@@ -93,7 +93,7 @@ jobs:
         run: |
           # container:release does not turn on a dyno when the formation is empty
           # (e.g. first deploy); idempotent for existing formations.
-          heroku ps:scale web=1:basic --app $HEROKU_APP
+          heroku ps:scale web=1:basic --app "$HEROKU_APP"
 
       - name: Post-deploy smoke check
         if: ${{ matrix.smoke_check }}
@@ -117,7 +117,7 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           # Verify the released image actually contains the binary the Scheduler job runs
-          heroku run --exit-code --app $HEROKU_APP "test -f ./${{ matrix.binary }} && echo 'Binary present: ${{ matrix.binary }}'"
+          heroku run --exit-code --app "$HEROKU_APP" "test -f ./${{ matrix.binary }} && echo 'Binary present: ${{ matrix.binary }}'"
 
   create-scheduler-jobs:
     name: Create Heroku Scheduler entries (post-deploy)
@@ -128,7 +128,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 

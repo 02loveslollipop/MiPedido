@@ -1,0 +1,99 @@
+name: Set Heroku config from .env (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apps:
+        description: 'Comma-separated list of Heroku app names (or leave blank to use per-app secrets)'
+        required: false
+        default: ''
+      mongo_uri:
+        description: 'Optional MongoDB URI to override .env MONGODB_URL (secret)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  set-config:
+    name: Set Heroku Config
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_APP_BACKEND: ${{ secrets.HEROKU_APP_BACKEND }}
+      HEROKU_APP_WS: ${{ secrets.HEROKU_APP_WS }}
+      HEROKU_APP_REDIS_INDEXER: ${{ secrets.HEROKU_APP_REDIS_INDEXER }}
+      HEROKU_APP_RATING_CRON: ${{ secrets.HEROKU_APP_RATING_CRON }}
+      HEROKU_ENV_FILE: ${{ secrets.HEROKU_ENV_FILE }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --only-binary :all: requests==2.32.3
+
+      - name: Determine target apps
+        id: apps
+        env:
+          INPUT_APPS: ${{ github.event.inputs.apps }}
+        run: |
+          if [ -n "$INPUT_APPS" ]; then
+            APPS="$(echo "$INPUT_APPS" | tr ',' ' ' | xargs)"
+            echo "apps=$APPS" >> "$GITHUB_OUTPUT"
+          else
+            APPS=""
+            if [ -n "$HEROKU_APP_BACKEND" ]; then APPS="$APPS $HEROKU_APP_BACKEND"; fi
+            if [ -n "$HEROKU_APP_WS" ]; then APPS="$APPS $HEROKU_APP_WS"; fi
+            if [ -n "$HEROKU_APP_REDIS_INDEXER" ]; then APPS="$APPS $HEROKU_APP_REDIS_INDEXER"; fi
+            if [ -n "$HEROKU_APP_RATING_CRON" ]; then APPS="$APPS $HEROKU_APP_RATING_CRON"; fi
+            APPS="$(echo "$APPS" | xargs)"
+            echo "apps=$APPS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Materialize env content
+        id: env
+        env:
+          MONGO: ${{ github.event.inputs.mongo_uri }}
+        run: |
+          if [ -z "$HEROKU_ENV_FILE" ] && [ -z "$MONGO" ]; then
+            echo "Neither HEROKU_ENV_FILE secret nor mongo_uri input provided; skipping"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          ENV_PATH="${RUNNER_TEMP}/.env"
+          printf '%s\n' "$HEROKU_ENV_FILE" > "$ENV_PATH"
+          echo "env_file=$ENV_PATH" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Run config update per app
+        env:
+          APPS: ${{ steps.apps.outputs.apps }}
+          ENV_FILE: ${{ steps.env.outputs.env_file }}
+          MONGO: ${{ github.event.inputs.mongo_uri }}
+          SKIP: ${{ steps.env.outputs.skip }}
+        run: |
+          if [ "$SKIP" = "true" ]; then
+            echo "Skipping config update: no env content or mongo_uri provided"
+            exit 0
+          fi
+          if [ -z "$HEROKU_API_KEY" ]; then
+            echo "HEROKU_API_KEY not configured, skipping"
+            exit 0
+          fi
+          if [ -z "$APPS" ]; then
+            echo "No target apps specified or configured, skipping"
+            exit 0
+          fi
+          err=0
+          for app in $APPS; do
+            echo "Updating Heroku config for $app..."
+            python scripts/create_heroku_config_from_env.py --app "$app" --mongo-uri "$MONGO" --env-file "$ENV_FILE" || err=1
+          done
+          exit "$err"
