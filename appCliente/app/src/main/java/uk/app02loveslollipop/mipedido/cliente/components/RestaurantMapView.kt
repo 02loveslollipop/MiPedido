@@ -82,7 +82,7 @@ private fun createRestaurantMarker(
         // icon = ContextCompat.getDrawable(context, R.drawable.ic_restaurant_marker)
         
         // Set click listener to open Google Maps
-        setOnMarkerClickListener { marker, mapView ->
+        setOnMarkerClickListener { _, _ ->
             openGoogleMaps(context, restaurant)
             true // Return true to indicate the click was handled
         }

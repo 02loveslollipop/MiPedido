@@ -168,15 +168,15 @@ class WebSocketConnector private constructor() {
                     val welcomePayloadType = object : TypeToken<WebSocketMessage<WebSocketPayload.Welcome>>() {}.type
                     val welcomeMessage = gson.fromJson<WebSocketMessage<WebSocketPayload.Welcome>>(json, welcomePayloadType)
                     // Notify listener on the main thread if UI updates are needed, otherwise keep here
-                     listener?.onWelcome(welcomeMessage.payload.order_id, welcomeMessage.payload.time)
+                     listener?.onWelcome(welcomeMessage.payload.orderId, welcomeMessage.payload.time)
 
                 }
                 "order_completed" -> {
                     val completedPayloadType = object : TypeToken<WebSocketMessage<WebSocketPayload.OrderCompleted>>() {}.type
                     val completedMessage = gson.fromJson<WebSocketMessage<WebSocketPayload.OrderCompleted>>(json, completedPayloadType)
                      listener?.onOrderCompleted(
-                        completedMessage.payload.order_id,
-                        completedMessage.payload.restaurant_id,
+                        completedMessage.payload.orderId,
+                        completedMessage.payload.restaurantId,
                         completedMessage.payload.timestamp
                     )
                     // Documentation states the server closes the connection after this message.

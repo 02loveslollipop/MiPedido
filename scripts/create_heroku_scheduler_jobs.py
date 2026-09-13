@@ -95,7 +95,7 @@ def find_scheduler_api_url(app: str, addon: Dict[str, Any], token: str) -> Optio
 
     # heuristics: look for keys with SCHEDULER or SCHEDULER_API
     for k, v in cfg.items():
-        if "SCHEDULER" in k.upper() and (v.startswith("http://") or v.startswith("https://")):
+        if "SCHEDULER" in k.upper() and v.startswith(("http://", "https://")):
             print(f"Discovered possible scheduler API URL in config var {k}")
             return v
 

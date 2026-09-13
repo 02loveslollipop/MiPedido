@@ -12,7 +12,7 @@ import shared_preferences_foundation
 import system_theme
 import window_manager
 
-func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
+func registerGeneratedPlugins(registry: FlutterPluginRegistry) {
   FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
   MacOSWindowUtilsPlugin.register(with: registry.registrar(forPlugin: "MacOSWindowUtilsPlugin"))
   ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))

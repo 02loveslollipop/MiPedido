@@ -1,9 +1,13 @@
 package uk.app02loveslollipop.mipedido.cliente.models
 
+import com.google.gson.annotations.SerializedName
+
 data class ReviewResponse(
     val id: String?,
-    val restaurant_id: String?,
+    @SerializedName("restaurant_id")
+    val restaurantId: String?,
     val rating: Int?,
     val status: String?,
-    val created_at: String?
+    @SerializedName("created_at")
+    val createdAt: String?
 )

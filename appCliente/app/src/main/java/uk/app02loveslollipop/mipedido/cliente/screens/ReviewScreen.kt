@@ -20,8 +20,6 @@ import uk.app02loveslollipop.mipedido.cliente.components.useBackConfirmation
 @Composable
 fun ReviewScreen(
     restaurantId: String,
-    orderId: String,
-    userId: String,
     navController: NavController? = null
 ) {
     var rating by remember { mutableStateOf(0) }

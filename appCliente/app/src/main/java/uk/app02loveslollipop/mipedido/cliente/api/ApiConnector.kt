@@ -237,7 +237,7 @@ class ApiConnector private constructor() {
      */
     suspend fun submitReview(restaurantId: String, rating: Int): Result<ReviewResponse> {
         val review = ReviewRequest(
-            restaurant_id = restaurantId,
+            restaurantId = restaurantId,
             rating = rating
         )
         return apiCall { apiService.submitReview(review) }

@@ -22,6 +22,27 @@ import uk.app02loveslollipop.mipedido.cliente.icons.minus
 import java.text.NumberFormat
 import java.util.Locale
 
+private fun hasProductChanges(quantity: Int, currentQuantity: Int, hasIngredients: Boolean): Boolean {
+    return quantity > 0 || currentQuantity > 0 || hasIngredients
+}
+
+private fun decreaseQuantity(current: Int, onQuantityChange: (Int) -> Unit): Int {
+    return if (current <= 1) {
+        onQuantityChange(0)
+        0
+    } else {
+        current - 1
+    }
+}
+
+private fun toggleIngredient(selectedIngredients: MutableList<String>, ingredient: String, checked: Boolean) {
+    if (checked) {
+        selectedIngredients.add(ingredient)
+    } else {
+        selectedIngredients.remove(ingredient)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonalizeProductScreen(
@@ -45,8 +66,7 @@ fun PersonalizeProductScreen(
     }
 
     fun handleBackPress() {
-        val hasChanges = quantity > 0 || currentQuantity > 0 || selectedIngredients.isNotEmpty()
-        if (hasChanges) {
+        if (hasProductChanges(quantity, currentQuantity, selectedIngredients.isNotEmpty())) {
             showExitDialog = true
         } else {
             onNavigateBack()
@@ -78,12 +98,7 @@ fun PersonalizeProductScreen(
             PersonalizeBottomBar(
                 currentQuantity = currentQuantity,
                 onDecreaseQuantity = {
-                    if (currentQuantity <= 1) {
-                        currentQuantity = 0
-                        onQuantityChange(0)
-                    } else {
-                        currentQuantity--
-                    }
+                    currentQuantity = decreaseQuantity(currentQuantity, onQuantityChange)
                 },
                 onIncreaseQuantity = { currentQuantity++ },
                 onConfirm = {
@@ -97,11 +112,7 @@ fun PersonalizeProductScreen(
             product = product,
             selectedIngredients = selectedIngredients,
             onToggleIngredient = { ingredient, checked ->
-                if (checked) {
-                    selectedIngredients.add(ingredient)
-                } else {
-                    selectedIngredients.remove(ingredient)
-                }
+                toggleIngredient(selectedIngredients, ingredient, checked)
             },
             modifier = modifier
                 .fillMaxSize()

@@ -18,7 +18,17 @@ class ReviewCreate(BaseModel):
 
 # by_alias=False so the response carries "id" (as documented and expected by the
 # cliente app) instead of the Mongo alias "_id"; inserts still use by_alias=True.
-@router.post("/", response_model=Review, status_code=201, response_model_by_alias=False)
+@router.post(
+    "/",
+    response_model=Review,
+    status_code=201,
+    response_model_by_alias=False,
+    responses={
+        400: {"description": "Invalid rating"},
+        404: {"description": "Restaurant not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def create_review(review: ReviewCreate):
     """
     Create an anonymous review for a restaurant
@@ -53,7 +63,6 @@ async def create_review(review: ReviewCreate):
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error creating review: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error creating review: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)

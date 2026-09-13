@@ -41,6 +41,50 @@ import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+private fun handlePermissionResult(
+    isGranted: Boolean,
+    context: android.content.Context,
+    onPermissionChanged: (Boolean) -> Unit
+) {
+    onPermissionChanged(isGranted)
+    if (!isGranted) {
+        Toast.makeText(context, "Se requiere permiso de cámara para escanear códigos QR", Toast.LENGTH_LONG).show()
+    }
+}
+
+private fun shouldSkipQrScanning(isPaused: Boolean, isLoading: Boolean, isPausedByCodeInput: Boolean): Boolean {
+    return (isPaused || isLoading) && !isPausedByCodeInput
+}
+
+private fun isValidShortCode(shortCode: String): Boolean {
+    return shortCode.trim().length == 9
+}
+
+@Composable
+private fun QrScannerContent(
+    hasCameraPermission: Boolean,
+    scanner: BarcodeScanner,
+    cameraExecutor: ExecutorService,
+    onQrCodeDetected: (String) -> Unit,
+    isScanningPaused: () -> Boolean,
+    isLoading: Boolean,
+    onRequestPermission: () -> Unit
+) {
+    if (hasCameraPermission) {
+        CameraPreviewSection(
+            scanner = scanner,
+            cameraExecutor = cameraExecutor,
+            onQrCodeDetected = onQrCodeDetected,
+            isScanningPaused = isScanningPaused,
+            isLoading = isLoading
+        )
+    } else {
+        NoCameraPermissionContent(
+            onRequestPermission = onRequestPermission
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QrScannerScreen(
@@ -61,10 +105,7 @@ fun QrScannerScreen(
     val requestPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        hasCameraPermission = isGranted
-        if (!isGranted) {
-            Toast.makeText(context, "Se requiere permiso de cámara para escanear códigos QR", Toast.LENGTH_LONG).show()
-        }
+        handlePermissionResult(isGranted, context) { hasCameraPermission = it }
     }
 
     var isLoading by remember { mutableStateOf(false) }
@@ -89,7 +130,7 @@ fun QrScannerScreen(
     }
 
     fun processQrCode(qrContent: String) {
-        if ((isScanningPaused || isLoading) && !isScanningPausedByCodeInput) {
+        if (shouldSkipQrScanning(isScanningPaused, isLoading, isScanningPausedByCodeInput)) {
             return
         }
 
@@ -114,7 +155,7 @@ fun QrScannerScreen(
     }
 
     fun processShortCode(shortCode: String) {
-        if (shortCode.trim().length != 9) {
+        if (!isValidShortCode(shortCode)) {
             showError("Por favor ingresa un código válido (exactamente 8 caracteres sin contar guiones)")
             return
         }
@@ -173,48 +214,42 @@ fun QrScannerScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (hasCameraPermission) {
-                CameraPreviewSection(
-                    scanner = scanner,
-                    cameraExecutor = cameraExecutor,
-                    onQrCodeDetected = { qrContent -> processQrCode(qrContent) },
-                    isScanningPaused = { isScanningPaused },
-                    isLoading = isLoading
-                )
-            } else {
-                NoCameraPermissionContent(
-                    onRequestPermission = {
-                        requestPermissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                )
-            }
+            QrScannerContent(
+                hasCameraPermission = hasCameraPermission,
+                scanner = scanner,
+                cameraExecutor = cameraExecutor,
+                onQrCodeDetected = { qrContent -> processQrCode(qrContent) },
+                isScanningPaused = { isScanningPaused },
+                isLoading = isLoading,
+                onRequestPermission = {
+                    requestPermissionLauncher.launch(Manifest.permission.CAMERA)
+                }
+            )
 
-            if (showManualCodeDialog) {
-                QrManualCodeDialog(
-                    manualCodeInput = manualCodeInput,
-                    onManualCodeInputChange = { manualCodeInput = it },
-                    onConfirm = {
-                        showManualCodeDialog = false
-                        processShortCode(manualCodeInput.trim())
-                    },
-                    onDismiss = {
-                        showManualCodeDialog = false
-                        isScanningPaused = false
-                        manualCodeInput = ""
-                    }
-                )
-            }
+            QrManualCodeDialog(
+                visible = showManualCodeDialog,
+                manualCodeInput = manualCodeInput,
+                onManualCodeInputChange = { manualCodeInput = it },
+                onConfirm = {
+                    showManualCodeDialog = false
+                    processShortCode(manualCodeInput.trim())
+                },
+                onDismiss = {
+                    showManualCodeDialog = false
+                    isScanningPaused = false
+                    manualCodeInput = ""
+                }
+            )
 
-            if (showErrorDialog) {
-                QrErrorDialog(
-                    errorMessage = errorMessage,
-                    onDismiss = {
-                        showErrorDialog = false
-                        errorMessage = null
-                        isScanningPaused = false
-                    }
-                )
-            }
+            QrErrorDialog(
+                visible = showErrorDialog,
+                errorMessage = errorMessage,
+                onDismiss = {
+                    showErrorDialog = false
+                    errorMessage = null
+                    isScanningPaused = false
+                }
+            )
         }
     }
 }
@@ -460,11 +495,14 @@ private fun NoCameraPermissionContent(
 
 @Composable
 private fun QrManualCodeDialog(
+    visible: Boolean,
     manualCodeInput: String,
     onManualCodeInputChange: (String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    if (!visible) return
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Ingresar Código") },
@@ -496,9 +534,12 @@ private fun QrManualCodeDialog(
 
 @Composable
 private fun QrErrorDialog(
+    visible: Boolean,
     errorMessage: String?,
     onDismiss: () -> Unit
 ) {
+    if (!visible) return
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Error") },
