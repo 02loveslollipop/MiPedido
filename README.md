@@ -23,24 +23,24 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
-1. [Introduction](#-introduction)
-2. [Key Features](#-key-features)
-3. [System Architecture](#️-system-architecture)
-4. [Application Ecosystem](#-application-ecosystem)
-5. [Backend & Microservices](#️-backend--microservices)
-6. [Repository Structure](#-repository-structure)
-7. [Tech Stack](#️-tech-stack)
-8. [Getting Started & Local Development](#-getting-started--local-development)
-9. [Testing & Quality Assurance](#-testing--quality-assurance)
-10. [Deployment & CI/CD](#-deployment--cicd)
-11. [API Documentation](#-api-documentation)
-12. [License](#-license)
+1. [Introduction](#introduction)
+2. [Key Features](#key-features)
+3. [System Architecture](#system-architecture)
+4. [Application Ecosystem](#application-ecosystem)
+5. [Backend & Microservices](#backend--microservices)
+6. [Repository Structure](#repository-structure)
+7. [Tech Stack](#tech-stack)
+8. [Getting Started & Local Development](#getting-started--local-development)
+9. [Testing & Quality Assurance](#testing--quality-assurance)
+10. [Deployment & CI/CD](#deployment--cicd)
+11. [API Documentation](#api-documentation)
+12. [License](#license)
 
 ---
 
-## 📌 Introduction
+## Introduction
 
 **MiPedido** is a full-stack, multi-client restaurant ordering and fulfillment ecosystem designed to solve two major friction points in dining and food pickup:
 
@@ -51,47 +51,47 @@ Under the hood, the system coordinates native Android and cross-platform Flutter
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- **👥 Multi-User Shared Cart**: Real-time collaborative ordering session. Participants join via QR code, customize ingredient options, and submit selections into a single consolidated kitchen order.
-- **⚡ High-Density Base36 QR Compression**: MongoDB ObjectIDs are converted into compact Base36 tokens (`timestamp-counter`) enabling fast, error-tolerant QR code scanning even under poor lighting or on budget camera sensors.
-- **🔄 Real-Time Push Notifications**: Dedicated Go-based WebSocket gateway streams live order status transitions (Created, Updated, Items Added, Fulfilled) directly to customer and kitchen screens.
-- **🔍 RediSearch Acceleration**: Fast full-text indexing and caching for restaurant discovery, menu catalogs, and product queries.
-- **⭐ Asynchronous Rating Engine**: Offloads review calculation to an isolated Go background worker, aggregating ratings periodically without introducing latency into customer-facing order transactions.
-- **🗺️ Interactive Geolocation & Mapping**: OpenStreetMap and Nominatim geocoding integration for accurate restaurant location picking and proximity discovery.
-- **🛡️ Enterprise-Grade Security & Hardening**: JWT-based role authentication, strict non-root container execution (`UID 10001`), hash-pinned locked dependencies, SonarCloud A-grade security rating, and comprehensive administrative audit logging.
+- **Multi-User Shared Cart**: Real-time collaborative ordering session. Participants join via QR code, customize ingredient options, and submit selections into a single consolidated kitchen order.
+- **High-Density Base36 QR Compression**: MongoDB ObjectIDs are converted into compact Base36 tokens (`timestamp-counter`) enabling fast, error-tolerant QR code scanning even under poor lighting or on budget camera sensors.
+- **Real-Time Push Notifications**: Dedicated Go-based WebSocket gateway streams live order status transitions (Created, Updated, Items Added, Fulfilled) directly to customer and kitchen screens.
+- **RediSearch Acceleration**: Fast full-text indexing and caching for restaurant discovery, menu catalogs, and product queries.
+- **Asynchronous Rating Engine**: Offloads review calculation to an isolated Go background worker, aggregating ratings periodically without introducing latency into customer-facing order transactions.
+- **Interactive Geolocation & Mapping**: OpenStreetMap and Nominatim geocoding integration for accurate restaurant location picking and proximity discovery.
+- **Enterprise-Grade Security & Hardening**: JWT-based role authentication, strict non-root container execution (`UID 10001`), hash-pinned locked dependencies, SonarCloud A-grade security rating, and comprehensive administrative audit logging.
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 MiPedido is structured around decoupled services communicating via REST, WebSockets, and asynchronous background pipelines:
 
 ```mermaid
 flowchart TD
-    subgraph Clients["📱 Client Applications"]
+    subgraph Clients["Client Applications"]
         APP_CLI["App Cliente<br/>(Android / Jetpack Compose)"]
         APP_VEN["App Vendedor<br/>(Flutter / Dart)"]
         APP_ADM["App Admin<br/>(Flutter / Dart)"]
     end
 
-    subgraph CoreServices["⚡ Backend Services & Engines"]
+    subgraph CoreServices["Backend Services & Engines"]
         API["Core REST API<br/>(Python 3.13 / FastAPI / Gunicorn)"]
         WS["WebSocket Engine<br/>(Go 1.24 / Gin)"]
     end
 
-    subgraph Workers["⏱️ Background Cron Workers"]
+    subgraph Workers["Background Cron Workers"]
         REDIS_CRON["Redis Indexer Cron<br/>(Go 1.24)"]
         RATING_CRON["Rating Aggregator Cron<br/>(Go 1.24)"]
     end
 
-    subgraph DataLayers["💾 Data Stores & Storage"]
+    subgraph DataLayers["Data Stores & Storage"]
         MONGO[("MongoDB<br/>(Primary Document Store)")]
         REDIS[("Redis Cloud / RediSearch<br/>(Full-Text Search & Cache)")]
         BLOB["Vercel Blob Storage<br/>(Product & Restaurant Imagery)"]
     end
 
-    subgraph External["🌐 External Services"]
+    subgraph External["External Services"]
         OSM["OpenStreetMap / Nominatim<br/>(Geocoding & Location)"]
     end
 
@@ -163,7 +163,7 @@ sequenceDiagram
 
 ---
 
-## 📱 Application Ecosystem
+## Application Ecosystem
 
 The project consists of three purpose-built frontends serving different user roles:
 
@@ -198,7 +198,7 @@ The project consists of three purpose-built frontends serving different user rol
 
 ---
 
-## ⚙️ Backend & Microservices
+## Backend & Microservices
 
 | Service | Directory | Language / Framework | Description |
 |---|---|---|---|
@@ -209,7 +209,7 @@ The project consists of three purpose-built frontends serving different user rol
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```
 MiPedido/
@@ -260,7 +260,7 @@ MiPedido/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Languages**: Python 3.13, Go 1.24, Kotlin, Dart
 - **Frameworks & Libraries**:
@@ -279,7 +279,7 @@ MiPedido/
 
 ---
 
-## 🚀 Getting Started & Local Development
+## Getting Started & Local Development
 
 ### Prerequisites
 
@@ -405,7 +405,7 @@ flutter run -d chrome  # or macos, linux, windows
 
 ---
 
-## 🧪 Testing & Quality Assurance
+## Testing & Quality Assurance
 
 ### Automated Testing
 
@@ -429,7 +429,7 @@ pytest -q
 
 ---
 
-## 📦 Deployment & CI/CD
+## Deployment & CI/CD
 
 The repository includes complete GitHub Actions CI/CD workflows:
 
@@ -462,7 +462,7 @@ export HEROKU_APP_RATING_CRON=mipedido-rating-cron
 
 ---
 
-## 📡 API Documentation
+## API Documentation
 
 Comprehensive REST API endpoints and schema definitions are documented in [`apiDoc.md`](apiDoc.md).
 
@@ -486,6 +486,6 @@ Comprehensive REST API endpoints and schema definitions are documented in [`apiD
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the terms of the MIT License.
