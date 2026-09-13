@@ -30,7 +30,9 @@ func GetOrderWatcher() *OrderChangeWatcher {
 		if err != nil {
 			log.Fatalf("Failed to create order watcher: %v", err)
 		}
-		err = orderWatcher.Start()
+		ctx, cancel := context.WithCancel(context.Background())
+		orderWatcher.cancel = cancel
+		err = orderWatcher.Start(ctx)
 		if err != nil {
 			log.Fatalf("Failed to start order watcher: %v", err)
 		}
@@ -41,7 +43,6 @@ func GetOrderWatcher() *OrderChangeWatcher {
 type OrderChangeWatcher struct {
 	collection     *mongo.Collection
 	changeStream   *mongo.ChangeStream
-	ctx            context.Context
 	cancel         context.CancelFunc
 	orderUserCache map[string]string       // Maps order ID to a single user ID
 	orderCache     map[string]models.Order // Cache of orders
@@ -54,12 +55,8 @@ func NewOrderChangeWatcher(collectionName string) (*OrderChangeWatcher, error) {
 		return nil, fmt.Errorf("collection '%s' not found", collectionName)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	watcher := &OrderChangeWatcher{
 		collection:     collection,
-		ctx:            ctx,
-		cancel:         cancel,
 		orderUserCache: make(map[string]string),
 		orderCache:     make(map[string]models.Order),
 	}
@@ -68,9 +65,9 @@ func NewOrderChangeWatcher(collectionName string) (*OrderChangeWatcher, error) {
 }
 
 // Start begins watching for changes in the orders collection
-func (w *OrderChangeWatcher) Start() error {
+func (w *OrderChangeWatcher) Start(ctx context.Context) error {
 	// Load existing orders for tracking
-	w.preloadOrders()
+	w.preloadOrders(ctx)
 
 	// Create a pipeline for the change stream
 	pipeline := mongo.Pipeline{
@@ -84,14 +81,14 @@ func (w *OrderChangeWatcher) Start() error {
 	}
 
 	opts := options.ChangeStream().SetFullDocument(options.UpdateLookup)
-	changeStream, err := w.collection.Watch(w.ctx, pipeline, opts)
+	changeStream, err := w.collection.Watch(ctx, pipeline, opts)
 	if err != nil {
 		return fmt.Errorf("failed to create change stream: %v", err)
 	}
 
 	w.changeStream = changeStream
 
-	go w.processChanges()
+	go w.processChanges(ctx)
 	log.Println("Order change watcher started")
 
 	return nil
@@ -109,16 +106,16 @@ func (w *OrderChangeWatcher) Stop() {
 }
 
 // preloadOrders loads existing orders into cache for tracking
-func (w *OrderChangeWatcher) preloadOrders() {
-	cursor, err := w.collection.Find(w.ctx, bson.M{})
+func (w *OrderChangeWatcher) preloadOrders(ctx context.Context) {
+	cursor, err := w.collection.Find(ctx, bson.M{})
 	if err != nil {
 		log.Printf("Error preloading orders: %v", err)
 		return
 	}
-	defer cursor.Close(w.ctx)
+	defer cursor.Close(ctx)
 
 	var orders []models.Order
-	if err := cursor.All(w.ctx, &orders); err != nil {
+	if err := cursor.All(ctx, &orders); err != nil {
 		log.Printf("Error decoding orders: %v", err)
 		return
 	}
@@ -144,8 +141,8 @@ func (w *OrderChangeWatcher) GetCollection() *mongo.Collection {
 }
 
 // processChanges processes changes from the change stream
-func (w *OrderChangeWatcher) processChanges() {
-	for w.changeStream.Next(w.ctx) {
+func (w *OrderChangeWatcher) processChanges(ctx context.Context) {
+	for w.changeStream.Next(ctx) {
 		var changeDoc struct {
 			FullDocument models.Order `bson:"fullDocument"`
 		}
@@ -196,7 +193,7 @@ func (w *OrderChangeWatcher) processChanges() {
 				},
 			}
 
-			_, err := w.collection.UpdateByID(w.ctx, order.ID, update)
+			_, err := w.collection.UpdateByID(ctx, order.ID, update)
 			if err != nil {
 				log.Printf("Error updating notifiedAt for order %s: %v", orderIDHex, err)
 			} else {

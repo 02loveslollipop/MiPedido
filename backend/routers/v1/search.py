@@ -18,7 +18,13 @@ class SearchResponse(BaseModel):
     count: int
     results: List[Dict]
 
-@router.get("/restaurants", response_model=SearchResponse)
+@router.get(
+    "/restaurants",
+    response_model=SearchResponse,
+    responses={
+        500: {"description": "Internal server error"}
+    }
+)
 async def search_restaurants_endpoint(
     q: str = Query(..., description="Search query for restaurants, products or cuisines"),
     limit: int = Query(10, description="Maximum number of results to return"),
@@ -47,7 +53,13 @@ async def search_restaurants_endpoint(
         error_detail = f"Search error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.get("/products", response_model=SearchResponse)
+@router.get(
+    "/products",
+    response_model=SearchResponse,
+    responses={
+        500: {"description": "Internal server error"}
+    }
+)
 async def search_products_endpoint(
     q: str = Query(..., description="Search query for products, ingredients or descriptions"),
     restaurant_id: str = Query(..., description="Restaurant ID to filter products by restaurant"),

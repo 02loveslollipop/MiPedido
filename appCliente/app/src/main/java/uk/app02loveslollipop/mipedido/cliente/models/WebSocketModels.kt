@@ -1,5 +1,7 @@
 package uk.app02loveslollipop.mipedido.cliente.models
 
+import com.google.gson.annotations.SerializedName
+
 /**
  * Generic structure for messages received via WebSocket.
  * @param T The type of the payload object.
@@ -20,7 +22,8 @@ sealed class WebSocketPayload {
      */
     data class Welcome(
         val message: String,
-        val order_id: String,
+        @SerializedName("order_id")
+        val orderId: String,
         val time: String // ISO DateTime format
     ) : WebSocketPayload()
 
@@ -28,8 +31,10 @@ sealed class WebSocketPayload {
      * Payload for the 'order_completed' message type.
      */
     data class OrderCompleted(
-        val order_id: String,
-        val restaurant_id: String,
+        @SerializedName("order_id")
+        val orderId: String,
+        @SerializedName("restaurant_id")
+        val restaurantId: String,
         val status: String, // Should be "fulfilled"
         val timestamp: String, // ISO DateTime format
         val message: String

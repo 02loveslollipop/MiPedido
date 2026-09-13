@@ -30,6 +30,12 @@ import java.util.Locale
 
 private const val DEFAULT_ERROR_MESSAGE = "Error desconocido"
 
+data class CartNavActions(
+    val onNavigateBack: () -> Unit,
+    val onNavigateToCheckoutQR: (String, String, String) -> Unit,
+    val onNavigateToCheckoutSlave: (String, String, String, Double) -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun CartScreen(
@@ -37,9 +43,7 @@ fun CartScreen(
     orderId: String,
     userId: String,
     isCreator: Boolean,
-    onNavigateBack: () -> Unit,
-    onNavigateToCheckoutQR: (String, String, String) -> Unit,
-    onNavigateToCheckoutSlave: (String, String, String, Double) -> Unit,
+    navActions: CartNavActions,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -114,10 +118,10 @@ fun CartScreen(
     fun handleCheckout() {
         if (isCreator) {
             // Navigate to QR screen if user is the creator
-            onNavigateToCheckoutQR(restaurantId, orderId, userId)
+            navActions.onNavigateToCheckoutQR(restaurantId, orderId, userId)
         } else {
             // Navigate to slave screen if user joined the order
-            onNavigateToCheckoutSlave(restaurantId, orderId, userId, totalPrice)
+            navActions.onNavigateToCheckoutSlave(restaurantId, orderId, userId, totalPrice)
         }
     }
 
@@ -136,7 +140,7 @@ fun CartScreen(
         topBar = {
             NavBar(
                 title = "Tu Carrito",
-                onBackPressed = onNavigateBack
+                onBackPressed = navActions.onNavigateBack
             )
         }
     ) { paddingValues ->

@@ -17,8 +17,6 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutSlaveScreen(
-    orderId: String, // May be needed for future reference or logging
-    userId: String, // May be needed for future reference or logging
     totalPrice: Double,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier

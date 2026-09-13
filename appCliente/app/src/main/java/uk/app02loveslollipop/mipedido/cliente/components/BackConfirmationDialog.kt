@@ -6,33 +6,37 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.text.style.TextAlign
 
 /**
+ * Configuration for texts shown in the back confirmation dialog.
+ */
+data class BackConfirmationDialogTexts(
+    val message: String,
+    val title: String = "¿Estás seguro que deseas salir?",
+    val confirmButtonText: String = "Salir",
+    val dismissButtonText: String = "Volver"
+)
+
+/**
  * A reusable component that handles back navigation with a confirmation dialog.
  *
  * @param showDialog Whether the dialog is currently shown or not
  * @param onShowDialogChange Callback to update the dialog visibility state
  * @param onConfirm Action to perform when the user confirms (usually navigation)
+ * @param texts Text configuration for the dialog
  * @param onDismiss Action to perform when the user dismisses the dialog (usually stay on screen)
- * @param title Dialog title text
- * @param message Dialog message text
- * @param confirmButtonText Text for the confirm button (usually "Salir")
- * @param dismissButtonText Text for the dismiss button (usually "Volver")
  */
 @Composable
 fun BackConfirmationDialog(
     showDialog: Boolean,
     onShowDialogChange: (Boolean) -> Unit,
     onConfirm: () -> Unit,
-    onDismiss: () -> Unit = { onShowDialogChange(false) },
-    title: String = "¿Estás seguro que deseas salir?",
-    message: String,
-    confirmButtonText: String = "Salir",
-    dismissButtonText: String = "Volver"
+    texts: BackConfirmationDialogTexts,
+    onDismiss: () -> Unit = { onShowDialogChange(false) }
 ) {
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { onShowDialogChange(false) },
-            title = { Text(title) },
-            text = { Text(message, textAlign = TextAlign.Start) },
+            title = { Text(texts.title) },
+            text = { Text(texts.message, textAlign = TextAlign.Start) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -43,7 +47,7 @@ fun BackConfirmationDialog(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text(confirmButtonText)
+                    Text(texts.confirmButtonText)
                 }
             },
             dismissButton = {
@@ -56,7 +60,7 @@ fun BackConfirmationDialog(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(dismissButtonText)
+                    Text(texts.dismissButtonText)
                 }
             }
         )
@@ -97,10 +101,12 @@ fun useBackConfirmation(
             showDialog = showConfirmationDialog,
             onShowDialogChange = { showConfirmationDialog = it },
             onConfirm = onConfirmNavigation,
-            title = title,
-            message = message,
-            confirmButtonText = confirmButtonText,
-            dismissButtonText = dismissButtonText
+            texts = BackConfirmationDialogTexts(
+                title = title,
+                message = message,
+                confirmButtonText = confirmButtonText,
+                dismissButtonText = dismissButtonText
+            )
         )
     }
     

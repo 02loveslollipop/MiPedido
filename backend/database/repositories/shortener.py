@@ -84,16 +84,16 @@ class ShortenerRepository:
         return t_bin, c_bin
 
     @classmethod
-    async def get_object_id(cls, short_code: str, collection_name: str = "orders") -> Dict[str, str]:
+    async def get_object_id(cls, short_code: str, collection_name: str = "orders") -> str:
         """
         Decode a base36 shortened code back to a MongoDB ObjectID.
         
         Args:
             short_code: The shortened code in format "timestamp-counter" (both in base36)
-            collection_name: The collection to search in (defaults to "users")
+            collection_name: The collection to search in (defaults to "orders")
             
         Returns:
-            A dictionary containing the object_id if found, otherwise None
+            The ObjectID as a string
         """
         try:
             # Parse the base36 encoded string and convert to binary values

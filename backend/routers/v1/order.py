@@ -69,7 +69,15 @@ async def join_order(order_id: str):
             detail=error_detail
         )
 
-@router.put("/{order_id}/{user_id}", response_model=OrderStatusResponse)
+@router.put(
+    "/{order_id}/{user_id}",
+    response_model=OrderStatusResponse,
+    responses={
+        400: {"description": "Bad request"},
+        404: {"description": "Order, user, or product not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def modify_user_order(order_id: str, user_id: str, item_update: OrderItemUpdate):
     """
     Modify the order of a user.
@@ -114,8 +122,7 @@ async def modify_user_order(order_id: str, user_id: str, item_update: OrderItemU
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        logging.error(f"Error modifying user order: {str(e)}")
-        logging.error(traceback.format_exc())
+        logging.exception("Error modifying user order: %s", e)
         error_detail = f"Error: {str(e)}\n Stack trace: {traceback.format_exc()}"
         raise HTTPException(status_code=500, detail=error_detail)
 

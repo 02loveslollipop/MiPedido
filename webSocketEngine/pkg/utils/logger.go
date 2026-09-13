@@ -32,77 +32,68 @@ func (w *LoggingResponseWriter) WriteHeader(code int) {
 	w.ResponseWriter.WriteHeader(code)
 }
 
+func extractRequestBody(c *gin.Context) string {
+	if (c.Request.Method != "POST" && c.Request.Method != "PUT") || c.Request.Body == nil {
+		return ""
+	}
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		return ""
+	}
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+	return string(bodyBytes)
+}
+
+func formatJSONOrRaw(raw []byte) string {
+	var pretty bytes.Buffer
+	if err := json.Indent(&pretty, raw, "", "  "); err == nil {
+		return pretty.String()
+	}
+	return string(raw)
+}
+
+func logNon2xxResponse(c *gin.Context, writer *LoggingResponseWriter, requestBody string, duration time.Duration) {
+	if writer.statusCode >= 200 && writer.statusCode < 300 {
+		return
+	}
+
+	sanitizedPath := SanitizeLog(c.Request.URL.Path)
+	sanitizedQuery := SanitizeLog(fmt.Sprintf("%v", c.Request.URL.Query()))
+
+	reqFormatted := requestBody
+	if requestBody != "" {
+		reqFormatted = formatJSONOrRaw([]byte(requestBody))
+	}
+
+	respFormatted := formatJSONOrRaw(writer.body.Bytes())
+
+	log.Printf("HTTP Error [%d] - %s %s - Duration: %v\nRequest: %s\nResponse: %s\nQuery Params: %s",
+		writer.statusCode,
+		c.Request.Method,
+		sanitizedPath,
+		duration,
+		SanitizeLog(reqFormatted),
+		SanitizeLog(respFormatted),
+		sanitizedQuery)
+}
+
 // LogNon2xxResponses is a middleware that logs all non-2xx HTTP responses
 func LogNon2xxResponses() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Create a custom response writer to capture the response
 		writer := &LoggingResponseWriter{
 			ResponseWriter: c.Writer,
 			body:           bytes.NewBufferString(""),
-			statusCode:     http.StatusOK, // Default status code
+			statusCode:     http.StatusOK,
 		}
 		c.Writer = writer
 
-		// Get the request body for logging if needed
-		requestBody := ""
-		if c.Request.Method == "POST" || c.Request.Method == "PUT" {
-			var bodyBytes []byte
-			if c.Request.Body != nil {
-				bodyBytes, _ = io.ReadAll(c.Request.Body)
-				// Restore the body for further processing
-				c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-				requestBody = string(bodyBytes)
-			}
-		}
+		requestBody := extractRequestBody(c)
 
-		// Process request
 		startTime := time.Now()
 		c.Next()
 		duration := time.Since(startTime)
 
-		// Log non-2xx responses
-		if writer.statusCode < 200 || writer.statusCode >= 300 {
-			sanitizedPath := SanitizeLog(c.Request.URL.Path)
-			sanitizedQuery := SanitizeLog(fmt.Sprintf("%v", c.Request.URL.Query()))
-
-			// Format the response body as JSON if possible
-			var prettyJSON bytes.Buffer
-			if err := json.Indent(&prettyJSON, writer.body.Bytes(), "", "  "); err == nil {
-				// Try to format the request body as well if it's not empty
-				requestBodyFormatted := requestBody
-				if requestBody != "" {
-					var prettyRequest bytes.Buffer
-					if err := json.Indent(&prettyRequest, []byte(requestBody), "", "  "); err == nil {
-						requestBodyFormatted = prettyRequest.String()
-					}
-				}
-
-				sanitizedReqBody := SanitizeLog(requestBodyFormatted)
-				sanitizedRespBody := SanitizeLog(prettyJSON.String())
-
-				log.Printf("HTTP Error [%d] - %s %s - Duration: %v\nRequest: %s\nResponse: %s\nQuery Params: %s",
-					writer.statusCode,
-					c.Request.Method,
-					sanitizedPath,
-					duration,
-					sanitizedReqBody,
-					sanitizedRespBody,
-					sanitizedQuery)
-			} else {
-				// If JSON formatting fails, log the raw response
-				sanitizedReqBody := SanitizeLog(requestBody)
-				sanitizedRespBody := SanitizeLog(writer.body.String())
-
-				log.Printf("HTTP Error [%d] - %s %s - Duration: %v\nRequest: %s\nResponse: %s\nQuery Params: %s",
-					writer.statusCode,
-					c.Request.Method,
-					sanitizedPath,
-					duration,
-					sanitizedReqBody,
-					sanitizedRespBody,
-					sanitizedQuery)
-			}
-		}
+		logNon2xxResponse(c, writer, requestBody, duration)
 	}
 }
 

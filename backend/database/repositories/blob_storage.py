@@ -14,9 +14,8 @@ class BlobStorage:
             res = vercel_blob.put(blob_name, upload_file.file.read())
             
             url = res["url"]
-            #url = res["downloadUrl"]
             if url is None:
-                raise Exception("Blob storage upload failed")
+                raise RuntimeError("Blob storage upload failed")
             return url
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

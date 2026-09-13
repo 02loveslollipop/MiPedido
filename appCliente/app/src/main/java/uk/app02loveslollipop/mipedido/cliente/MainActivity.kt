@@ -168,13 +168,15 @@ fun MiPedidoApp() {
                 orderId = orderId,
                 userId = userId,
                 isCreator = isCreator,
-                onNavigateBack = safeNavigateBack,
-                onNavigateToCheckoutQR = { resId, oId, uId ->
-                    navController.navigate("checkout-qr/$resId/$oId/$uId")
-                },
-                onNavigateToCheckoutSlave = { resId, oId, uId, total ->
-                    navController.navigate("checkout-slave/$oId/$uId/$total")
-                }
+                navActions = CartNavActions(
+                    onNavigateBack = safeNavigateBack,
+                    onNavigateToCheckoutQR = { resId, oId, uId ->
+                        navController.navigate("checkout-qr/$resId/$oId/$uId")
+                    },
+                    onNavigateToCheckoutSlave = { _, oId, uId, total ->
+                        navController.navigate("checkout-slave/$oId/$uId/$total")
+                    }
+                )
             )
         }
 
@@ -194,7 +196,6 @@ fun MiPedidoApp() {
                 restaurantId = restaurantId,
                 orderId = orderId,
                 userId = userId,
-                onNavigateBack = safeNavigateBack,
                 navController = navController
             )
         }
@@ -229,12 +230,8 @@ fun MiPedidoApp() {
             )
         ) { backStackEntry ->
             val restaurantId = backStackEntry.arguments?.getString("restaurantId") ?: ""
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
-            val userId = backStackEntry.arguments?.getString("userId") ?: ""
             ReviewScreen(
                 restaurantId = restaurantId,
-                orderId = orderId,
-                userId = userId,
                 navController = navController
             )
         }
@@ -248,12 +245,8 @@ fun MiPedidoApp() {
                 navArgument("totalPrice") { type = NavType.FloatType }
             )
         ) { backStackEntry ->
-            val orderId = backStackEntry.arguments?.getString("orderId") ?: ""
-            val userId = backStackEntry.arguments?.getString("userId") ?: ""
             val totalPrice = backStackEntry.arguments?.getFloat("totalPrice")?.toDouble() ?: 0.0
             CheckoutSlaveScreen(
-                orderId = orderId,
-                userId = userId,
                 totalPrice = totalPrice,
                 onFinish = {
                     // Pop back to restaurants screen

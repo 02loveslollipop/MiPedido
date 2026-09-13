@@ -49,7 +49,7 @@ object Base36Utils {
      * @return The base36 string representation.
      */
     private fun intToBase36(number: Int): String {
-        if (number < 0) throw IllegalArgumentException("Number must be non-negative")
+        require(number >= 0) { "Number must be non-negative" }
         if (number == 0) return BASE36_CHARS[0].toString()
 
         var num = number
