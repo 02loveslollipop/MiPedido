@@ -1,0 +1,17 @@
+version: 1
+reconciliation: keep
+records:
+  - key: backend-02labs-me
+    zone: 02labs.me
+    name: valkyrie.02labs.me
+    type: CNAME
+    content: cubic-anchisaurus-omcs69fz9itvc3in7q0g1k1u.herokudns.com
+    proxied: false
+    ttl: 300
+  - key: websocket-02labs-me
+    zone: 02labs.me
+    name: wattson.02labs.me
+    type: CNAME
+    content: environmental-stegosaurus-oppemudqafy67wjth2n5zncn.herokudns.com
+    proxied: false
+    ttl: 300
