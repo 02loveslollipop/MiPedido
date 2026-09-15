@@ -1,0 +1,32 @@
+name: DNS — FlareForm plan
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - flareform.yaml
+      - .github/workflows/dns.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flareform-production
+  cancel-in-progress: false
+
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: 02loveslollipop/flareform/github-action@9d1087bd60ab68317918b3ed05c0108e75e048ad
+        with:
+          operation: plan
+          manifest: flareform.yaml
