@@ -26,6 +26,37 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Diagnose allowlisted OIDC claim shapes
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const endpoint = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+          endpoint.searchParams.set("audience", "https://dns.02labs.me");
+          const response = await fetch(endpoint, {
+            headers: {
+              authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
+            },
+          });
+          if (!response.ok) process.exit(1);
+          const token = (await response.json()).value;
+          const [encodedHeader, encodedPayload] = token.split(".");
+          const decode = (part) =>
+            JSON.parse(Buffer.from(part, "base64url").toString("utf8"));
+          const header = decode(encodedHeader);
+          const payload = decode(encodedPayload);
+          const claimNames = [
+            "iss", "aud", "sub", "repository_id", "repository_owner_id",
+            "event_name", "ref", "environment", "workflow_ref",
+            "runner_environment", "iat", "nbf", "exp",
+          ];
+          const claims = Object.fromEntries(
+            claimNames.map((name) => [name, {
+              type: typeof payload[name],
+              value: payload[name],
+            }]),
+          );
+          console.log(JSON.stringify({ headerKeys: Object.keys(header), claims }));
+          NODE
       - uses: 02loveslollipop/flareform/github-action@9d1087bd60ab68317918b3ed05c0108e75e048ad
         with:
           operation: plan
