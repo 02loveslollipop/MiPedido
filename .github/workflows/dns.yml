@@ -79,8 +79,44 @@ jobs:
             },
             jwks: { keyCount: jwks.keys.length, matchingKeys: matchingKey.length },
             signatureValid,
+            tokenShape: {
+              totalLength: token.length,
+              segmentLengths: token.split(".").map((part) => part.length),
+            },
             claims,
           }));
+          NODE
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: 02loveslollipop/flareform
+          ref: 44973af29d1d233f9aa500044d52f00821089a4c
+          path: .flareform-verifier
+          persist-credentials: false
+      - name: Verify token with the exact deployed verifier source
+        working-directory: .flareform-verifier
+        shell: bash
+        run: |
+          npm ci --ignore-scripts
+          node --input-type=module <<'NODE'
+          import { createOidcVerifier } from "./src/auth/oidc.js";
+          const endpoint = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
+          endpoint.searchParams.set("audience", "https://dns.02labs.me");
+          const response = await fetch(endpoint, {
+            headers: {
+              authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
+            },
+          });
+          if (!response.ok) process.exit(1);
+          const token = (await response.json()).value;
+          try {
+            await createOidcVerifier()(token);
+            console.log(JSON.stringify({ sourceVerifierValid: true }));
+          } catch (error) {
+            console.log(JSON.stringify({
+              sourceVerifierValid: false,
+              code: error?.code ?? "UNKNOWN",
+            }));
+          }
           NODE
       - uses: 02loveslollipop/flareform/github-action@9d1087bd60ab68317918b3ed05c0108e75e048ad
         with:
