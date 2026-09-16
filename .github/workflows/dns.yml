@@ -1,4 +1,4 @@
-name: DNS — FlareForm plan
+name: DNS — FlareForm reconcile
 
 on:
   push:
@@ -26,99 +26,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Diagnose allowlisted OIDC claim shapes
-        shell: bash
-        run: |
-          node --input-type=module <<'NODE'
-          import { createPublicKey, verify } from "node:crypto";
-          const endpoint = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
-          endpoint.searchParams.set("audience", "https://dns.02labs.me");
-          const response = await fetch(endpoint, {
-            headers: {
-              authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
-            },
-          });
-          if (!response.ok) process.exit(1);
-          const token = (await response.json()).value;
-          const [encodedHeader, encodedPayload] = token.split(".");
-          const decode = (part) =>
-            JSON.parse(Buffer.from(part, "base64url").toString("utf8"));
-          const header = decode(encodedHeader);
-          const payload = decode(encodedPayload);
-          const jwksResponse = await fetch(
-            "https://token.actions.githubusercontent.com/.well-known/jwks",
-          );
-          if (!jwksResponse.ok) process.exit(1);
-          const jwks = await jwksResponse.json();
-          const matchingKey = jwks.keys.filter((key) => key.kid === header.kid);
-          const signatureValid = matchingKey.length === 1 && verify(
-            "RSA-SHA256",
-            Buffer.from(`${encodedHeader}.${encodedPayload}`),
-            createPublicKey({ key: matchingKey[0], format: "jwk" }),
-            Buffer.from(token.split(".")[2], "base64url"),
-          );
-          const claimNames = [
-            "iss", "aud", "sub", "repository_id", "repository_owner_id",
-            "event_name", "ref", "environment", "workflow_ref",
-            "runner_environment", "iat", "nbf", "exp",
-          ];
-          const claims = Object.fromEntries(
-            claimNames.map((name) => [name, {
-              type: typeof payload[name],
-              value: payload[name],
-            }]),
-          );
-          console.log(JSON.stringify({
-            header: {
-              keys: Object.keys(header),
-              algorithm: header.alg,
-              type: header.typ,
-              thumbprintType: typeof header.x5t,
-              thumbprintLength: header.x5t?.length,
-              thumbprintShape: /^[A-Za-z0-9_-]{27}$/.test(header.x5t ?? ""),
-            },
-            jwks: { keyCount: jwks.keys.length, matchingKeys: matchingKey.length },
-            signatureValid,
-            tokenShape: {
-              totalLength: token.length,
-              segmentLengths: token.split(".").map((part) => part.length),
-            },
-            claims,
-          }));
-          NODE
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: 02loveslollipop/flareform/github-action@ce8d7005b5a089d9c5d704420564b3dd1f4668a9
         with:
-          repository: 02loveslollipop/flareform
-          ref: 44973af29d1d233f9aa500044d52f00821089a4c
-          path: .flareform-verifier
-          persist-credentials: false
-      - name: Verify token with the exact deployed verifier source
-        working-directory: .flareform-verifier
-        shell: bash
-        run: |
-          npm ci --ignore-scripts
-          node --input-type=module <<'NODE'
-          import { createOidcVerifier } from "./src/auth/oidc.js";
-          const endpoint = new URL(process.env.ACTIONS_ID_TOKEN_REQUEST_URL);
-          endpoint.searchParams.set("audience", "https://dns.02labs.me");
-          const response = await fetch(endpoint, {
-            headers: {
-              authorization: `Bearer ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
-            },
-          });
-          if (!response.ok) process.exit(1);
-          const token = (await response.json()).value;
-          try {
-            await createOidcVerifier()(token);
-            console.log(JSON.stringify({ sourceVerifierValid: true }));
-          } catch (error) {
-            console.log(JSON.stringify({
-              sourceVerifierValid: false,
-              code: error?.code ?? "UNKNOWN",
-            }));
-          }
-          NODE
-      - uses: 02loveslollipop/flareform/github-action@9d1087bd60ab68317918b3ed05c0108e75e048ad
-        with:
-          operation: plan
+          operation: apply
           manifest: flareform.yaml
