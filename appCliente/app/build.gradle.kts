@@ -42,7 +42,7 @@ android {
 val accompanistVersion = "0.32.0"
 val retrofitVersion = "3.0.0"
 val okhttpVersion = "5.2.1"
-val gsonVersion = "2.13.2"
+val gsonVersion = "2.14.0"
 val coroutinesVersion = "1.10.2"
 val coroutinesCoreVersion = "1.7.1"
 val coilVersion = "2.7.0"
