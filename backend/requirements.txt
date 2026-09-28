@@ -5,7 +5,7 @@ gunicorn==26.2.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
 motor==3.7.1
-pymongo==4.18.1
+pymongo==4.18.2
 python-dotenv==1.2.3
 sqlalchemy==2.0.52
 databases==0.9.0
