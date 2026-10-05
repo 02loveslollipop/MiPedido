@@ -6,7 +6,7 @@ pydantic==2.13.5
 pydantic-settings==2.15.0
 motor==3.7.1
 pymongo==4.18.1
-python-dotenv==1.2.3
+python-dotenv==1.2.4
 sqlalchemy==2.0.52
 databases==0.9.0
 asyncpg==0.31.0
